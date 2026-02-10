@@ -1,7 +1,7 @@
 import { type ComponentType } from 'react';
 import {
   Settings, Terminal, Plug2, Volume2, VolumeX,
-  Bell, BellOff, Play, Pause,
+  Bell, BellOff, Play, Pause, Info,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSettingsStore } from '@/stores/useSettingsStore';
@@ -11,6 +11,7 @@ interface ControlBarProps {
   onConnect: () => void;
   onSettings: () => void;
   onDiagnostics: () => void;
+  onAbout: () => void;
 }
 
 function ControlButton({
@@ -43,7 +44,7 @@ function ControlButton({
   );
 }
 
-export function ControlBar({ onConnect, onSettings, onDiagnostics }: ControlBarProps) {
+export function ControlBar({ onConnect, onSettings, onDiagnostics, onAbout }: ControlBarProps) {
   const { connectionMode, setConnectionMode, muted, setMuted, dnd, setDnd } = useSettingsStore();
   const isDemoMode = connectionMode === 'demo';
 
@@ -71,6 +72,7 @@ export function ControlBar({ onConnect, onSettings, onDiagnostics }: ControlBarP
       <ControlButton icon={Plug2} label="Connect" onClick={onConnect} />
       <ControlButton icon={Settings} label="Settings" onClick={onSettings} />
       <ControlButton icon={Terminal} label="Diagnostics" onClick={onDiagnostics} />
+      <ControlButton icon={Info} label="About" onClick={onAbout} />
     </div>
   );
 }
