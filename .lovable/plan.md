@@ -1,56 +1,132 @@
 
 
-# Privacy Lock v1 — Implementation Plan
+# Bridge Mode Testing — UX Helpers
 
-## All Changes
+## What already works (no code changes needed)
 
-### 1. Fix: `resetIdleTimer` null assignment
-**File: `src/lib/bridge.ts`**
-- In `resetIdleTimer()`, add `idleTimer = null` after `clearTimeout(idleTimer)`
+The bridge client in `bridge.ts` passes the full URL to `new WebSocket(url)`, so `ws://127.0.0.1:3939/ping` (with the `/ping` path) already works out of the box. No client-side changes are required.
 
-### 2. Add types
-**File: `src/lib/types.ts`**
-- Add `AutoLockMinutes` type: `5 | 15 | 30 | 60`
+## Code Changes
 
-### 3. Settings store updates
-**File: `src/stores/useSettingsStore.ts`**
-- Add persisted settings: `privacyLock` (boolean, default `false`), `autoLockMinutes` (AutoLockMinutes, default `15`)
-- Add runtime state (not persisted): `isLocked` (boolean, default `false`)
-- Add actions: `setPrivacyLock`, `setAutoLockMinutes`, `lock`, `unlock`
+### 1. Connect Modal — helper note
+**File: `src/components/ping/ConnectModal.tsx`**
 
-### 4. Inactivity timer with throttled mousemove
-**File: `src/pages/Index.tsx`**
-- Add `useEffect` that runs when `privacyLock` is enabled
-- Listen for `mousemove`, `keydown`, `touchstart` to reset an inactivity timer
-- Mousemove resets are throttled to max once every 3 seconds via a `lastResetTs` ref
-- Keydown and touchstart reset immediately
-- On timeout (matching `autoLockMinutes`), call `lock()`
-- Cleanup on unmount or when `privacyLock` is toggled off
+Update the helper text below the URL input to include a fallback tip:
 
-### 5. Composer: hidden when locked
-**File: `src/components/ping/Composer.tsx`**
-- Read `isLocked` from `useSettingsStore`
-- When `isLocked === true`, return `null` (hide entirely) — no messages can be sent
+> "Bridge must bind to 127.0.0.1 only. UI never stores tokens.
+> Tip: If your server doesn't support URL paths, use ws://127.0.0.1:3939"
 
-### 6. ChatStack: locked overlay
-**File: `src/components/ping/ChatStack.tsx`**
-- Read `isLocked` from `useSettingsStore`
-- When locked, render a blurred overlay with "Session Locked" text and an "Unlock" button
-- Clicking Unlock calls `unlock()` on the settings store
-
-### 7. StatusChip: hide detail when locked
-**File: `src/components/ping/StatusChip.tsx`**
-- Read `isLocked` from `useSettingsStore`
-- When locked, show "Locked" label instead of the current state label
-
-### 8. DiagnosticsPanel: locked placeholder
+### 2. Diagnostics Panel — Bridge Test Checklist
 **File: `src/components/ping/DiagnosticsPanel.tsx`**
-- Read `isLocked` from `useSettingsStore`
-- When locked, show a single "Session is locked" message instead of diagnostic rows
 
-### 9. SettingsPanel: Privacy section
-**File: `src/components/ping/SettingsPanel.tsx`**
-- Add a "Privacy" section below the DND toggle
-- Toggle: "Privacy Lock" (controls `privacyLock`)
-- When enabled, show a select dropdown for "Auto-lock after" with options: 5 / 15 / 30 / 60 minutes
+Add a collapsible "Bridge Test Checklist" section at the bottom of the diagnostics panel (only visible when in Bridge mode). Contains four items with auto-detected pass/fail status:
+
+| Check | Auto-detected via |
+|-------|-------------------|
+| Status chip shows Idle | `persistentState === 'idle'` |
+| Protocol version received | `bridgeStatus.protocolVersion` exists |
+| Agent name received | `bridgeStatus.agentName` exists |
+| Message round-trip works | At least one assistant message in `messages[]` |
+
+Each item shows a green checkmark or gray circle based on current state. This gives instant visual feedback during testing.
+
+### 3. Copy-paste test server (not a code change — instructions for you)
+
+Create a folder anywhere on your machine and run these commands:
+
+```
+mkdir ping-bridge-test
+cd ping-bridge-test
+npm init -y
+npm i ws
+```
+
+Then create `ping-bridge.mjs` with this content:
+
+```javascript
+import { WebSocketServer } from 'ws';
+
+const wss = new WebSocketServer({
+  host: '127.0.0.1',
+  port: 3939,
+  path: '/ping',
+});
+
+const replies = [
+  "Hello! I'm your test bridge agent.",
+  "Everything looks good from here.",
+  "Ping protocol is working correctly.",
+  "That's a great question — let me think about it.",
+  "All systems nominal.",
+];
+
+wss.on('connection', (ws) => {
+  console.log('[bridge] client connected');
+
+  // Send status on connect
+  ws.send(JSON.stringify({
+    type: 'status',
+    connected: true,
+    agentName: 'Test Bridge',
+    agentId: 'test-001',
+    protocolVersion: 'ping/0.1',
+  }));
+
+  ws.on('message', (raw) => {
+    try {
+      const data = JSON.parse(raw);
+      console.log('[bridge] received:', data);
+
+      if (data.type === 'send') {
+        // Send thinking state
+        ws.send(JSON.stringify({ type: 'state', state: 'thinking' }));
+
+        // Reply after 1.5-3s delay
+        const delay = 1500 + Math.random() * 1500;
+        setTimeout(() => {
+          const text = replies[Math.floor(Math.random() * replies.length)];
+          ws.send(JSON.stringify({
+            type: 'message',
+            role: 'assistant',
+            text,
+            ts: Date.now(),
+          }));
+        }, delay);
+      }
+
+      if (data.type === 'ping') {
+        // Heartbeat — no response needed
+      }
+    } catch {
+      // ignore malformed
+    }
+  });
+
+  ws.on('close', () => console.log('[bridge] client disconnected'));
+});
+
+console.log('[bridge] listening on ws://127.0.0.1:3939/ping');
+```
+
+Run it:
+```
+node ping-bridge.mjs
+```
+
+Then in Ping: open Connect modal, switch to Bridge, click Connect. The default URL `ws://127.0.0.1:3939/ping` will work immediately.
+
+### Verification checklist (manual)
+
+1. Status chip turns green (Idle)
+2. Open Diagnostics -- shows Protocol: ping/0.1, Agent: Test Bridge
+3. Type a message -- status goes to Thinking, then reply appears, then back to Idle
+4. Stop the server (Ctrl+C) -- status goes to Disconnected
+5. Restart server -- auto-reconnects within 3 seconds
+
+## Technical summary
+
+| File | Change |
+|------|--------|
+| `src/components/ping/ConnectModal.tsx` | Add fallback URL tip text |
+| `src/components/ping/DiagnosticsPanel.tsx` | Add collapsible Bridge Test Checklist with auto-detected status |
 
