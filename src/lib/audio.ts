@@ -78,3 +78,62 @@ export function playIdleChirp(volume: number, muted: boolean, dnd: boolean) {
   osc.start();
   osc.stop(ctx.currentTime + 0.15);
 }
+
+export function playSend(volume: number, muted: boolean, dnd: boolean) {
+  if (!canBeep(muted, dnd)) return;
+  lastBeepTime = Date.now();
+  const ctx = getCtx();
+  const pv = 0.96 + Math.random() * 0.08;
+
+  // Click: triangle, ~400Hz, 30ms
+  const osc1 = ctx.createOscillator();
+  const gain1 = ctx.createGain();
+  osc1.type = 'triangle';
+  osc1.frequency.value = 400 * pv;
+  gain1.gain.setValueAtTime(volume * 0.2, ctx.currentTime);
+  gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+  osc1.connect(gain1).connect(ctx.destination);
+  osc1.start();
+  osc1.stop(ctx.currentTime + 0.05);
+
+  // Chirp: sine, 600->900Hz, 80ms
+  const osc2 = ctx.createOscillator();
+  const gain2 = ctx.createGain();
+  osc2.type = 'sine';
+  osc2.frequency.setValueAtTime(600 * pv, ctx.currentTime);
+  osc2.frequency.linearRampToValueAtTime(900 * pv, ctx.currentTime + 0.08);
+  gain2.gain.setValueAtTime(volume * 0.15, ctx.currentTime);
+  gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+  osc2.connect(gain2).connect(ctx.destination);
+  osc2.start();
+  osc2.stop(ctx.currentTime + 0.1);
+}
+
+export function playReceive(volume: number, muted: boolean, dnd: boolean) {
+  if (!canBeep(muted, dnd)) return;
+  lastBeepTime = Date.now();
+  const ctx = getCtx();
+  const pv = 0.95 + Math.random() * 0.1;
+
+  // Ding: sine, ~1100Hz
+  const osc1 = ctx.createOscillator();
+  const gain1 = ctx.createGain();
+  osc1.type = 'sine';
+  osc1.frequency.value = 1100 * pv;
+  gain1.gain.setValueAtTime(volume * 0.22, ctx.currentTime);
+  gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+  osc1.connect(gain1).connect(ctx.destination);
+  osc1.start();
+  osc1.stop(ctx.currentTime + 0.12);
+
+  // Harmonic shimmer: 2x freq, quieter
+  const osc2 = ctx.createOscillator();
+  const gain2 = ctx.createGain();
+  osc2.type = 'sine';
+  osc2.frequency.value = 2200 * pv;
+  gain2.gain.setValueAtTime(volume * 0.08, ctx.currentTime);
+  gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+  osc2.connect(gain2).connect(ctx.destination);
+  osc2.start();
+  osc2.stop(ctx.currentTime + 0.08);
+}

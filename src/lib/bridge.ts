@@ -1,7 +1,7 @@
 import { usePingStore } from '@/stores/usePingStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { startTextReveal } from './textReveal';
-import { playError } from './audio';
+import { playError, playReceive } from './audio';
 import type { ChatMessage } from './types';
 
 let ws: WebSocket | null = null;
@@ -78,6 +78,7 @@ function handleEvent(data: Record<string, unknown>) {
         store.setPersistentState('speaking');
         resetIdleTimer();
         const settings = useSettingsStore.getState();
+        playReceive(settings.volume, settings.muted, settings.dnd);
         const cleanup = startTextReveal(
           msg.id,
           msg.text,

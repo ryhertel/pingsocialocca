@@ -6,6 +6,7 @@ import { usePingStore } from '@/stores/usePingStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { triggerDemoResponse } from '@/lib/demoEngine';
 import { sendMessage as bridgeSendMessage } from '@/lib/bridge';
+import { playSend } from '@/lib/audio';
 
 export function Composer() {
   const [text, setText] = useState('');
@@ -30,6 +31,9 @@ export function Composer() {
 
     setPersistentState('thinking');
     setText('');
+
+    const settings = useSettingsStore.getState();
+    playSend(settings.volume, settings.muted, settings.dnd);
 
     if (connectionMode === 'demo') {
       triggerDemoResponse();
