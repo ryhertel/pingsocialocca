@@ -24,7 +24,7 @@ export function WelcomeDialog({ open, onOpenChange }: WelcomeDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm text-center gap-5">
         <DialogHeader className="items-center gap-3">
-          <img src="/ping-icon.png" alt="Ping" className="h-16 w-16 rounded-2xl" />
+          <img src="/ping-square.png" alt="Ping" className="h-16 w-16 rounded-2xl" />
           <DialogTitle className="text-xl">Meet Ping</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground leading-relaxed">
             Ping is your always-on presence companion — an expressive face that listens,

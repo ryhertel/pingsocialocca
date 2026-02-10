@@ -79,14 +79,16 @@ const Index = () => {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-background select-none">
-      <img
-        src={pingLogo}
-        alt="Ping"
-        className="absolute top-4 left-4 z-10 h-8 cursor-pointer select-none opacity-90 hover:opacity-100 transition-opacity"
-        onClick={() => setShowAbout(true)}
-      />
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-3">
+        <img
+          src={pingLogo}
+          alt="Ping"
+          className="h-8 cursor-pointer select-none opacity-90 hover:opacity-100 transition-opacity"
+          onClick={() => setShowAbout(true)}
+        />
+        <StatusChip />
+      </div>
       <FaceCanvas />
-      <StatusChip />
       <ControlBar
         onConnect={() => setShowConnect(true)}
         onSettings={() => setShowSettings(true)}
