@@ -1,11 +1,15 @@
 import { type ComponentType } from 'react';
 import {
   Settings, Terminal, Plug2, Volume2, VolumeX,
-  Bell, BellOff, Play, Pause, Info,
+  Bell, BellOff, Play, Pause, Info, Menu,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
+} from '@/components/ui/sheet';
+import { useState } from 'react';
 
 interface ControlBarProps {
   onConnect: () => void;
@@ -49,7 +53,7 @@ export function ControlBar({ onConnect, onSettings, onDiagnostics, onAbout }: Co
   const isDemoMode = connectionMode === 'demo';
 
   return (
-    <div className="absolute top-4 right-4 z-10 flex items-center gap-0.5">
+    <div className="flex items-center gap-0.5">
       <ControlButton
         icon={isDemoMode ? Pause : Play}
         label={isDemoMode ? 'Demo Active' : 'Start Demo'}
@@ -74,5 +78,85 @@ export function ControlBar({ onConnect, onSettings, onDiagnostics, onAbout }: Co
       <ControlButton icon={Terminal} label="Diagnostics" onClick={onDiagnostics} />
       <ControlButton icon={Info} label="About" onClick={onAbout} />
     </div>
+  );
+}
+
+function MobileMenuItem({
+  icon: Icon,
+  label,
+  onClick,
+  active,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  onClick: () => void;
+  active?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-3 w-full px-4 py-3 text-sm rounded-lg transition-colors
+        ${active ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted/50'}`}
+    >
+      <Icon className="h-5 w-5 shrink-0" />
+      <span>{label}</span>
+    </button>
+  );
+}
+
+export function MobileMenu({ onConnect, onSettings, onDiagnostics, onAbout }: ControlBarProps) {
+  const [open, setOpen] = useState(false);
+  const { connectionMode, setConnectionMode, muted, setMuted, dnd, setDnd } = useSettingsStore();
+  const isDemoMode = connectionMode === 'demo';
+
+  const act = (fn: () => void) => {
+    fn();
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setOpen(true)}
+        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl pb-8">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Menu</SheetTitle>
+            <SheetDescription>Controls and settings</SheetDescription>
+          </SheetHeader>
+          <div className="space-y-1 mt-2">
+            <MobileMenuItem
+              icon={isDemoMode ? Pause : Play}
+              label={isDemoMode ? 'Demo Active' : 'Start Demo'}
+              onClick={() => act(() => setConnectionMode(isDemoMode ? 'bridge' : 'demo'))}
+              active={isDemoMode}
+            />
+            <MobileMenuItem
+              icon={muted ? VolumeX : Volume2}
+              label={muted ? 'Unmute Sound' : 'Mute Sound'}
+              onClick={() => act(() => setMuted(!muted))}
+              active={muted}
+            />
+            <MobileMenuItem
+              icon={dnd ? BellOff : Bell}
+              label={dnd ? 'Disable Do Not Disturb' : 'Do Not Disturb'}
+              onClick={() => act(() => setDnd(!dnd))}
+              active={dnd}
+            />
+            <div className="h-px bg-border/50 my-2" />
+            <MobileMenuItem icon={Plug2} label="Connect" onClick={() => act(onConnect)} />
+            <MobileMenuItem icon={Settings} label="Settings" onClick={() => act(onSettings)} />
+            <MobileMenuItem icon={Terminal} label="Diagnostics" onClick={() => act(onDiagnostics)} />
+            <MobileMenuItem icon={Info} label="About" onClick={() => act(onAbout)} />
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }
