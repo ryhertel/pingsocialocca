@@ -5,7 +5,6 @@ import { themePresets } from '@/lib/themes';
 import { cn } from '@/lib/utils';
 import { Lock, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 function formatRelative(ts: number): string {
   const diff = Date.now() - ts;
@@ -25,7 +24,7 @@ export function ChatStack() {
   const displayed = messages.slice(-20);
 
   const bottomRef = useRef<HTMLDivElement>(null);
-  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const isNearBottom = useRef(true);
   const prevLengthRef = useRef(displayed.length);
   const [showJumpButton, setShowJumpButton] = useState(false);
@@ -37,28 +36,18 @@ export function ChatStack() {
     borderLeft: `2px solid hsla(${glowPrimary}, 0.5)`,
   };
 
-  const checkNearBottom = useCallback((el: HTMLElement) => {
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_THRESHOLD;
     isNearBottom.current = nearBottom;
     setShowJumpButton(!nearBottom && displayed.length > 0);
   }, [displayed.length]);
 
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    checkNearBottom(e.currentTarget);
-  }, [checkNearBottom]);
-
-  // Capture the ScrollArea viewport element
-  const scrollAreaRef = useCallback((node: HTMLDivElement | null) => {
-    if (node) {
-      const viewport = node.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement | null;
-      viewportRef.current = viewport;
-    }
-  }, []);
-
   const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
-    const viewport = viewportRef.current;
-    if (viewport) {
-      viewport.scrollTo({ top: viewport.scrollHeight, behavior });
+    const el = scrollRef.current;
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior });
     }
   }, []);
 
@@ -101,10 +90,10 @@ export function ChatStack() {
   return (
     <div className="absolute bottom-20 right-4 w-72 sm:w-80 max-h-[50vh] sm:max-h-[60vh] z-10">
       <div className="relative">
-        <ScrollArea
-          ref={scrollAreaRef}
-          className="max-h-[50vh] sm:max-h-[60vh]"
-          onScrollCapture={handleScroll}
+        <div
+          ref={scrollRef}
+          className="overflow-y-auto max-h-[50vh] sm:max-h-[60vh]"
+          onScroll={handleScroll}
         >
           <div className="space-y-1.5 pr-1 pb-8">
             {displayed.map((msg) => (
@@ -128,7 +117,7 @@ export function ChatStack() {
             ))}
             <div ref={bottomRef} />
           </div>
-        </ScrollArea>
+        </div>
         {showJumpButton && (
           <button
             onClick={jumpToLatest}

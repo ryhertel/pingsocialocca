@@ -1,6 +1,6 @@
 let audioCtx: AudioContext | null = null;
 let lastBeepTime = 0;
-const BEEP_COOLDOWN = 20000; // 20s rate limit
+const BEEP_COOLDOWN = 300; // 300ms to prevent overlapping oscillators
 
 function getCtx(): AudioContext {
   if (!audioCtx) audioCtx = new AudioContext();
