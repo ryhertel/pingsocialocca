@@ -102,6 +102,14 @@ export function FaceCanvas() {
     // Hover
     let isHovered = false;
 
+    // Cursor tracking
+    let mouseNX = 0, mouseNY = 0;
+    let prevMouseNX = 0, prevMouseNY = 0;
+    let cursorTrackingPhase: 'idle' | 'tracking' = 'idle';
+    let cursorPhaseTimer = rand(2000, 6000);
+    let lastCursorMoveTs = 0;
+    let noticeReactionTimer = 0;
+
     let lastFrameTime = performance.now();
     let animId: number;
     let slowTimeoutId: number;
@@ -121,6 +129,22 @@ export function FaceCanvas() {
     canvas.addEventListener('touchend', () => {
       setTimeout(() => { isHovered = false; }, 500);
     }, { passive: true });
+
+    // Window-level mousemove for cursor tracking
+    const onMouseMove = (e: MouseEvent) => {
+      const nx = (e.clientX / window.innerWidth - 0.5) * 2;
+      const ny = (e.clientY / window.innerHeight - 0.5) * 2;
+      // Throttle: only update if moved > ~2% of screen
+      const dx = nx - mouseNX, dy = ny - mouseNY;
+      if (dx * dx + dy * dy > 0.0004) {
+        prevMouseNX = mouseNX;
+        prevMouseNY = mouseNY;
+        mouseNX = nx;
+        mouseNY = ny;
+        lastCursorMoveTs = performance.now();
+      }
+    };
+    window.addEventListener('mousemove', onMouseMove);
 
     function animate(now: number) {
       if (!running) return;
@@ -226,7 +250,55 @@ export function FaceCanvas() {
           targetGY = 0.35;
         }
 
-        if (gazeOverrideTimer <= 0 && !state.isComposerFocused) {
+        // — Cursor Attention —
+        const higherPriorityGaze = gazeOverrideTimer > 0 || state.isComposerFocused || ps === 'thinking' || ps === 'speaking';
+        const cursorActive = !higherPriorityGaze;
+
+        if (cursorActive) {
+          // Detect fast cursor flick
+          const flickDx = mouseNX - prevMouseNX, flickDy = mouseNY - prevMouseNY;
+          const flickSpeed = Math.sqrt(flickDx * flickDx + flickDy * flickDy);
+          const isFlick = flickSpeed > 0.3;
+
+          if (cursorTrackingPhase === 'idle') {
+            cursorPhaseTimer -= dt;
+            if (cursorPhaseTimer <= 0 || isFlick) {
+              // Notice! Transition to tracking
+              cursorTrackingPhase = 'tracking';
+              cursorPhaseTimer = rand(3000, 8000);
+              noticeReactionTimer = 300;
+            }
+          } else if (cursorTrackingPhase === 'tracking') {
+            // Follow cursor
+            const trackScale = 0.45 * iMult;
+            targetGX = mouseNX * trackScale;
+            targetGY = mouseNY * trackScale;
+
+            // Notice reaction (brief widen + glow on entry)
+            if (noticeReactionTimer > 0) {
+              noticeReactionTimer -= dt;
+              targetWiden = Math.max(targetWiden, 0.15 * iMult);
+              targetGlow = Math.max(targetGlow, 1.3);
+            }
+
+            cursorPhaseTimer -= dt;
+            const cursorStale = now - lastCursorMoveTs > 3000;
+            if (cursorPhaseTimer <= 0 || cursorStale) {
+              // Lose interest
+              cursorTrackingPhase = 'idle';
+              cursorPhaseTimer = rand(2000, 6000);
+              targetGX = 0;
+              targetGY = 0;
+            }
+          }
+        } else if (cursorTrackingPhase === 'tracking') {
+          // Higher-priority gaze took over, reset to idle
+          cursorTrackingPhase = 'idle';
+          cursorPhaseTimer = rand(2000, 6000);
+        }
+
+        // Random idle glances (suppressed during cursor tracking)
+        if (gazeOverrideTimer <= 0 && !state.isComposerFocused && cursorTrackingPhase !== 'tracking') {
           if (!isGlancing) {
             nextGlanceTime -= dt;
             if (nextGlanceTime <= 0) {
@@ -346,6 +418,7 @@ export function FaceCanvas() {
       cancelAnimationFrame(animId);
       clearTimeout(slowTimeoutId);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('mousemove', onMouseMove);
       canvas.removeEventListener('mouseenter', onEnter);
       canvas.removeEventListener('mouseleave', onLeave);
     };
