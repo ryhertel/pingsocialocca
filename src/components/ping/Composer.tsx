@@ -9,6 +9,7 @@ import { sendMessage as bridgeSendMessage } from '@/lib/bridge';
 
 export function Composer() {
   const [text, setText] = useState('');
+  const isLocked = useSettingsStore((s) => s.isLocked);
   const addMessage = usePingStore((s) => s.addMessage);
   const setPersistentState = usePingStore((s) => s.setPersistentState);
   const setIsComposerFocused = usePingStore((s) => s.setIsComposerFocused);
@@ -36,6 +37,8 @@ export function Composer() {
       bridgeSendMessage(trimmed);
     }
   };
+
+  if (isLocked) return null;
 
   return (
     <div className="absolute bottom-0 left-0 right-0 p-4 z-10">

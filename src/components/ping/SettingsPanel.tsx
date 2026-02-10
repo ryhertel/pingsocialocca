@@ -4,9 +4,10 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { themePresets } from '@/lib/themes';
-import type { ThemePreset, AnimationIntensity } from '@/lib/types';
+import type { ThemePreset, AnimationIntensity, AutoLockMinutes } from '@/lib/types';
 
 interface SettingsPanelProps {
   open: boolean;
@@ -108,6 +109,37 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
               <p className="text-[10px] text-muted-foreground">Disables all sounds</p>
             </div>
             <Switch checked={settings.dnd} onCheckedChange={settings.setDnd} />
+          </div>
+
+          {/* Privacy */}
+          <div className="space-y-3">
+            <Label className="text-xs text-muted-foreground">Privacy</Label>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm">Privacy Lock</span>
+                <p className="text-[10px] text-muted-foreground">Lock after inactivity</p>
+              </div>
+              <Switch checked={settings.privacyLock} onCheckedChange={settings.setPrivacyLock} />
+            </div>
+            {settings.privacyLock && (
+              <div className="space-y-1.5">
+                <span className="text-sm">Auto-lock after</span>
+                <Select
+                  value={String(settings.autoLockMinutes)}
+                  onValueChange={(v) => settings.setAutoLockMinutes(Number(v) as AutoLockMinutes)}
+                >
+                  <SelectTrigger className="bg-muted/40 border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value="5">5 minutes</SelectItem>
+                    <SelectItem value="15">15 minutes</SelectItem>
+                    <SelectItem value="30">30 minutes</SelectItem>
+                    <SelectItem value="60">60 minutes</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </div>
       </SheetContent>
