@@ -1,69 +1,80 @@
 
+# Polish Reactions + Sound Feedback ("Game UI" Vibe)
 
-# Cursor-Following Eyes with "Notice" Behavior
+## A) Stronger Visual Reactions (FaceCanvas.tsx)
 
-## Overview
+### 1. User send -- immediate "thinking" expression
+Currently, `Composer.tsx` calls `setPersistentState('thinking')` which triggers squint in FaceCanvas. We'll enhance this by adding a quick micro-glance downward toward the composer area for 150-250ms on transition to thinking state.
 
-The eyes will smoothly track the user's cursor position, making Ping feel alive and aware. To keep it from feeling robotic, the tracking won't be constant -- instead, the eyes will periodically "notice" the cursor, track it for a while, then drift back to their idle behaviors.
+- In the FaceCanvas animation loop, detect when `ps` transitions to `'thinking'` (compare against a `prevPersistentState` variable)
+- On that transition, set `gazeOverrideTimer = 250` and `targetGY = 0.4` (downward toward composer)
+- The existing squint (0.4) and glow shift already provide a good thinking look
 
-## How it works
+### 2. First assistant message -- "notice" reaction
+- Detect when a new assistant message arrives (track `lastAssistantMsgCount`)
+- Trigger a quick glance toward chat area: `targetGX = 0.4, targetGY = 0.3` for 250ms via `gazeOverrideTimer`
+- Add a small glow pulse: `targetGlow = 1.4` briefly
+- Then let it fall through to the normal speaking pulse
 
-### Cursor Tracking (always-on, subtle)
+### 3. Speaking pulse -- increase visibility by ~20%
+- Change speaking glow formula from `1 + 0.5 * sin(...)` to `1 + 0.65 * sin(...)` (about 30% more range, feels noticeably richer)
 
-- Track `mousemove` on the canvas to capture normalized cursor position (-1 to 1 range relative to canvas center)
-- Convert cursor position into `targetGX` / `targetGY` values (the existing glance system), clamped to a max range of about 0.5 so the eyes don't overextend
-- The existing `lerp` interpolation ensures smooth, natural-feeling movement
+### 4. Assistant message gaze priority
+- The new assistant message glance (item 2) uses `gazeOverrideTimer` which is already the highest priority gaze, so this is handled automatically
 
-### "Noticing" the Cursor
+## B) Sound Effects (audio.ts)
 
-Instead of always staring at the cursor (which feels creepy), the eyes use an attention cycle:
+### New: `playSend` -- "click + tiny upward chirp"
+- Two-oscillator layered sound: a short click (triangle, 400Hz, 30ms) + upward chirp (sine, 600->900Hz, 80ms)
+- Total duration ~100ms
+- Volume: `volume * 0.2` (conservative)
+- Slight random pitch variance: multiply base frequencies by `0.96 + Math.random() * 0.08` (+-4%)
+- Respects mute/DND/20s rate limit via existing `canBeep()`
 
-- **Idle phase** (2-6s): Eyes do their normal idle glances/bored routines, ignoring the cursor
-- **Notice trigger**: After the idle phase ends, OR if the cursor moves quickly (a sudden flick), the eyes "notice" -- a subtle widen reaction (like a slight surprise) followed by tracking
-- **Tracking phase** (3-8s): Eyes smoothly follow the cursor. A very subtle glow pulse on initial notice adds life
-- **Lose interest**: After the tracking phase, eyes drift back to center and return to idle behaviors
+### New: `playReceive` -- "soft ding/plink"
+- Single oscillator: sine wave at ~1100Hz with quick exponential decay
+- Add a second harmonic oscillator at 2x frequency, much quieter, for "plink" richness
+- Total duration ~120ms
+- Volume: `volume * 0.22`
+- Same pitch variance +-5%
+- Respects all existing audio constraints
 
-### Priority System
+### Trigger points
+- **Composer.tsx** `handleSend()`: call `playSend()` right after adding the user message
+- **bridge.ts** `handleEvent` case `'message'` when `role === 'assistant'`: call `playReceive()`
+- **demoEngine.ts** `generateResponse()`: call `playReceive()` when adding assistant message
 
-The existing gaze override system already handles priority. Cursor tracking slots in as the lowest priority:
+## C) File Changes Summary
 
-1. New message gaze override (highest)
-2. Composer focus gaze
-3. Thinking/speaking states
-4. Cursor tracking (new)
-5. Random idle glances (lowest -- suppressed during cursor tracking)
-
-### Edge Cases
-
-- **Cursor leaves window**: Smoothly drift back to center (existing `onLeave` behavior)
-- **Cursor stationary for 3s+**: Lose interest early, return to idle
-- **Disconnected state**: No tracking (eyes are dimmed)
-- **Low animation intensity**: Reduce tracking range and disable "notice" widen reaction
+| File | Changes |
+|------|---------|
+| `src/lib/audio.ts` | Add `playSend()` and `playReceive()` functions |
+| `src/components/ping/Composer.tsx` | Import and call `playSend()` on send |
+| `src/lib/bridge.ts` | Import and call `playReceive()` on assistant message |
+| `src/lib/demoEngine.ts` | Import and call `playReceive()` on assistant message |
+| `src/components/ping/FaceCanvas.tsx` | Add thinking-transition glance, assistant-message notice reaction, boost speaking pulse |
 
 ## Technical Details
 
-### File: `src/components/ping/FaceCanvas.tsx`
+### FaceCanvas.tsx changes (animation loop)
+- New variable: `prevPs` to detect persistent state transitions
+- New variable: `lastAssistantCount` to detect new assistant messages
+- On `ps` transition to `'thinking'` (and `prevPs !== 'thinking'`): set `gazeOverrideTimer = 250`, `targetGY = 0.4`
+- On new assistant message detected: set `gazeOverrideTimer = 300`, `targetGX = 0.4`, `targetGY = 0.3`, `targetGlow = max(targetGlow, 1.4)`
+- Speaking glow: change `0.5` to `0.65` in the sine multiplier
 
-All changes are within the existing `useEffect` animation loop:
+### audio.ts -- playSend design
+```
+Two oscillators:
+  osc1: triangle, ~400Hz * pitchVar, gain 0.2*vol, decay 30ms (the "click")
+  osc2: sine, 600->900Hz * pitchVar, gain 0.15*vol, decay 80ms (the "chirp")
+Total: ~100ms, snappy and satisfying
+```
 
-**New variables** (added alongside existing animation vars):
-- `mouseNX`, `mouseNY` -- normalized cursor position (0-1 mapped to -1 to 1)
-- `cursorTrackingPhase`: `'idle' | 'tracking'` -- current attention state
-- `cursorPhaseTimer` -- countdown for current phase
-- `lastCursorMoveTs` -- timestamp of last significant cursor movement
-- `prevMouseNX`, `prevMouseNY` -- for detecting fast cursor movement (flick detection)
-
-**New event listener**:
-- `mousemove` on `window` (not just canvas) to capture cursor even at edges
-- Updates `mouseNX` and `mouseNY` as `(clientX / w - 0.5) * 2` (range -1 to 1)
-- Throttled: only updates if cursor moved more than ~2% of screen width since last update
-
-**New logic block** -- "Cursor Attention" (inserted after the existing Glance block, before Bored routines):
-- During `idle` phase: decrement timer; on expire OR on fast cursor flick, transition to `tracking` with a brief widen reaction
-- During `tracking` phase: set `targetGX` and `targetGY` based on `mouseNX/mouseNY` scaled by ~0.45; decrement timer; if cursor hasn't moved for 3s, end early; on expire, return to `idle`
-- Bored routines are suppressed while in `tracking` phase
-- Random glances are suppressed while in `tracking` phase
-
-**Notice reaction**: When transitioning from `idle` to `tracking`, briefly set `targetWiden = 0.15 * iMult` and `targetGlow = 1.3` for ~300ms (a subtle "oh, I see you" moment)
-
-No other files need changes. No new dependencies.
+### audio.ts -- playReceive design
+```
+Two oscillators:
+  osc1: sine, ~1100Hz * pitchVar, gain 0.22*vol, decay 100ms (the "ding")
+  osc2: sine, ~2200Hz * pitchVar, gain 0.08*vol, decay 60ms (harmonic shimmer)
+Total: ~120ms, pleasant plink
+```
