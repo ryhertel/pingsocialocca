@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { ThemePreset, AnimationIntensity, ConnectionMode } from '@/lib/types';
+import type { ThemePreset, AnimationIntensity, ConnectionMode, AutoLockMinutes } from '@/lib/types';
 import { themePresets } from '@/lib/themes';
 
 interface SettingsState {
@@ -13,6 +13,9 @@ interface SettingsState {
   dnd: boolean;
   connectionMode: ConnectionMode;
   bridgeUrl: string;
+  privacyLock: boolean;
+  autoLockMinutes: AutoLockMinutes;
+  isLocked: boolean;
 
   setDisplayName: (name: string) => void;
   setTheme: (theme: ThemePreset) => void;
@@ -23,6 +26,10 @@ interface SettingsState {
   setDnd: (dnd: boolean) => void;
   setConnectionMode: (mode: ConnectionMode) => void;
   setBridgeUrl: (url: string) => void;
+  setPrivacyLock: (enabled: boolean) => void;
+  setAutoLockMinutes: (minutes: AutoLockMinutes) => void;
+  lock: () => void;
+  unlock: () => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -37,6 +44,9 @@ export const useSettingsStore = create<SettingsState>()(
       dnd: false,
       connectionMode: 'demo',
       bridgeUrl: 'ws://127.0.0.1:3939/ping',
+      privacyLock: false,
+      autoLockMinutes: 15,
+      isLocked: false,
 
       setDisplayName: (displayName) => set({ displayName }),
       setTheme: (theme) => set({ theme }),
@@ -47,8 +57,27 @@ export const useSettingsStore = create<SettingsState>()(
       setDnd: (dnd) => set({ dnd }),
       setConnectionMode: (connectionMode) => set({ connectionMode }),
       setBridgeUrl: (bridgeUrl) => set({ bridgeUrl }),
+      setPrivacyLock: (privacyLock) => set({ privacyLock }),
+      setAutoLockMinutes: (autoLockMinutes) => set({ autoLockMinutes }),
+      lock: () => set({ isLocked: true }),
+      unlock: () => set({ isLocked: false }),
     }),
-    { name: 'ping-settings' },
+    {
+      name: 'ping-settings',
+      partialize: (state) => ({
+        displayName: state.displayName,
+        theme: state.theme,
+        animationIntensity: state.animationIntensity,
+        muted: state.muted,
+        volume: state.volume,
+        idleChirps: state.idleChirps,
+        dnd: state.dnd,
+        connectionMode: state.connectionMode,
+        bridgeUrl: state.bridgeUrl,
+        privacyLock: state.privacyLock,
+        autoLockMinutes: state.autoLockMinutes,
+      }),
+    },
   ),
 );
 

@@ -116,7 +116,10 @@ function handleEvent(data: Record<string, unknown>) {
 }
 
 function resetIdleTimer() {
-  if (idleTimer) clearTimeout(idleTimer);
+  if (idleTimer) {
+    clearTimeout(idleTimer);
+    idleTimer = null;
+  }
 }
 
 function setIdleAfterDelay() {

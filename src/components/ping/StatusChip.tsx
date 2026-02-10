@@ -15,7 +15,21 @@ export function StatusChip() {
   const state = usePingStore((s) => s.persistentState);
   const badgeCount = usePingStore((s) => s.notifyBadgeCount);
   const theme = useSettingsStore((s) => s.theme);
+  const isLocked = useSettingsStore((s) => s.isLocked);
   const preset = themePresets[theme];
+
+  if (isLocked) {
+    return (
+      <div className="absolute top-4 left-4 z-10">
+        <div
+          className="relative px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide backdrop-blur-sm"
+          style={{ backgroundColor: 'rgba(170,180,194,0.12)', color: '#AAB4C2' }}
+        >
+          Locked
+        </div>
+      </div>
+    );
+  }
 
   let bg: string, fg: string;
   switch (state) {
