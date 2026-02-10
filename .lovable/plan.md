@@ -1,132 +1,69 @@
 
 
-# Bridge Mode Testing — UX Helpers
+# Cursor-Following Eyes with "Notice" Behavior
 
-## What already works (no code changes needed)
+## Overview
 
-The bridge client in `bridge.ts` passes the full URL to `new WebSocket(url)`, so `ws://127.0.0.1:3939/ping` (with the `/ping` path) already works out of the box. No client-side changes are required.
+The eyes will smoothly track the user's cursor position, making Ping feel alive and aware. To keep it from feeling robotic, the tracking won't be constant -- instead, the eyes will periodically "notice" the cursor, track it for a while, then drift back to their idle behaviors.
 
-## Code Changes
+## How it works
 
-### 1. Connect Modal — helper note
-**File: `src/components/ping/ConnectModal.tsx`**
+### Cursor Tracking (always-on, subtle)
 
-Update the helper text below the URL input to include a fallback tip:
+- Track `mousemove` on the canvas to capture normalized cursor position (-1 to 1 range relative to canvas center)
+- Convert cursor position into `targetGX` / `targetGY` values (the existing glance system), clamped to a max range of about 0.5 so the eyes don't overextend
+- The existing `lerp` interpolation ensures smooth, natural-feeling movement
 
-> "Bridge must bind to 127.0.0.1 only. UI never stores tokens.
-> Tip: If your server doesn't support URL paths, use ws://127.0.0.1:3939"
+### "Noticing" the Cursor
 
-### 2. Diagnostics Panel — Bridge Test Checklist
-**File: `src/components/ping/DiagnosticsPanel.tsx`**
+Instead of always staring at the cursor (which feels creepy), the eyes use an attention cycle:
 
-Add a collapsible "Bridge Test Checklist" section at the bottom of the diagnostics panel (only visible when in Bridge mode). Contains four items with auto-detected pass/fail status:
+- **Idle phase** (2-6s): Eyes do their normal idle glances/bored routines, ignoring the cursor
+- **Notice trigger**: After the idle phase ends, OR if the cursor moves quickly (a sudden flick), the eyes "notice" -- a subtle widen reaction (like a slight surprise) followed by tracking
+- **Tracking phase** (3-8s): Eyes smoothly follow the cursor. A very subtle glow pulse on initial notice adds life
+- **Lose interest**: After the tracking phase, eyes drift back to center and return to idle behaviors
 
-| Check | Auto-detected via |
-|-------|-------------------|
-| Status chip shows Idle | `persistentState === 'idle'` |
-| Protocol version received | `bridgeStatus.protocolVersion` exists |
-| Agent name received | `bridgeStatus.agentName` exists |
-| Message round-trip works | At least one assistant message in `messages[]` |
+### Priority System
 
-Each item shows a green checkmark or gray circle based on current state. This gives instant visual feedback during testing.
+The existing gaze override system already handles priority. Cursor tracking slots in as the lowest priority:
 
-### 3. Copy-paste test server (not a code change — instructions for you)
+1. New message gaze override (highest)
+2. Composer focus gaze
+3. Thinking/speaking states
+4. Cursor tracking (new)
+5. Random idle glances (lowest -- suppressed during cursor tracking)
 
-Create a folder anywhere on your machine and run these commands:
+### Edge Cases
 
-```
-mkdir ping-bridge-test
-cd ping-bridge-test
-npm init -y
-npm i ws
-```
+- **Cursor leaves window**: Smoothly drift back to center (existing `onLeave` behavior)
+- **Cursor stationary for 3s+**: Lose interest early, return to idle
+- **Disconnected state**: No tracking (eyes are dimmed)
+- **Low animation intensity**: Reduce tracking range and disable "notice" widen reaction
 
-Then create `ping-bridge.mjs` with this content:
+## Technical Details
 
-```javascript
-import { WebSocketServer } from 'ws';
+### File: `src/components/ping/FaceCanvas.tsx`
 
-const wss = new WebSocketServer({
-  host: '127.0.0.1',
-  port: 3939,
-  path: '/ping',
-});
+All changes are within the existing `useEffect` animation loop:
 
-const replies = [
-  "Hello! I'm your test bridge agent.",
-  "Everything looks good from here.",
-  "Ping protocol is working correctly.",
-  "That's a great question — let me think about it.",
-  "All systems nominal.",
-];
+**New variables** (added alongside existing animation vars):
+- `mouseNX`, `mouseNY` -- normalized cursor position (0-1 mapped to -1 to 1)
+- `cursorTrackingPhase`: `'idle' | 'tracking'` -- current attention state
+- `cursorPhaseTimer` -- countdown for current phase
+- `lastCursorMoveTs` -- timestamp of last significant cursor movement
+- `prevMouseNX`, `prevMouseNY` -- for detecting fast cursor movement (flick detection)
 
-wss.on('connection', (ws) => {
-  console.log('[bridge] client connected');
+**New event listener**:
+- `mousemove` on `window` (not just canvas) to capture cursor even at edges
+- Updates `mouseNX` and `mouseNY` as `(clientX / w - 0.5) * 2` (range -1 to 1)
+- Throttled: only updates if cursor moved more than ~2% of screen width since last update
 
-  // Send status on connect
-  ws.send(JSON.stringify({
-    type: 'status',
-    connected: true,
-    agentName: 'Test Bridge',
-    agentId: 'test-001',
-    protocolVersion: 'ping/0.1',
-  }));
+**New logic block** -- "Cursor Attention" (inserted after the existing Glance block, before Bored routines):
+- During `idle` phase: decrement timer; on expire OR on fast cursor flick, transition to `tracking` with a brief widen reaction
+- During `tracking` phase: set `targetGX` and `targetGY` based on `mouseNX/mouseNY` scaled by ~0.45; decrement timer; if cursor hasn't moved for 3s, end early; on expire, return to `idle`
+- Bored routines are suppressed while in `tracking` phase
+- Random glances are suppressed while in `tracking` phase
 
-  ws.on('message', (raw) => {
-    try {
-      const data = JSON.parse(raw);
-      console.log('[bridge] received:', data);
+**Notice reaction**: When transitioning from `idle` to `tracking`, briefly set `targetWiden = 0.15 * iMult` and `targetGlow = 1.3` for ~300ms (a subtle "oh, I see you" moment)
 
-      if (data.type === 'send') {
-        // Send thinking state
-        ws.send(JSON.stringify({ type: 'state', state: 'thinking' }));
-
-        // Reply after 1.5-3s delay
-        const delay = 1500 + Math.random() * 1500;
-        setTimeout(() => {
-          const text = replies[Math.floor(Math.random() * replies.length)];
-          ws.send(JSON.stringify({
-            type: 'message',
-            role: 'assistant',
-            text,
-            ts: Date.now(),
-          }));
-        }, delay);
-      }
-
-      if (data.type === 'ping') {
-        // Heartbeat — no response needed
-      }
-    } catch {
-      // ignore malformed
-    }
-  });
-
-  ws.on('close', () => console.log('[bridge] client disconnected'));
-});
-
-console.log('[bridge] listening on ws://127.0.0.1:3939/ping');
-```
-
-Run it:
-```
-node ping-bridge.mjs
-```
-
-Then in Ping: open Connect modal, switch to Bridge, click Connect. The default URL `ws://127.0.0.1:3939/ping` will work immediately.
-
-### Verification checklist (manual)
-
-1. Status chip turns green (Idle)
-2. Open Diagnostics -- shows Protocol: ping/0.1, Agent: Test Bridge
-3. Type a message -- status goes to Thinking, then reply appears, then back to Idle
-4. Stop the server (Ctrl+C) -- status goes to Disconnected
-5. Restart server -- auto-reconnects within 3 seconds
-
-## Technical summary
-
-| File | Change |
-|------|--------|
-| `src/components/ping/ConnectModal.tsx` | Add fallback URL tip text |
-| `src/components/ping/DiagnosticsPanel.tsx` | Add collapsible Bridge Test Checklist with auto-detected status |
-
+No other files need changes. No new dependencies.
