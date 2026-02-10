@@ -20,13 +20,11 @@ export function StatusChip() {
 
   if (isLocked) {
     return (
-      <div className="absolute top-4 left-4 z-10">
-        <div
-          className="relative px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide backdrop-blur-sm"
-          style={{ backgroundColor: 'rgba(170,180,194,0.12)', color: '#AAB4C2' }}
-        >
-          Locked
-        </div>
+      <div
+        className="relative px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide backdrop-blur-sm"
+        style={{ backgroundColor: 'rgba(170,180,194,0.12)', color: '#AAB4C2' }}
+      >
+        Locked
       </div>
     );
   }
@@ -53,21 +51,19 @@ export function StatusChip() {
   }
 
   return (
-    <div className="absolute top-4 left-4 z-10">
-      <div
-        className="relative px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide backdrop-blur-sm"
-        style={{ backgroundColor: bg, color: fg }}
-      >
-        {stateLabels[state]}
-        {badgeCount > 0 && (
-          <span
-            className="absolute -top-1.5 -right-1.5 text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: fg, color: '#080B10' }}
-          >
-            {badgeCount}
-          </span>
-        )}
-      </div>
+    <div
+      className="relative px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide backdrop-blur-sm"
+      style={{ backgroundColor: bg, color: fg }}
+    >
+      {stateLabels[state]}
+      {badgeCount > 0 && (
+        <span
+          className="absolute -top-1.5 -right-1.5 text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: fg, color: '#080B10' }}
+        >
+          {badgeCount}
+        </span>
+      )}
     </div>
   );
 }
