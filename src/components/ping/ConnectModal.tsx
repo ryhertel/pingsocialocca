@@ -74,6 +74,9 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
               </div>
               <p className="text-[10px] text-muted-foreground/60">
                 Bridge must bind to 127.0.0.1 only. UI never stores tokens.
+                <br />
+                Tip: If your server doesn't support URL paths, use{' '}
+                <span className="font-mono text-muted-foreground">ws://127.0.0.1:3939</span>
               </p>
 
               {bridgeStatus.connected && (
