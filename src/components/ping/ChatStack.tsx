@@ -16,7 +16,11 @@ function formatRelative(ts: number): string {
 
 const NEAR_BOTTOM_THRESHOLD = 120;
 
-export function ChatStack() {
+interface ChatStackProps {
+  hidden?: boolean;
+}
+
+export function ChatStack({ hidden }: ChatStackProps) {
   const messages = usePingStore((s) => s.messages);
   const isLocked = useSettingsStore((s) => s.isLocked);
   const unlock = useSettingsStore((s) => s.unlock);
@@ -56,21 +60,20 @@ export function ChatStack() {
     setShowJumpButton(false);
   }, [scrollToBottom]);
 
-  // Auto-scroll on new message (smooth) or reveal tick (instant)
   useEffect(() => {
     if (!isNearBottom.current) return;
-
     const isNewMessage = displayed.length !== prevLengthRef.current;
     prevLengthRef.current = displayed.length;
-
     scrollToBottom(isNewMessage ? 'smooth' : 'auto');
   }, [displayed.length, displayed[displayed.length - 1]?.revealedText, scrollToBottom]);
+
+  if (hidden) return null;
 
   if (displayed.length === 0 && !isLocked) return null;
 
   if (isLocked) {
     return (
-      <div className="absolute bottom-20 right-4 w-72 sm:w-80 z-10">
+      <div className="absolute bottom-2 right-4 left-4 sm:left-auto w-auto sm:w-80 z-10">
         <div className="flex flex-col items-center gap-3 rounded-xl bg-muted/30 backdrop-blur-md px-6 py-8 text-center">
           <Lock className="h-5 w-5 text-muted-foreground" />
           <p className="text-xs font-medium text-muted-foreground">Session Locked</p>
@@ -88,19 +91,19 @@ export function ChatStack() {
   }
 
   return (
-    <div className="absolute bottom-20 right-4 w-72 sm:w-80 max-h-[50vh] sm:max-h-[60vh] z-10">
+    <div className="absolute bottom-2 right-4 left-4 sm:left-auto sm:w-80 max-h-[40vh] sm:max-h-[60vh] z-10">
       <div className="relative">
         <div
           ref={scrollRef}
-          className="overflow-y-auto max-h-[50vh] sm:max-h-[60vh]"
+          className="overflow-y-auto max-h-[40vh] sm:max-h-[60vh]"
           onScroll={handleScroll}
         >
-          <div className="space-y-1.5 pr-1 pb-8">
+          <div className="space-y-1.5 pr-1 pb-16">
             {displayed.map((msg) => (
               <div
                 key={msg.id}
                 className={cn(
-                  'text-xs rounded-xl px-3 py-2 backdrop-blur-sm',
+                  'text-sm sm:text-xs rounded-xl px-3 py-2 backdrop-blur-sm max-w-[78vw] sm:max-w-none',
                   msg.role === 'user'
                     ? 'bg-muted/50 ml-10 text-foreground'
                     : 'mr-6 text-foreground',

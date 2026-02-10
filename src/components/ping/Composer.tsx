@@ -45,7 +45,7 @@ export function Composer() {
   if (isLocked) return null;
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
+    <div className="p-4">
       <div className="flex gap-2 max-w-xl mx-auto">
         <Input
           value={text}
