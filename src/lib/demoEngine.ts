@@ -1,7 +1,7 @@
 import { usePingStore } from '@/stores/usePingStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { startTextReveal } from './textReveal';
-import { playNotify, playConfirm } from './audio';
+import { playNotify, playConfirm, playReceive } from './audio';
 
 const DEMO_MESSAGES = [
   "I've analyzed the incoming data streams and found some interesting patterns worth investigating further.",
@@ -52,6 +52,8 @@ function generateResponse() {
 
   store.addMessage(msg);
   store.setPersistentState('speaking');
+  const s2 = useSettingsStore.getState();
+  playReceive(s2.volume, s2.muted, s2.dnd);
 
   const cleanup = startTextReveal(
     msg.id,

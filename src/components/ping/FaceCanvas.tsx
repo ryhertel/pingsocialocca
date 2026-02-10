@@ -99,6 +99,9 @@ export function FaceCanvas() {
     // Message tracking
     let lastMsgCount = usePingStore.getState().messages.length;
 
+    // State transition tracking
+    let prevPs = usePingStore.getState().persistentState;
+
     // Hover
     let isHovered = false;
 
@@ -159,6 +162,13 @@ export function FaceCanvas() {
       const ps = state.persistentState;
       const tr = state.transientReaction;
 
+      // Detect thinking transition — micro-glance downward
+      if (ps === 'thinking' && prevPs !== 'thinking') {
+        gazeOverrideTimer = 250;
+        targetGY = 0.4;
+      }
+      prevPs = ps;
+
       // Reset bored timer on state change
       if (ps !== lastActivityState) {
         lastActivityState = ps;
@@ -182,7 +192,7 @@ export function FaceCanvas() {
 
       if (ps === 'speaking') {
         speakPhase += dt * 0.004;
-        targetGlow = 1 + 0.5 * Math.sin(speakPhase * Math.PI) * iMult;
+        targetGlow = 1 + 0.65 * Math.sin(speakPhase * Math.PI) * iMult;
       } else {
         speakPhase = 0;
       }
@@ -236,8 +246,13 @@ export function FaceCanvas() {
       if (ps !== 'disconnected') {
         const msgCount = state.messages.length;
         if (msgCount > lastMsgCount) {
+          // Check if latest message is assistant for notice glow
+          const latestMsg = state.messages[state.messages.length - 1];
           targetGX = 0.4; targetGY = 0.3;
-          gazeOverrideTimer = 1200;
+          gazeOverrideTimer = 300;
+          if (latestMsg?.role === 'assistant') {
+            targetGlow = Math.max(targetGlow, 1.4);
+          }
           lastMsgCount = msgCount;
         }
 
