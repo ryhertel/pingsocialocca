@@ -2,7 +2,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { usePingStore } from '@/stores/usePingStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, CheckCircle2, Circle } from 'lucide-react';
 
 interface DiagnosticsPanelProps {
   open: boolean;
@@ -18,12 +18,26 @@ function Row({ label, value, color }: { label: string; value: string; color?: st
   );
 }
 
+function CheckItem({ label, passed }: { label: string; passed: boolean }) {
+  return (
+    <div className="flex items-center gap-2 text-xs py-1">
+      {passed ? (
+        <CheckCircle2 className="h-3.5 w-3.5 text-green-400 shrink-0" />
+      ) : (
+        <Circle className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
+      )}
+      <span className={passed ? 'text-foreground' : 'text-muted-foreground'}>{label}</span>
+    </div>
+  );
+}
+
 export function DiagnosticsPanel({ open, onOpenChange }: DiagnosticsPanelProps) {
-  const { persistentState, bridgeStatus, diagnosticsLog, lastError, lastEventTs } = usePingStore();
+  const { persistentState, bridgeStatus, diagnosticsLog, lastError, lastEventTs, messages } = usePingStore();
   const connectionMode = useSettingsStore((s) => s.connectionMode);
   const isLocked = useSettingsStore((s) => s.isLocked);
 
   const unknownEvents = diagnosticsLog.filter((e) => e.type.startsWith('unknown:'));
+  const hasAssistantMessage = messages.some((m) => m.role === 'assistant');
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -80,6 +94,23 @@ export function DiagnosticsPanel({ open, onOpenChange }: DiagnosticsPanelProps) 
                         {new Date(e.ts).toLocaleTimeString()} — {e.type}
                       </div>
                     ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+
+            {connectionMode === 'bridge' && (
+              <Collapsible>
+                <CollapsibleTrigger className="flex items-center justify-between w-full text-xs py-2 text-muted-foreground hover:text-foreground">
+                  <span>Bridge Test Checklist</span>
+                  <ChevronDown className="h-3 w-3" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-0.5 pb-2">
+                    <CheckItem label="Status: Idle" passed={persistentState === 'idle'} />
+                    <CheckItem label="Protocol version received" passed={!!bridgeStatus.protocolVersion} />
+                    <CheckItem label="Agent name received" passed={!!bridgeStatus.agentName} />
+                    <CheckItem label="Message round-trip" passed={hasAssistantMessage} />
                   </div>
                 </CollapsibleContent>
               </Collapsible>
