@@ -7,13 +7,20 @@ import { ControlBar } from '@/components/ping/ControlBar';
 import { ConnectModal } from '@/components/ping/ConnectModal';
 import { SettingsPanel } from '@/components/ping/SettingsPanel';
 import { DiagnosticsPanel } from '@/components/ping/DiagnosticsPanel';
+import { WelcomeDialog } from '@/components/ping/WelcomeDialog';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { startDemo, stopDemo } from '@/lib/demoEngine';
+import pingLogo from '@/assets/ping-logo-white.png';
 
 const Index = () => {
   const [showConnect, setShowConnect] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem('ping:welcomeSeen')) setShowAbout(true);
+  }, []);
   const connectionMode = useSettingsStore((s) => s.connectionMode);
   const privacyLock = useSettingsStore((s) => s.privacyLock);
   const autoLockMinutes = useSettingsStore((s) => s.autoLockMinutes);
@@ -72,18 +79,26 @@ const Index = () => {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-background select-none">
+      <img
+        src={pingLogo}
+        alt="Ping"
+        className="absolute top-4 left-4 z-10 h-8 cursor-pointer select-none opacity-90 hover:opacity-100 transition-opacity"
+        onClick={() => setShowAbout(true)}
+      />
       <FaceCanvas />
       <StatusChip />
       <ControlBar
         onConnect={() => setShowConnect(true)}
         onSettings={() => setShowSettings(true)}
         onDiagnostics={() => setShowDiagnostics(true)}
+        onAbout={() => setShowAbout(true)}
       />
       <ChatStack />
       <Composer />
       <ConnectModal open={showConnect} onOpenChange={setShowConnect} />
       <SettingsPanel open={showSettings} onOpenChange={setShowSettings} />
       <DiagnosticsPanel open={showDiagnostics} onOpenChange={setShowDiagnostics} />
+      <WelcomeDialog open={showAbout} onOpenChange={setShowAbout} />
     </div>
   );
 };
