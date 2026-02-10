@@ -1,28 +1,37 @@
 
-# Polish Tweaks: Logo + Welcome + About
 
-Since the WelcomeDialog and About button were planned previously but never created, this plan covers creating them fresh with all three tweaks baked in.
+# Fix Welcome Icon + Top-Left Logo/Status Layout
 
-## Changes
+## Two issues to fix
 
-### 1. New file: `src/components/ping/WelcomeDialog.tsx`
-- Dialog with Ping icon (`/ping-icon.png`), "Meet Ping" heading, friendly description
-- Includes a Bridge Mode instruction line: *"To connect to a local agent bridge, click Bridge and enter `ws://127.0.0.1:3939/ping`."*
-- "Get Started" button dismisses and writes `ping:welcomeSeen` to localStorage
-- Accepts `open` / `onOpenChange` props
+### 1. Welcome dialog icon -- use the square Ping icon
+The current `/ping-icon.png` is getting distorted/smushed in the dialog. We'll copy the uploaded square icon (`Ping_PFP_Favicon_Design.png`) into `public/ping-square.png` and use it in the WelcomeDialog instead. The `rounded-2xl` class will give it nice rounded corners matching the icon's own shape.
 
-### 2. Update: `src/pages/Index.tsx`
-- Import `WelcomeDialog` and the white logo asset
-- Add `showAbout` state
-- On mount, check `localStorage.getItem('ping:welcomeSeen')` -- if not set, auto-open
-- Add the logo as a clickable `<img>` in top-left (`absolute top-4 left-4 z-10 cursor-pointer select-none opacity-90 hover:opacity-100`) with `onClick={() => setShowAbout(true)}`
-- Render `<WelcomeDialog>` with open/onOpenChange
-- Pass `onAbout={() => setShowAbout(true)}` to ControlBar
+**File: `src/components/ping/WelcomeDialog.tsx`**
+- Change `src="/ping-icon.png"` to `src="/ping-square.png"`
 
-### 3. Update: `src/components/ping/ControlBar.tsx`
-- Add `onAbout` to props interface
-- Import `Info` from lucide-react
-- Add Info button after Diagnostics button
+### 2. Logo and StatusChip overlapping -- give them a shared row
+Both the Ping logo and the StatusChip are positioned at `absolute top-4 left-4`, causing them to stack on top of each other. Fix: place them side-by-side in a flex row.
 
-### localStorage key
-- Uses `ping:welcomeSeen` (namespaced with colon) everywhere
+**File: `src/pages/Index.tsx`**
+- Remove the standalone `<img>` for the logo
+- Remove `<StatusChip />` as a standalone element
+- Add a new `<div>` container at `absolute top-4 left-4 z-10 flex items-center gap-3` that contains:
+  - The clickable Ping logo `<img>` (h-8, cursor-pointer, opacity hover)
+  - `<StatusChip />` rendered inline
+
+**File: `src/components/ping/StatusChip.tsx`**
+- Remove the outer `<div className="absolute top-4 left-4 z-10">` wrapper (both in the locked and normal returns) since positioning is now handled by the parent container in Index.tsx
+- Just return the chip `<div>` directly
+
+This way the logo sits on the left, the status chip sits right next to it, and they don't overlap.
+
+## Files changed
+
+| File | Change |
+|------|--------|
+| `public/ping-square.png` | Copy uploaded square icon here |
+| `src/components/ping/WelcomeDialog.tsx` | Use `/ping-square.png` for the icon |
+| `src/pages/Index.tsx` | Wrap logo + StatusChip in a shared flex row container |
+| `src/components/ping/StatusChip.tsx` | Remove absolute positioning wrapper, return just the chip |
+
