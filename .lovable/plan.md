@@ -1,104 +1,201 @@
 
 
-# Mobile-First Responsive Layout + Landscape Mode
+# Phase 1: Scripted Demo Engine + Interactive Chat + Demo Badge
 
-## Overview
+## What's included in Phase 1
 
-Restructure the entire page from absolute-positioned elements to a proper flexbox column layout using `h-[100svh]`. Add a mobile hamburger menu, iOS safe-area support, and a landscape-specific chat mode.
+- Scripted state-machine demo engine replacing the random message picker
+- Intent/topic keyword router (no AI)
+- Opening flow with auto-message on load
+- Modular response map (What Is Ping, Notifications, Integrations, Privacy)
+- Quick-reply buttons rendered as a row below the last assistant message
+- "Demo Mode (scripted)" badge + subtext in header
+- Persistent CTAs (Connect OpenClaw, Discord coming soon, Keep exploring)
+- Restart Demo button always visible
+- Fallback for unknown input (never dead-ends)
+- Demo actions: trigger eye states + sounds from response nodes
 
-## Files Changed
+## What's deferred to Phase 2
 
-### 1. `index.html` -- viewport-fit=cover
+- Eye redesign (30-40% larger, new states like laugh, shock, etc.)
+- Video game sound system overhaul (signature motif, frequency mapping)
+- Liveliness/Energy Level slider (0-100)
+- OpenClaw setup UI with copy button + setup steps modal
 
-Add `viewport-fit=cover` to the viewport meta tag so `env(safe-area-inset-*)` values are available on iOS.
+---
 
-### 2. `src/hooks/use-landscape.tsx` -- New file
+## Files to create
 
-Small hook that returns `true` when the device is in landscape orientation AND the viewport height is short (under 500px). Uses `window.matchMedia('(orientation: landscape) and (max-height: 500px)')`.
+### `src/lib/demoScriptEngine.ts` -- New scripted demo engine
 
-### 3. `src/components/ping/ControlBar.tsx` -- Add MobileMenu export
+Replaces the current `demoEngine.ts` random message system with a deterministic router.
 
-- Keep the existing `ControlBar` component unchanged (used on desktop `sm+`)
-- Add a new `MobileMenu` component export that renders a `Sheet` (from the bottom) triggered by a `Menu` (hamburger) icon button
-- The sheet contains all controls as labeled list items: Demo toggle, Mute, DND, Connect, Settings, Diagnostics, About
-- Each item shows the icon + label text, making it touch-friendly
+**demoState** tracks:
+- `currentModule`: `'idle' | 'welcome' | 'whatIsPing' | 'notifications' | 'integrations' | 'privacy'`
+- `stepsCompleted`: number
+- `lastIntegration`: string or null
+- `sawNotificationDemo`: boolean
+- `turnsSinceCtaSurface`: number (surfaces CTA every 2-3 turns)
 
-### 4. `src/pages/Index.tsx` -- Flexbox layout restructure
+**Intent router** -- keyword scoring + regex, not AI:
+- Maps typed input to intents: `learn`, `see_demo`, `integrate`, `pricing`, `security`, `troubleshooting`
+- Maps to topics: `openclaw`, `discord`, `notifications`, `sound`, `eyes`, `privacy`
+- If input matches a button label exactly, route to that module
+- Unknown input returns a friendly fallback with 3 buttons
 
-Replace the current `relative w-screen h-screen overflow-hidden` with:
+**Response nodes** -- each returns:
+- `text`: 1-3 sentences
+- `buttons`: array of `{ label: string, action: string }` (required, never empty)
+- `demoActions`: optional array of `{ type: 'triggerEyes' | 'triggerSound', payload: string }`
+
+**Module responses:**
+
+| Module | Key responses |
+|--------|-------------|
+| Welcome (auto on load) | "Hey, I'm Ping. I turn AI agent activity into expressive eyes + notification moments. Want to see a quick demo?" Buttons: Yes - show me, Tell me what Ping does, Connect OpenClaw |
+| What Is Ping | Explanation of visual feedback. Buttons: Notifications, Integrations, Privacy |
+| Notifications | Triggers sound + eye reaction. Buttons: Trigger another, Connect your agent, Back to menu |
+| Integrations | Options: OpenClaw, Discord, Other, Just exploring. OpenClaw shows local-first explanation. Discord says "coming soon" |
+| Privacy | Security reassurance. Buttons: Back to demo, Connect OpenClaw |
+| Fallback | "I'm in Demo Mode (scripted), but I can show you the experience." Buttons: Notifications, Integrations, Privacy |
+
+Every 2-3 turns, append a CTA: "Ready to connect your real agent?" with Connect button.
+
+**Exported functions:**
+- `startScriptedDemo()` -- clears messages, sends welcome message with buttons
+- `stopScriptedDemo()` -- clears timers
+- `handleDemoInput(text: string)` -- routes input through intent router, returns response
+- `handleDemoButtonClick(action: string)` -- routes button action to module
+
+### `src/lib/demoIntentRouter.ts` -- Intent + topic keyword matcher
+
+Simple keyword scoring:
+```
+const INTENT_KEYWORDS = {
+  learn: ['what', 'how', 'explain', 'tell', 'about', 'info'],
+  see_demo: ['demo', 'show', 'try', 'see', 'yes', 'cool'],
+  integrate: ['connect', 'setup', 'openclaw', 'discord', 'bridge', 'agent'],
+  pricing: ['price', 'cost', 'free', 'pay'],
+  security: ['security', 'privacy', 'safe', 'token', 'local', 'data'],
+  troubleshooting: ['error', 'help', 'broken', 'not working', 'issue'],
+};
+```
+
+Exported: `routeInput(text: string): { intent: string, topic: string | null }`
+
+---
+
+## Files to modify
+
+### `src/lib/types.ts`
+
+Add new types:
+```typescript
+export interface DemoButton {
+  label: string;
+  action: string;
+}
+
+export interface DemoAction {
+  type: 'triggerEyes' | 'triggerSound';
+  payload: string;
+}
+
+// Extend ChatMessage to optionally carry buttons
+export interface ChatMessage {
+  // ... existing fields
+  buttons?: DemoButton[];
+}
+```
+
+### `src/components/ping/ChatStack.tsx`
+
+- After the last assistant message, if it has `buttons` array, render a row of pill-shaped quick-reply buttons
+- Buttons styled as small rounded pills with theme-tinted border, text-sm
+- On click, call `handleDemoButtonClick(action)` from the demo engine
+- Only show buttons on the most recent assistant message
+- Buttons disappear once the user sends a new message or clicks one
+
+### `src/components/ping/Composer.tsx`
+
+- When in demo mode, route input through `handleDemoInput()` from the scripted engine instead of `triggerDemoResponse()`
+- Still adds the user message to the chat store
+- Still plays send sound
+
+### `src/pages/Index.tsx`
+
+- Add "Demo Mode (scripted)" badge in header area (between logo/status and controls)
+- Badge: small pill with text "Demo Mode (scripted)" using Badge component
+- Below it (or as tooltip): "This demo is scripted to show the experience -- not a real AI."
+- Add "Restart Demo" button visible when in demo mode (in header or control bar area)
+- Replace `startDemo`/`stopDemo` imports with `startScriptedDemo`/`stopScriptedDemo`
+
+### `src/components/ping/ControlBar.tsx`
+
+- Add "Restart Demo" item to both desktop ControlBar and MobileMenu when `connectionMode === 'demo'`
+- Icon: `RotateCcw` from lucide
+
+### `src/lib/demoEngine.ts`
+
+- Keep file but mark as legacy / remove the random message logic
+- Or: delete entirely and replace all imports with `demoScriptEngine`
+
+### `src/stores/usePingStore.ts`
+
+- No changes needed -- the existing `addMessage` and `ChatMessage` flow works. The `buttons` field is added to the type.
+
+### `src/lib/audio.ts`
+
+- No changes in Phase 1 (existing sounds are triggered via demoActions)
+
+### `src/components/ping/FaceCanvas.tsx`
+
+- No changes in Phase 1 (existing eye states are triggered via `setPersistentState` and `triggerReaction` from demoActions)
+
+---
+
+## Quick-reply button behavior
+
+- Rendered as a horizontal flex-wrap row of pill buttons below the last assistant bubble
+- Each pill: `rounded-full px-3 py-1.5 text-xs border border-primary/30 bg-primary/5 hover:bg-primary/15 text-foreground`
+- Clicking a button:
+  1. Adds a user message with the button label text
+  2. Hides all buttons
+  3. Routes through `handleDemoButtonClick(action)`
+  4. Shows thinking state briefly (1-2s)
+  5. Shows assistant response with new buttons
+
+## Demo flow example
 
 ```
-h-[100svh] flex flex-col overflow-hidden bg-background select-none
+[Auto on load]
+Assistant: "Hey, I'm Ping. I turn AI agent activity into expressive eyes + notification moments. Want to see a quick demo?"
+Buttons: [Yes - show me] [Tell me what Ping does] [Connect OpenClaw]
+
+[User clicks "Yes - show me"]
+User: "Yes - show me"
+[Eyes: thinking, 1.5s delay]
+Assistant: "Watch Ping's eyes react to different events. Here's a notification..."
+[DemoAction: triggerSound('notify'), triggerEyes('speaking')]
+Buttons: [Trigger another] [What is Ping?] [Connect your agent]
+
+[User types "privacy"]
+[Intent router matches: security topic]
+User: "privacy"
+Assistant: "Ping never stores tokens in the browser. OpenClaw runs locally on your machine. This demo is fully sandboxed."
+Buttons: [Back to demo] [Connect OpenClaw]
 ```
 
-Structure becomes:
-
-| Section | Classes | Content |
-|---------|---------|---------|
-| Header | `flex-none`, safe-area top padding | Logo + StatusChip (left), ControlBar on `sm+` or MobileMenu hamburger on mobile (right) |
-| Main | `flex-1 min-h-0 relative` | FaceCanvas (absolute inset-0) + ChatStack (positioned overlay) |
-| Footer | `flex-none`, safe-area bottom padding | Composer (no longer absolute) |
-
-- Import `useIsMobile` and `useLandscape` hooks
-- On mobile: render `MobileMenu` (hamburger) instead of full `ControlBar`
-- On desktop: render `ControlBar` as-is
-- Add landscape chat toggle state (`showChat` / `setShowChat`)
-- In landscape mode: show a small floating `MessageCircle` button in main area to toggle chat visibility via a bottom Sheet/Drawer
-
-### 5. `src/components/ping/Composer.tsx` -- Remove absolute positioning
-
-- Remove `absolute bottom-0 left-0 right-0` from the outer div
-- Keep `p-4` and inner flex layout unchanged
-- Positioning is now handled by the parent flex layout
-
-### 6. `src/components/ping/ChatStack.tsx` -- Responsive + landscape
-
-- Remove `absolute bottom-20 right-4` positioning
-- Position as `absolute bottom-0 right-4` inside the `<main>` area (so it sits above the face but can never overlap the footer/composer which is outside `<main>`)
-- Keep native `div overflow-y-auto` scrolling (no Radix ScrollArea)
-- Responsive max-heights:
-  - Default (mobile portrait): `max-h-[40vh]`
-  - `sm+`: `max-h-[60vh]`
-- Mobile bubble width clamp: `max-w-[78vw] sm:max-w-none`
-- Mobile text size: `text-sm` on bubbles
-- Keep all existing auto-scroll logic, jump-to-latest pill, theme-tinted bubbles
-- Accept an optional `landscape` prop; when true and on small screens, render nothing (chat handled by parent's Sheet)
-- The locked state view also updates to non-absolute positioning
-
-### 7. `src/components/ping/FaceCanvas.tsx` -- No changes needed
-
-Canvas already uses `absolute inset-0 w-full h-full`. It will now fill the `<main>` flex area instead of the full screen. The resize handler uses `window.innerWidth/Height` which is fine since the canvas is full-bleed within main.
-
-## Landscape Chat Behavior
-
-In landscape on small screens:
-- ChatStack is hidden from the main area
-- A floating `MessageCircle` button appears in the bottom-right of `<main>`
-- Tapping it opens a `Drawer` (vaul) from the bottom containing the ChatStack content
-- This keeps face + composer always visible and prioritized
-
-## iOS Safe Areas
-
-- Header gets `style={{ paddingTop: 'env(safe-area-inset-top)' }}`
-- Footer gets `style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}`
-- These only have effect on devices with notches/home indicators when `viewport-fit=cover` is set
-
-## Key Constraint: Chat Never Covers Composer
-
-Since `<main>` and `<footer>` (Composer) are siblings in the flex column:
-- ChatStack is absolutely positioned inside `<main>` with `bottom-0`
-- It can never extend below `<main>`'s boundary
-- The Composer lives in `<footer>` which is a separate flex item
-- Zero overlap is guaranteed by the flex layout itself
-
-## Summary of All Files
+## Summary of all file changes
 
 | File | Action |
 |------|--------|
-| `index.html` | Add `viewport-fit=cover` to viewport meta |
-| `src/hooks/use-landscape.tsx` | New hook |
-| `src/components/ping/ControlBar.tsx` | Add `MobileMenu` export |
-| `src/pages/Index.tsx` | Restructure to flexbox layout |
-| `src/components/ping/Composer.tsx` | Remove absolute positioning |
-| `src/components/ping/ChatStack.tsx` | Responsive sizing, landscape prop |
+| `src/lib/demoScriptEngine.ts` | Create -- scripted state machine + response map |
+| `src/lib/demoIntentRouter.ts` | Create -- keyword router |
+| `src/lib/types.ts` | Modify -- add DemoButton, DemoAction, buttons field on ChatMessage |
+| `src/lib/demoEngine.ts` | Delete (replaced by demoScriptEngine) |
+| `src/components/ping/ChatStack.tsx` | Modify -- render quick-reply buttons below last message |
+| `src/components/ping/Composer.tsx` | Modify -- route demo input through scripted engine |
+| `src/pages/Index.tsx` | Modify -- add demo badge, restart button, swap engine imports |
+| `src/components/ping/ControlBar.tsx` | Modify -- add Restart Demo item |
 
