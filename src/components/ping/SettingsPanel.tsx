@@ -5,13 +5,20 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useSettingsStore, ENERGY_PRESETS } from '@/stores/useSettingsStore';
 import { themePresets } from '@/lib/themes';
-import type { ThemePreset, AnimationIntensity, AutoLockMinutes } from '@/lib/types';
+import type { ThemePreset, AutoLockMinutes } from '@/lib/types';
 
 interface SettingsPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+function getEnergyLabel(level: number): string {
+  if (level <= 15) return 'Minimal';
+  if (level <= 40) return 'Balanced';
+  if (level <= 75) return 'Expressive';
+  return 'Hyper';
 }
 
 export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
@@ -57,25 +64,36 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
             </div>
           </div>
 
-          {/* Animation Intensity */}
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Animation Intensity</Label>
-            <div className="flex gap-1.5">
-              {(['low', 'medium', 'high'] as AnimationIntensity[]).map((level) => (
-                <Button
-                  key={level}
-                  variant={settings.animationIntensity === level ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => settings.setAnimationIntensity(level)}
-                  className="flex-1 text-xs capitalize"
+          {/* Ping Energy Level */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">Ping Energy Level</Label>
+              <span className="text-[10px] text-muted-foreground font-medium">
+                {getEnergyLabel(settings.energyLevel)}
+              </span>
+            </div>
+            <Slider
+              value={[settings.energyLevel]}
+              onValueChange={([v]) => settings.setEnergyLevel(v)}
+              min={0}
+              max={100}
+              step={1}
+            />
+            <div className="flex justify-between">
+              {(Object.entries(ENERGY_PRESETS) as [string, number][]).map(([label, value]) => (
+                <button
+                  key={label}
+                  onClick={() => settings.setEnergyLevel(value)}
+                  className={`text-[9px] capitalize px-1.5 py-0.5 rounded transition-colors ${
+                    settings.energyLevel === value
+                      ? 'text-primary'
+                      : 'text-muted-foreground/50 hover:text-muted-foreground'
+                  }`}
                 >
-                  {level}
-                </Button>
+                  {label}
+                </button>
               ))}
             </div>
-            {settings.animationIntensity === 'low' && (
-              <p className="text-[10px] text-muted-foreground">Reduced motion</p>
-            )}
           </div>
 
           {/* Sound */}

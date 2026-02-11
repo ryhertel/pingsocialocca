@@ -7,6 +7,7 @@ interface SettingsState {
   displayName: string;
   theme: ThemePreset;
   animationIntensity: AnimationIntensity;
+  energyLevel: number; // 0-100
   muted: boolean;
   volume: number;
   idleChirps: boolean;
@@ -20,6 +21,7 @@ interface SettingsState {
   setDisplayName: (name: string) => void;
   setTheme: (theme: ThemePreset) => void;
   setAnimationIntensity: (intensity: AnimationIntensity) => void;
+  setEnergyLevel: (level: number) => void;
   setMuted: (muted: boolean) => void;
   setVolume: (volume: number) => void;
   setIdleChirps: (enabled: boolean) => void;
@@ -32,12 +34,15 @@ interface SettingsState {
   unlock: () => void;
 }
 
+const ENERGY_PRESETS = { minimal: 15, balanced: 50, expressive: 75, hyper: 100 };
+
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       displayName: 'Ping',
       theme: 'mint',
       animationIntensity: 'medium',
+      energyLevel: 50,
       muted: false,
       volume: 0.7,
       idleChirps: false,
@@ -51,6 +56,7 @@ export const useSettingsStore = create<SettingsState>()(
       setDisplayName: (displayName) => set({ displayName }),
       setTheme: (theme) => set({ theme }),
       setAnimationIntensity: (animationIntensity) => set({ animationIntensity }),
+      setEnergyLevel: (energyLevel) => set({ energyLevel: Math.max(0, Math.min(100, energyLevel)) }),
       setMuted: (muted) => set({ muted }),
       setVolume: (volume) => set({ volume }),
       setIdleChirps: (idleChirps) => set({ idleChirps }),
@@ -68,6 +74,7 @@ export const useSettingsStore = create<SettingsState>()(
         displayName: state.displayName,
         theme: state.theme,
         animationIntensity: state.animationIntensity,
+        energyLevel: state.energyLevel,
         muted: state.muted,
         volume: state.volume,
         idleChirps: state.idleChirps,
@@ -80,6 +87,9 @@ export const useSettingsStore = create<SettingsState>()(
     },
   ),
 );
+
+// Export energy presets for UI
+export { ENERGY_PRESETS };
 
 // Apply theme glow colors to CSS custom properties
 function applyThemeToCSS() {

@@ -1,7 +1,7 @@
 import { usePingStore } from '@/stores/usePingStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { startTextReveal } from './textReveal';
-import { playReceive, playNotify, playConfirm } from './audio';
+import { playReceive, playNotify, playConfirm, playExcited, playThinking, playMotif, triggerEmotion } from './audio';
 import { routeInput } from './demoIntentRouter';
 import type { DemoButton, DemoAction } from './types';
 
@@ -85,7 +85,7 @@ function getNotificationsResponse(): ResponseNode {
     ],
     demoActions: [
       { type: 'triggerSound', payload: 'notify' },
-      { type: 'triggerEyes', payload: 'speaking' },
+      { type: 'triggerEyes', payload: 'surprise' },
     ],
     module: 'notifications',
   };
@@ -102,7 +102,7 @@ function getNotificationsAgainResponse(): ResponseNode {
       ],
       demoActions: [
         { type: 'triggerSound', payload: 'confirm' },
-        { type: 'triggerEyes', payload: 'speaking' },
+        { type: 'triggerEyes', payload: 'happy' },
       ],
     },
     {
@@ -123,7 +123,7 @@ function getNotificationsAgainResponse(): ResponseNode {
       ],
       demoActions: [
         { type: 'triggerSound', payload: 'receive' },
-        { type: 'triggerEyes', payload: 'speaking' },
+        { type: 'triggerEyes', payload: 'curious' },
       ],
     },
   ];
@@ -348,6 +348,11 @@ function executeDemoActions(actions?: DemoAction[]) {
       if (validStates.includes(s)) {
         store.setPersistentState(s);
       }
+      // Also trigger emotional states via custom event
+      const emotionStates = ['happy', 'laugh', 'shock', 'curious', 'concern', 'proud', 'surprise', 'cheer'];
+      if (emotionStates.includes(action.payload)) {
+        triggerEmotion(action.payload, 2000);
+      }
     } else if (action.type === 'triggerSound') {
       if (action.payload === 'notify') {
         playNotify(settings.volume, settings.muted, settings.dnd);
@@ -357,6 +362,12 @@ function executeDemoActions(actions?: DemoAction[]) {
         store.triggerReaction('success');
       } else if (action.payload === 'receive') {
         playReceive(settings.volume, settings.muted, settings.dnd);
+      } else if (action.payload === 'excited') {
+        playExcited(settings.volume, settings.muted, settings.dnd);
+      } else if (action.payload === 'thinking') {
+        playThinking(settings.volume, settings.muted, settings.dnd);
+      } else if (action.payload === 'motif') {
+        playMotif(settings.volume, settings.muted, settings.dnd);
       }
     }
   }
@@ -436,6 +447,10 @@ export function startScriptedDemo() {
   const store = usePingStore.getState();
   store.setPersistentState('idle');
   store.clearMessages();
+
+  // Play signature motif on demo start
+  const settings = useSettingsStore.getState();
+  playMotif(settings.volume, settings.muted, settings.dnd);
 
   // Auto-send welcome after a short delay
   const t = window.setTimeout(() => {
