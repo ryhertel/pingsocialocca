@@ -6,6 +6,7 @@ import { ChatStack } from '@/components/ping/ChatStack';
 import { Composer } from '@/components/ping/Composer';
 import { ControlBar, MobileMenu } from '@/components/ping/ControlBar';
 import { ConnectModal } from '@/components/ping/ConnectModal';
+import { OpenClawSetupModal } from '@/components/ping/OpenClawSetupModal';
 import { SettingsPanel } from '@/components/ping/SettingsPanel';
 import { DiagnosticsPanel } from '@/components/ping/DiagnosticsPanel';
 import { WelcomeDialog } from '@/components/ping/WelcomeDialog';
@@ -26,6 +27,7 @@ import pingLogo from '@/assets/ping-logo-white.png';
 
 const Index = () => {
   const [showConnect, setShowConnect] = useState(false);
+  const [showOpenClaw, setShowOpenClaw] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
@@ -37,6 +39,13 @@ const Index = () => {
 
   useEffect(() => {
     if (!localStorage.getItem('ping:welcomeSeen')) setShowAbout(true);
+  }, []);
+
+  // Listen for demo engine requesting OpenClaw setup modal
+  useEffect(() => {
+    const handler = () => setShowOpenClaw(true);
+    window.addEventListener('ping:openClawSetup', handler);
+    return () => window.removeEventListener('ping:openClawSetup', handler);
   }, []);
 
   const connectionMode = useSettingsStore((s) => s.connectionMode);
@@ -98,6 +107,7 @@ const Index = () => {
 
   const controlProps = {
     onConnect: () => setShowConnect(true),
+    onOpenClaw: () => setShowOpenClaw(true),
     onSettings: () => setShowSettings(true),
     onDiagnostics: () => setShowDiagnostics(true),
     onAbout: () => setShowAbout(true),
@@ -186,6 +196,7 @@ const Index = () => {
 
       {/* Modals */}
       <ConnectModal open={showConnect} onOpenChange={setShowConnect} />
+      <OpenClawSetupModal open={showOpenClaw} onOpenChange={setShowOpenClaw} />
       <SettingsPanel open={showSettings} onOpenChange={setShowSettings} />
       <DiagnosticsPanel open={showDiagnostics} onOpenChange={setShowDiagnostics} />
       <WelcomeDialog open={showAbout} onOpenChange={setShowAbout} />

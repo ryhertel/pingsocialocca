@@ -156,10 +156,11 @@ function getOpenClawResponse(): ResponseNode {
 }
 
 function getOpenClawSetupResponse(): ResponseNode {
+  // Dispatch event to open the setup modal
+  window.dispatchEvent(new CustomEvent('ping:openClawSetup'));
   return {
-    text: "Setup is 3 steps: 1) Open Ubuntu (WSL) on your computer. 2) Run: cd /home/ryan/.openclaw/workspace/ping-openclaw-bridge && node bridge.mjs. 3) Return to Ping and click Connect. Keep the terminal open while using Ping.",
+    text: "I've opened the setup guide for you. Follow the 3 steps to get your bridge running, then hit Connect. Keep the terminal open while using Ping.",
     buttons: [
-      { label: 'Connect now', action: 'connect_bridge' },
       { label: 'Back to integrations', action: 'integrations' },
       { label: 'Keep exploring', action: 'see_demo' },
     ],
@@ -266,14 +267,17 @@ const ACTION_MAP: Record<string, () => ResponseNode> = {
   privacy: getPrivacyResponse,
   pricing: getPricingResponse,
   troubleshooting: getTroubleshootingResponse,
-  connect_bridge: () => ({
-    text: "Great! Make sure your bridge is running, then use the Connect button in the menu to establish the WebSocket connection.",
-    buttons: [
-      { label: 'Back to menu', action: 'whatIsPing' },
-      { label: 'Keep exploring', action: 'see_demo' },
-    ],
-    module: 'integrations' as const,
-  }),
+  connect_bridge: () => {
+    window.dispatchEvent(new CustomEvent('ping:openClawSetup'));
+    return {
+      text: "I've opened the connection setup. Make sure your bridge is running, then click Connect in the modal.",
+      buttons: [
+        { label: 'Back to menu', action: 'whatIsPing' },
+        { label: 'Keep exploring', action: 'see_demo' },
+      ],
+      module: 'integrations' as const,
+    };
+  },
 };
 
 function resolveAction(action: string): ResponseNode {
