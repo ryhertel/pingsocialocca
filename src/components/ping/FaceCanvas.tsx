@@ -16,7 +16,7 @@ function drawEye(
   x: number, y: number, w: number, h: number,
   cornerR: number, glowColor: string, glowSecColor: string,
   glowMult: number, opacity: number, intensityMult: number,
-  tintError: boolean,
+  tintError: boolean, bounceY: number,
 ) {
   if (h < 1) return;
   const mainColor = tintError ? 'hsl(0, 100%, 62%)' : glowColor;
@@ -27,16 +27,23 @@ function drawEye(
   ctx.globalAlpha = opacity;
 
   // Outer glow
-  ctx.shadowBlur = (35 * glowMult) * intensityMult;
+  ctx.shadowBlur = (40 * glowMult) * intensityMult;
   ctx.shadowColor = mainColor;
   ctx.fillStyle = mainColor;
   ctx.beginPath();
-  ctx.roundRect(x, y, w, h, cr);
+  ctx.roundRect(x, y + bounceY, w, h, cr);
   ctx.fill();
 
   // Second pass for richer glow
-  ctx.globalAlpha = opacity * 0.35;
+  ctx.globalAlpha = opacity * 0.4;
   ctx.fill();
+
+  // Third pass for bloom
+  if (glowMult > 1.3) {
+    ctx.globalAlpha = opacity * 0.15 * (glowMult - 1);
+    ctx.shadowBlur = 80 * intensityMult;
+    ctx.fill();
+  }
 
   // Inner highlight
   ctx.globalAlpha = opacity;
@@ -46,7 +53,7 @@ function drawEye(
   const innerH = Math.max(1, h - inset * 2);
   const innerCr = Math.max(0, Math.min(cr - 1, innerH / 2));
   ctx.beginPath();
-  ctx.roundRect(x + inset, y + inset, w - inset * 2, innerH, innerCr);
+  ctx.roundRect(x + inset, y + bounceY + inset, w - inset * 2, innerH, innerCr);
   ctx.fill();
 
   ctx.restore();
@@ -72,6 +79,7 @@ export function FaceCanvas() {
     let shakeX = 0;
     let opacity = 1;
     let scanY = -1.2;
+    let bounceY = 0, targetBounceY = 0;
 
     // Blink
     let blinkPhase: 'idle' | 'closing' | 'closed' | 'opening' = 'idle';
@@ -95,6 +103,10 @@ export function FaceCanvas() {
 
     // Error
     let errorShakeTime = 0;
+
+    // Emotional state timers
+    let emotionTimer = 0;
+    let currentEmotion: string | null = null;
 
     // Message tracking
     let lastMsgCount = usePingStore.getState().messages.length;
@@ -133,11 +145,9 @@ export function FaceCanvas() {
       setTimeout(() => { isHovered = false; }, 500);
     }, { passive: true });
 
-    // Window-level mousemove for cursor tracking
     const onMouseMove = (e: MouseEvent) => {
       const nx = (e.clientX / window.innerWidth - 0.5) * 2;
       const ny = (e.clientY / window.innerHeight - 0.5) * 2;
-      // Throttle: only update if moved > ~2% of screen
       const dx = nx - mouseNX, dy = ny - mouseNY;
       if (dx * dx + dy * dy > 0.0004) {
         prevMouseNX = mouseNX;
@@ -149,6 +159,14 @@ export function FaceCanvas() {
     };
     window.addEventListener('mousemove', onMouseMove);
 
+    // Listen for custom emotion events from demo engine
+    const onEmotion = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      currentEmotion = detail.emotion;
+      emotionTimer = detail.duration || 2000;
+    };
+    window.addEventListener('ping:emotion', onEmotion);
+
     function animate(now: number) {
       if (!running) return;
       const dt = Math.min(50, now - lastFrameTime);
@@ -157,7 +175,8 @@ export function FaceCanvas() {
       const state = usePingStore.getState();
       const settings = useSettingsStore.getState();
       const theme = themePresets[settings.theme];
-      const iMult = settings.animationIntensity === 'high' ? 1 : settings.animationIntensity === 'medium' ? 0.7 : 0.3;
+      const energy = settings.energyLevel / 100; // 0-1
+      const iMult = energy;
 
       const ps = state.persistentState;
       const tr = state.transientReaction;
@@ -172,7 +191,7 @@ export function FaceCanvas() {
       // Reset bored timer on state change
       if (ps !== lastActivityState) {
         lastActivityState = ps;
-        nextBoredTime = rand(45000, 90000);
+        nextBoredTime = rand(30000, 70000) / Math.max(0.3, energy);
         boredRoutine = null;
       }
 
@@ -180,10 +199,61 @@ export function FaceCanvas() {
       targetSquint = 0;
       targetWiden = 0;
       targetGlow = 1;
+      targetBounceY = 0;
       opacity = ps === 'disconnected' ? 0.3 : 1;
 
+      // — Emotional states from events —
+      if (currentEmotion && emotionTimer > 0) {
+        emotionTimer -= dt;
+        switch (currentEmotion) {
+          case 'happy':
+            targetWiden = 0.3 * iMult;
+            targetGlow = Math.max(targetGlow, 1.5);
+            targetBounceY = Math.sin(now * 0.008) * 4 * iMult;
+            break;
+          case 'laugh':
+            targetWiden = 0.35 * iMult;
+            targetSquint = 0.2 * iMult;
+            targetGlow = Math.max(targetGlow, 1.6);
+            targetBounceY = Math.sin(now * 0.012) * 6 * iMult;
+            break;
+          case 'shock':
+            targetWiden = 0.5 * iMult;
+            targetGlow = Math.max(targetGlow, 2.5);
+            break;
+          case 'curious':
+            targetWiden = 0.2 * iMult;
+            targetGX = Math.sin(now * 0.003) * 0.3 * iMult;
+            targetGY = -0.15 * iMult;
+            break;
+          case 'concern':
+            targetSquint = 0.35 * iMult;
+            targetGY = 0.1;
+            targetGlow = Math.max(targetGlow, 0.8);
+            break;
+          case 'proud':
+            targetWiden = 0.25 * iMult;
+            targetGlow = Math.max(targetGlow, 2.0);
+            targetBounceY = -3 * iMult;
+            break;
+          case 'surprise':
+            targetWiden = 0.4 * iMult;
+            targetGlow = Math.max(targetGlow, 2.2);
+            targetBounceY = -5 * iMult;
+            break;
+          case 'cheer':
+            targetWiden = 0.3 * iMult;
+            targetGlow = Math.max(targetGlow, 1.8);
+            targetBounceY = Math.abs(Math.sin(now * 0.01)) * 8 * iMult;
+            break;
+        }
+        if (emotionTimer <= 0) {
+          currentEmotion = null;
+        }
+      }
+
       if (ps === 'thinking') {
-        targetSquint = 0.4;
+        targetSquint = Math.max(targetSquint, 0.4);
         scanY += dt * 0.0015;
         if (scanY > 1.2) scanY = -1.2;
       } else {
@@ -192,7 +262,7 @@ export function FaceCanvas() {
 
       if (ps === 'speaking') {
         speakPhase += dt * 0.004;
-        targetGlow = 1 + 0.65 * Math.sin(speakPhase * Math.PI) * iMult;
+        targetGlow = Math.max(targetGlow, 1 + 0.65 * Math.sin(speakPhase * Math.PI) * iMult);
       } else {
         speakPhase = 0;
       }
@@ -210,18 +280,19 @@ export function FaceCanvas() {
       }
 
       if (tr === 'success') {
-        targetWiden = 0.25 * iMult;
+        targetWiden = Math.max(targetWiden, 0.25 * iMult);
         targetGlow = Math.max(targetGlow, 1.6);
       } else if (tr === 'notify') {
         targetGlow = Math.max(targetGlow, 2.2);
       }
 
-      if (isHovered && !tr) {
+      if (isHovered && !tr && !currentEmotion) {
         targetWiden = Math.max(targetWiden, 0.12 * iMult);
       }
 
       // — Blink —
       if (ps !== 'disconnected') {
+        const blinkInterval = energy > 0.7 ? rand(2000, 5000) : rand(3000, 8000);
         if (blinkPhase === 'idle') {
           nextBlinkTime -= dt;
           if (nextBlinkTime <= 0) {
@@ -237,7 +308,7 @@ export function FaceCanvas() {
           if (blink < 0.05) {
             blink = 0;
             blinkPhase = 'idle';
-            nextBlinkTime = rand(3000, 7000);
+            nextBlinkTime = blinkInterval;
           }
         }
       }
@@ -246,7 +317,6 @@ export function FaceCanvas() {
       if (ps !== 'disconnected') {
         const msgCount = state.messages.length;
         if (msgCount > lastMsgCount) {
-          // Check if latest message is assistant for notice glow
           const latestMsg = state.messages[state.messages.length - 1];
           targetGX = 0.4; targetGY = 0.3;
           gazeOverrideTimer = 300;
@@ -267,10 +337,9 @@ export function FaceCanvas() {
 
         // — Cursor Attention —
         const higherPriorityGaze = gazeOverrideTimer > 0 || state.isComposerFocused || ps === 'thinking' || ps === 'speaking';
-        const cursorActive = !higherPriorityGaze;
+        const cursorActive = !higherPriorityGaze && !currentEmotion;
 
         if (cursorActive) {
-          // Detect fast cursor flick
           const flickDx = mouseNX - prevMouseNX, flickDy = mouseNY - prevMouseNY;
           const flickSpeed = Math.sqrt(flickDx * flickDx + flickDy * flickDy);
           const isFlick = flickSpeed > 0.3;
@@ -278,18 +347,15 @@ export function FaceCanvas() {
           if (cursorTrackingPhase === 'idle') {
             cursorPhaseTimer -= dt;
             if (cursorPhaseTimer <= 0 || isFlick) {
-              // Notice! Transition to tracking
               cursorTrackingPhase = 'tracking';
               cursorPhaseTimer = rand(3000, 8000);
               noticeReactionTimer = 300;
             }
           } else if (cursorTrackingPhase === 'tracking') {
-            // Follow cursor
             const trackScale = 0.45 * iMult;
             targetGX = mouseNX * trackScale;
             targetGY = mouseNY * trackScale;
 
-            // Notice reaction (brief widen + glow on entry)
             if (noticeReactionTimer > 0) {
               noticeReactionTimer -= dt;
               targetWiden = Math.max(targetWiden, 0.15 * iMult);
@@ -299,7 +365,6 @@ export function FaceCanvas() {
             cursorPhaseTimer -= dt;
             const cursorStale = now - lastCursorMoveTs > 3000;
             if (cursorPhaseTimer <= 0 || cursorStale) {
-              // Lose interest
               cursorTrackingPhase = 'idle';
               cursorPhaseTimer = rand(2000, 6000);
               targetGX = 0;
@@ -307,13 +372,12 @@ export function FaceCanvas() {
             }
           }
         } else if (cursorTrackingPhase === 'tracking') {
-          // Higher-priority gaze took over, reset to idle
           cursorTrackingPhase = 'idle';
           cursorPhaseTimer = rand(2000, 6000);
         }
 
-        // Random idle glances (suppressed during cursor tracking)
-        if (gazeOverrideTimer <= 0 && !state.isComposerFocused && cursorTrackingPhase !== 'tracking') {
+        // Random idle glances
+        if (gazeOverrideTimer <= 0 && !state.isComposerFocused && cursorTrackingPhase !== 'tracking' && !currentEmotion) {
           if (!isGlancing) {
             nextGlanceTime -= dt;
             if (nextGlanceTime <= 0) {
@@ -331,13 +395,13 @@ export function FaceCanvas() {
       }
 
       // — Bored routines —
-      if (ps === 'idle' && !boredRoutine && settings.animationIntensity !== 'low') {
+      if (ps === 'idle' && !boredRoutine && energy > 0.2) {
         nextBoredTime -= dt;
         if (nextBoredTime <= 0) {
-          const routines = ['scan', 'orbit', 'sleepDrift', 'doubleBlink'];
+          const routines = ['scan', 'orbit', 'sleepDrift', 'doubleBlink', 'wiggle'];
           boredRoutine = routines[Math.floor(Math.random() * routines.length)];
           boredTimer = 0;
-          nextBoredTime = rand(45000, 90000);
+          nextBoredTime = rand(30000, 70000) / Math.max(0.3, energy);
         }
       }
 
@@ -359,6 +423,10 @@ export function FaceCanvas() {
           else if (boredTimer < 300) targetBlink = 1;
           else if (boredTimer < 450) targetBlink = 0;
           else boredRoutine = null;
+        } else if (boredRoutine === 'wiggle') {
+          targetBounceY = Math.sin(boredTimer * 0.01) * 3 * energy;
+          targetGX = Math.sin(boredTimer * 0.005) * 0.15;
+          if (boredTimer > 2000) { targetBounceY = 0; targetGX = 0; boredRoutine = null; }
         }
       }
 
@@ -370,18 +438,21 @@ export function FaceCanvas() {
       squint = lerp(squint, targetSquint, dt, ls);
       widen = lerp(widen, targetWiden, dt, ls * 1.5);
       glowMult = lerp(glowMult, targetGlow, dt, ls * 2);
+      bounceY = lerp(bounceY, targetBounceY, dt, ls * 2);
 
       // — Render —
       const w = canvas.width;
       const h = canvas.height;
       ctx.clearRect(0, 0, w, h);
 
-      const unit = Math.min(w, h) / 12;
-      const eyeW = unit * 1.3;
-      const baseH = unit * 0.85;
+      // Eyes 30-40% larger: increased from /12 to /8.5
+      const unit = Math.min(w, h) / 8.5;
+      const eyeW = unit * 1.4;
+      const baseH = unit * 0.95;
       const eyeH = baseH * (1 - squint * 0.5) * (1 + widen * 0.3);
-      const gap = unit * 0.65;
-      const cornerR = baseH * 0.35;
+      const gap = unit * 0.7;
+      // Slightly more square: reduced corner radius ratio
+      const cornerR = baseH * 0.28;
 
       const cx = w / 2 + shakeX;
       const cy = h / 2;
@@ -396,8 +467,8 @@ export function FaceCanvas() {
       const rightX = cx + gap / 2 + offX;
       const eyeY = cy - blinkH / 2 + offY;
 
-      drawEye(ctx, leftX, eyeY, eyeW, blinkH, cornerR, glowColor, glowSecColor, glowMult, opacity, iMult, ps === 'error');
-      drawEye(ctx, rightX, eyeY, eyeW, blinkH, cornerR, glowColor, glowSecColor, glowMult, opacity, iMult, ps === 'error');
+      drawEye(ctx, leftX, eyeY, eyeW, blinkH, cornerR, glowColor, glowSecColor, glowMult, opacity, iMult, ps === 'error', bounceY);
+      drawEye(ctx, rightX, eyeY, eyeW, blinkH, cornerR, glowColor, glowSecColor, glowMult, opacity, iMult, ps === 'error', bounceY);
 
       // Thinking scanline
       if (squint > 0.08) {
@@ -434,6 +505,7 @@ export function FaceCanvas() {
       clearTimeout(slowTimeoutId);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('ping:emotion', onEmotion);
       canvas.removeEventListener('mouseenter', onEnter);
       canvas.removeEventListener('mouseleave', onLeave);
     };
