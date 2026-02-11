@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react';
 import { usePingStore } from '@/stores/usePingStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { themePresets } from '@/lib/themes';
+import { createSpectacleState, updateSpectacle, renderParticles } from '@/lib/spectacles';
 
 function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
@@ -97,6 +98,9 @@ export function FaceCanvas() {
     let boredTimer = 0;
     let nextBoredTime = rand(45000, 90000);
     let lastActivityState = '';
+
+    // Spectacles
+    const spectacle = createSpectacleState();
 
     // Speaking
     let speakPhase = 0;
@@ -430,6 +434,26 @@ export function FaceCanvas() {
         }
       }
 
+      // — Spectacles (pre-compute canvas dims for particle positioning) —
+      const cw = canvas.width, ch = canvas.height;
+      const preUnit = Math.min(cw, ch) / 8.5;
+      const preEyeW = preUnit * 1.4, preBaseH = preUnit * 0.95;
+      const spectacleTargets = updateSpectacle(
+        spectacle, dt, now, energy,
+        ps === 'idle', !!boredRoutine, !!currentEmotion,
+        cw / 2, ch / 2, preEyeW, preBaseH,
+        theme.glowPrimary,
+        settings.volume ?? 0.5, settings.muted ?? false, settings.dnd ?? false,
+      );
+      if (spectacle.routine) {
+        if (spectacleTargets.targetGX) targetGX = spectacleTargets.targetGX;
+        if (spectacleTargets.targetGY) targetGY = spectacleTargets.targetGY;
+        if (spectacleTargets.targetBounceY) targetBounceY = spectacleTargets.targetBounceY;
+        if (spectacleTargets.targetWiden) targetWiden = Math.max(targetWiden, spectacleTargets.targetWiden);
+        if (spectacleTargets.targetGlow) targetGlow = Math.max(targetGlow, spectacleTargets.targetGlow);
+        if (spectacleTargets.targetSquint) targetSquint = Math.max(targetSquint, spectacleTargets.targetSquint);
+      }
+
       // — Interpolate —
       const ls = 0.012;
       blink = lerp(blink, targetBlink, dt, ls * 2.5);
@@ -486,6 +510,9 @@ export function FaceCanvas() {
         ctx.stroke();
         ctx.restore();
       }
+
+      // — Spectacle particles —
+      renderParticles(ctx, spectacle.particles, theme.glowPrimary);
 
       // Next frame
       if (document.hidden) {
