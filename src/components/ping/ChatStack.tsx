@@ -138,7 +138,7 @@ export function ChatStack({ hidden }: ChatStackProps) {
                   )}
                   style={msg.role === 'assistant' ? assistantBgStyle : undefined}
                 >
-                  <p className="leading-relaxed">
+                  <p className="leading-relaxed chat-selectable cursor-text">
                     {msg.isRevealing ? msg.revealedText || '…' : msg.text}
                   </p>
                   <span className="text-[10px] opacity-40 mt-0.5 block">
