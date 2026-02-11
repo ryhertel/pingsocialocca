@@ -116,7 +116,7 @@ const Index = () => {
   const landscapeHideChat = isMobile && isLandscape;
 
   return (
-    <div className="h-[100svh] flex flex-col overflow-hidden bg-background select-none">
+    <div className="h-[100svh] flex flex-col overflow-hidden bg-background select-none [&_.chat-selectable]:select-text">
       {/* Header */}
       <header
         className="flex-none flex items-center justify-between px-4 py-2 z-10"
