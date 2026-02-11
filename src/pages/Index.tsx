@@ -10,6 +10,8 @@ import { OpenClawSetupModal } from '@/components/ping/OpenClawSetupModal';
 import { SettingsPanel } from '@/components/ping/SettingsPanel';
 import { DiagnosticsPanel } from '@/components/ping/DiagnosticsPanel';
 import { WelcomeDialog } from '@/components/ping/WelcomeDialog';
+import { WebhookPanel } from '@/components/ping/WebhookPanel';
+import { EventFeed } from '@/components/ping/EventFeed';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { usePingStore } from '@/stores/usePingStore';
 import { startScriptedDemo, stopScriptedDemo } from '@/lib/demoScriptEngine';
@@ -32,6 +34,8 @@ const Index = () => {
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showLandscapeChat, setShowLandscapeChat] = useState(false);
+  const [showWebhookPanel, setShowWebhookPanel] = useState(false);
+  const [showEventFeed, setShowEventFeed] = useState(false);
 
   const isMobile = useIsMobile();
   const isLandscape = useLandscape();
@@ -46,6 +50,13 @@ const Index = () => {
     const handler = () => setShowOpenClaw(true);
     window.addEventListener('ping:openClawSetup', handler);
     return () => window.removeEventListener('ping:openClawSetup', handler);
+  }, []);
+
+  // Listen for webhook panel open event (from demo script)
+  useEffect(() => {
+    const handler = () => setShowWebhookPanel(true);
+    window.addEventListener('ping:openWebhookPanel', handler);
+    return () => window.removeEventListener('ping:openWebhookPanel', handler);
   }, []);
 
   const connectionMode = useSettingsStore((s) => s.connectionMode);
@@ -111,6 +122,8 @@ const Index = () => {
     onSettings: () => setShowSettings(true),
     onDiagnostics: () => setShowDiagnostics(true),
     onAbout: () => setShowAbout(true),
+    onWebhooks: () => setShowWebhookPanel(true),
+    onEventFeed: () => setShowEventFeed(true),
   };
 
   const landscapeHideChat = isMobile && isLandscape;
@@ -195,11 +208,17 @@ const Index = () => {
       </Drawer>
 
       {/* Modals */}
-      <ConnectModal open={showConnect} onOpenChange={setShowConnect} />
+      <ConnectModal
+        open={showConnect}
+        onOpenChange={setShowConnect}
+        onOpenWebhooks={() => setShowWebhookPanel(true)}
+      />
       <OpenClawSetupModal open={showOpenClaw} onOpenChange={setShowOpenClaw} />
       <SettingsPanel open={showSettings} onOpenChange={setShowSettings} />
       <DiagnosticsPanel open={showDiagnostics} onOpenChange={setShowDiagnostics} />
       <WelcomeDialog open={showAbout} onOpenChange={setShowAbout} />
+      <WebhookPanel open={showWebhookPanel} onOpenChange={setShowWebhookPanel} />
+      <EventFeed open={showEventFeed} onOpenChange={setShowEventFeed} />
     </div>
   );
 };
