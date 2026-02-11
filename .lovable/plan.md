@@ -1,201 +1,82 @@
 
 
-# Phase 1: Scripted Demo Engine + Interactive Chat + Demo Badge
+# Idle Spectacle System -- Random Visual Events
 
-## What's included in Phase 1
+## Overview
 
-- Scripted state-machine demo engine replacing the random message picker
-- Intent/topic keyword router (no AI)
-- Opening flow with auto-message on load
-- Modular response map (What Is Ping, Notifications, Integrations, Privacy)
-- Quick-reply buttons rendered as a row below the last assistant message
-- "Demo Mode (scripted)" badge + subtext in header
-- Persistent CTAs (Connect OpenClaw, Discord coming soon, Keep exploring)
-- Restart Demo button always visible
-- Fallback for unknown input (never dead-ends)
-- Demo actions: trigger eye states + sounds from response nodes
+Add a set of rare, delightful idle animations that fire randomly when Ping has been idle for a while. These go beyond the existing subtle bored routines -- they're full visual "moments" with particle effects rendered on the canvas and coordinated eye reactions.
 
-## What's deferred to Phase 2
+## Spectacle Events (6 total)
 
-- Eye redesign (30-40% larger, new states like laugh, shock, etc.)
-- Video game sound system overhaul (signature motif, frequency mapping)
-- Liveliness/Energy Level slider (0-100)
-- OpenClaw setup UI with copy button + setup steps modal
+| Event | Visual | Eyes | Sound | Avg. Frequency |
+|-------|--------|------|-------|----------------|
+| **Fireworks** | 2-3 particle bursts rising and exploding around the eyes | Widen + glow bright, then bounce with each burst | `playExcited` | ~90-150s idle |
+| **Eye Roll** | Eyes glance hard up-right, sweep clockwise in a full circle, return to center | Smooth circular glance path over ~1.5s | None (silent comedy) | ~120-180s idle |
+| **Sparkle Trail** | Tiny glowing dots drift outward from both eyes like fairy dust, fade over 2s | Slight widen + extra glow | Soft chime (reuse `playConfirm` at low volume) | ~60-120s idle |
+| **Gravity Drop** | Eyes "fall" downward with bounce physics (drop, bounce smaller, settle) | bounceY driven by simple gravity sim | None | ~100-160s idle |
+| **Dizzy Spin** | Glance coordinates trace a tight spiral outward then back in | Squint slightly during spin, widen at end | None | ~130-200s idle |
+| **Pulse Wave** | Concentric rings expand outward from center of eyes, fading as they grow | Glow pulses to 2.5x in sync with ring | `playNotify` at 50% volume | ~80-140s idle |
 
----
+## Technical Approach
 
-## Files to create
+### Changes to `src/components/ping/FaceCanvas.tsx`
 
-### `src/lib/demoScriptEngine.ts` -- New scripted demo engine
+**New particle system** (lightweight, canvas-native):
 
-Replaces the current `demoEngine.ts` random message system with a deterministic router.
-
-**demoState** tracks:
-- `currentModule`: `'idle' | 'welcome' | 'whatIsPing' | 'notifications' | 'integrations' | 'privacy'`
-- `stepsCompleted`: number
-- `lastIntegration`: string or null
-- `sawNotificationDemo`: boolean
-- `turnsSinceCtaSurface`: number (surfaces CTA every 2-3 turns)
-
-**Intent router** -- keyword scoring + regex, not AI:
-- Maps typed input to intents: `learn`, `see_demo`, `integrate`, `pricing`, `security`, `troubleshooting`
-- Maps to topics: `openclaw`, `discord`, `notifications`, `sound`, `eyes`, `privacy`
-- If input matches a button label exactly, route to that module
-- Unknown input returns a friendly fallback with 3 buttons
-
-**Response nodes** -- each returns:
-- `text`: 1-3 sentences
-- `buttons`: array of `{ label: string, action: string }` (required, never empty)
-- `demoActions`: optional array of `{ type: 'triggerEyes' | 'triggerSound', payload: string }`
-
-**Module responses:**
-
-| Module | Key responses |
-|--------|-------------|
-| Welcome (auto on load) | "Hey, I'm Ping. I turn AI agent activity into expressive eyes + notification moments. Want to see a quick demo?" Buttons: Yes - show me, Tell me what Ping does, Connect OpenClaw |
-| What Is Ping | Explanation of visual feedback. Buttons: Notifications, Integrations, Privacy |
-| Notifications | Triggers sound + eye reaction. Buttons: Trigger another, Connect your agent, Back to menu |
-| Integrations | Options: OpenClaw, Discord, Other, Just exploring. OpenClaw shows local-first explanation. Discord says "coming soon" |
-| Privacy | Security reassurance. Buttons: Back to demo, Connect OpenClaw |
-| Fallback | "I'm in Demo Mode (scripted), but I can show you the experience." Buttons: Notifications, Integrations, Privacy |
-
-Every 2-3 turns, append a CTA: "Ready to connect your real agent?" with Connect button.
-
-**Exported functions:**
-- `startScriptedDemo()` -- clears messages, sends welcome message with buttons
-- `stopScriptedDemo()` -- clears timers
-- `handleDemoInput(text: string)` -- routes input through intent router, returns response
-- `handleDemoButtonClick(action: string)` -- routes button action to module
-
-### `src/lib/demoIntentRouter.ts` -- Intent + topic keyword matcher
-
-Simple keyword scoring:
-```
-const INTENT_KEYWORDS = {
-  learn: ['what', 'how', 'explain', 'tell', 'about', 'info'],
-  see_demo: ['demo', 'show', 'try', 'see', 'yes', 'cool'],
-  integrate: ['connect', 'setup', 'openclaw', 'discord', 'bridge', 'agent'],
-  pricing: ['price', 'cost', 'free', 'pay'],
-  security: ['security', 'privacy', 'safe', 'token', 'local', 'data'],
-  troubleshooting: ['error', 'help', 'broken', 'not working', 'issue'],
-};
-```
-
-Exported: `routeInput(text: string): { intent: string, topic: string | null }`
-
----
-
-## Files to modify
-
-### `src/lib/types.ts`
-
-Add new types:
-```typescript
-export interface DemoButton {
-  label: string;
-  action: string;
-}
-
-export interface DemoAction {
-  type: 'triggerEyes' | 'triggerSound';
-  payload: string;
-}
-
-// Extend ChatMessage to optionally carry buttons
-export interface ChatMessage {
-  // ... existing fields
-  buttons?: DemoButton[];
+```text
+Particle {
+  x, y        -- position
+  vx, vy      -- velocity
+  life, maxLife -- lifetime tracking
+  size         -- radius
+  hue          -- color from theme
+  type         -- 'spark' | 'ring' | 'dust'
 }
 ```
 
-### `src/components/ping/ChatStack.tsx`
+- Array of up to 60 particles, managed in the existing animation loop
+- Particles are spawned by spectacle triggers, updated each frame, drawn after the eyes
+- No new DOM elements or React components -- pure canvas rendering
 
-- After the last assistant message, if it has `buttons` array, render a row of pill-shaped quick-reply buttons
-- Buttons styled as small rounded pills with theme-tinted border, text-sm
-- On click, call `handleDemoButtonClick(action)` from the demo engine
-- Only show buttons on the most recent assistant message
-- Buttons disappear once the user sends a new message or clicks one
+**New spectacle scheduler**:
 
-### `src/components/ping/Composer.tsx`
+- Separate timer from the existing `boredRoutine` system
+- Only fires when `persistentState === 'idle'` and no emotion/bored routine is active
+- Minimum 60s between spectacles (scales inversely with energy level)
+- Each spectacle sets a `spectacleRoutine` string and `spectacleTimer` number
+- When a spectacle is active, it drives `targetGX`, `targetGY`, `targetBounceY`, `targetWiden`, `targetGlow`, and spawns particles
+- Spectacle is interrupted immediately if state changes away from idle
 
-- When in demo mode, route input through `handleDemoInput()` from the scripted engine instead of `triggerDemoResponse()`
-- Still adds the user message to the chat store
-- Still plays send sound
+**Spectacle implementations**:
 
-### `src/pages/Index.tsx`
+1. **Fireworks**: Spawn 3 "launcher" particles that rise upward. On reaching peak, spawn 8-12 "spark" particles in a radial burst with randomized velocity. Eyes widen + glow on each burst. Color uses theme glow hue.
 
-- Add "Demo Mode (scripted)" badge in header area (between logo/status and controls)
-- Badge: small pill with text "Demo Mode (scripted)" using Badge component
-- Below it (or as tooltip): "This demo is scripted to show the experience -- not a real AI."
-- Add "Restart Demo" button visible when in demo mode (in header or control bar area)
-- Replace `startDemo`/`stopDemo` imports with `startScriptedDemo`/`stopScriptedDemo`
+2. **Eye Roll**: Over 1.5s, `targetGX` and `targetGY` trace a circle: `cos(t)` and `sin(t)` with radius 0.5. Smooth easing at start/end.
 
-### `src/components/ping/ControlBar.tsx`
+3. **Sparkle Trail**: Spawn 15-20 tiny "dust" particles from left and right eye centers, drifting outward with slight gravity. Eyes get extra glow.
 
-- Add "Restart Demo" item to both desktop ControlBar and MobileMenu when `connectionMode === 'demo'`
-- Icon: `RotateCcw` from lucide
+4. **Gravity Drop**: `targetBounceY` follows `y += vy; vy += gravity` with `vy *= -0.6` on bounce. 3-4 bounces over ~2s.
 
-### `src/lib/demoEngine.ts`
+5. **Dizzy Spin**: Like eye roll but spiral -- radius grows from 0.1 to 0.5 then shrinks back. Slight squint during.
 
-- Keep file but mark as legacy / remove the random message logic
-- Or: delete entirely and replace all imports with `demoScriptEngine`
+6. **Pulse Wave**: Spawn 3 "ring" particles at staggered intervals. Each ring expands outward with decreasing opacity. `glowMult` pulses in sync.
 
-### `src/stores/usePingStore.ts`
+### Changes to `src/lib/audio.ts`
 
-- No changes needed -- the existing `addMessage` and `ChatMessage` flow works. The `buttons` field is added to the type.
+No new sounds needed -- reuses existing `playExcited`, `playConfirm`, and `playNotify` at reduced volume for spectacle events.
 
-### `src/lib/audio.ts`
+### Energy Level Integration
 
-- No changes in Phase 1 (existing sounds are triggered via demoActions)
+- At energy 0-20: spectacles disabled entirely
+- At energy 21-50: only subtle ones (sparkle trail, gravity drop)
+- At energy 51-80: all except fireworks
+- At energy 81-100: all spectacles, shorter intervals, more particles
 
-### `src/components/ping/FaceCanvas.tsx`
-
-- No changes in Phase 1 (existing eye states are triggered via `setPersistentState` and `triggerReaction` from demoActions)
-
----
-
-## Quick-reply button behavior
-
-- Rendered as a horizontal flex-wrap row of pill buttons below the last assistant bubble
-- Each pill: `rounded-full px-3 py-1.5 text-xs border border-primary/30 bg-primary/5 hover:bg-primary/15 text-foreground`
-- Clicking a button:
-  1. Adds a user message with the button label text
-  2. Hides all buttons
-  3. Routes through `handleDemoButtonClick(action)`
-  4. Shows thinking state briefly (1-2s)
-  5. Shows assistant response with new buttons
-
-## Demo flow example
-
-```
-[Auto on load]
-Assistant: "Hey, I'm Ping. I turn AI agent activity into expressive eyes + notification moments. Want to see a quick demo?"
-Buttons: [Yes - show me] [Tell me what Ping does] [Connect OpenClaw]
-
-[User clicks "Yes - show me"]
-User: "Yes - show me"
-[Eyes: thinking, 1.5s delay]
-Assistant: "Watch Ping's eyes react to different events. Here's a notification..."
-[DemoAction: triggerSound('notify'), triggerEyes('speaking')]
-Buttons: [Trigger another] [What is Ping?] [Connect your agent]
-
-[User types "privacy"]
-[Intent router matches: security topic]
-User: "privacy"
-Assistant: "Ping never stores tokens in the browser. OpenClaw runs locally on your machine. This demo is fully sandboxed."
-Buttons: [Back to demo] [Connect OpenClaw]
-```
-
-## Summary of all file changes
+## File Summary
 
 | File | Action |
 |------|--------|
-| `src/lib/demoScriptEngine.ts` | Create -- scripted state machine + response map |
-| `src/lib/demoIntentRouter.ts` | Create -- keyword router |
-| `src/lib/types.ts` | Modify -- add DemoButton, DemoAction, buttons field on ChatMessage |
-| `src/lib/demoEngine.ts` | Delete (replaced by demoScriptEngine) |
-| `src/components/ping/ChatStack.tsx` | Modify -- render quick-reply buttons below last message |
-| `src/components/ping/Composer.tsx` | Modify -- route demo input through scripted engine |
-| `src/pages/Index.tsx` | Modify -- add demo badge, restart button, swap engine imports |
-| `src/components/ping/ControlBar.tsx` | Modify -- add Restart Demo item |
+| `src/components/ping/FaceCanvas.tsx` | Add particle system, spectacle scheduler, 6 spectacle routines, particle rendering after eyes |
+
+Single file change. Everything is canvas-native, no new dependencies, no new components.
 
