@@ -11,13 +11,17 @@ import { DiagnosticsPanel } from '@/components/ping/DiagnosticsPanel';
 import { WelcomeDialog } from '@/components/ping/WelcomeDialog';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { usePingStore } from '@/stores/usePingStore';
-import { startDemo, stopDemo } from '@/lib/demoEngine';
+import { startScriptedDemo, stopScriptedDemo } from '@/lib/demoScriptEngine';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLandscape } from '@/hooks/use-landscape';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription,
 } from '@/components/ui/drawer';
+import {
+  Tooltip, TooltipContent, TooltipTrigger,
+} from '@/components/ui/tooltip';
 import pingLogo from '@/assets/ping-logo-white.png';
 
 const Index = () => {
@@ -39,12 +43,13 @@ const Index = () => {
   const privacyLock = useSettingsStore((s) => s.privacyLock);
   const autoLockMinutes = useSettingsStore((s) => s.autoLockMinutes);
   const lock = useSettingsStore((s) => s.lock);
+  const isDemoMode = connectionMode === 'demo';
 
   useEffect(() => {
     if (connectionMode === 'demo') {
-      startDemo();
+      startScriptedDemo();
     }
-    return () => stopDemo();
+    return () => stopScriptedDemo();
   }, [connectionMode]);
 
   // Privacy Lock: inactivity timer with throttled mousemove
@@ -115,6 +120,21 @@ const Index = () => {
             onClick={() => setShowAbout(true)}
           />
           <StatusChip />
+          {isDemoMode && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-2 py-0.5 border-primary/30 text-muted-foreground cursor-help hidden sm:inline-flex"
+                >
+                  Demo Mode (scripted)
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs max-w-[200px]">
+                This demo is scripted to show the experience — not a real AI.
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
         <div>
           {isMobile ? (

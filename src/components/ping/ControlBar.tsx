@@ -1,9 +1,10 @@
 import { type ComponentType } from 'react';
 import {
   Settings, Terminal, Plug2, Volume2, VolumeX,
-  Bell, BellOff, Play, Pause, Info, Menu,
+  Bell, BellOff, Play, Pause, Info, Menu, RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { startScriptedDemo } from '@/lib/demoScriptEngine';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -60,6 +61,13 @@ export function ControlBar({ onConnect, onSettings, onDiagnostics, onAbout }: Co
         onClick={() => setConnectionMode(isDemoMode ? 'bridge' : 'demo')}
         active={isDemoMode}
       />
+      {isDemoMode && (
+        <ControlButton
+          icon={RotateCcw}
+          label="Restart Demo"
+          onClick={() => startScriptedDemo()}
+        />
+      )}
       <ControlButton
         icon={muted ? VolumeX : Volume2}
         label={muted ? 'Unmute' : 'Mute'}
@@ -137,6 +145,13 @@ export function MobileMenu({ onConnect, onSettings, onDiagnostics, onAbout }: Co
               onClick={() => act(() => setConnectionMode(isDemoMode ? 'bridge' : 'demo'))}
               active={isDemoMode}
             />
+            {isDemoMode && (
+              <MobileMenuItem
+                icon={RotateCcw}
+                label="Restart Demo"
+                onClick={() => act(() => startScriptedDemo())}
+              />
+            )}
             <MobileMenuItem
               icon={muted ? VolumeX : Volume2}
               label={muted ? 'Unmute Sound' : 'Mute Sound'}

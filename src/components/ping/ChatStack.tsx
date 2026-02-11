@@ -5,6 +5,8 @@ import { themePresets } from '@/lib/themes';
 import { cn } from '@/lib/utils';
 import { Lock, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { handleDemoButtonClick } from '@/lib/demoScriptEngine';
+import { playSend } from '@/lib/audio';
 
 function formatRelative(ts: number): string {
   const diff = Date.now() - ts;
@@ -22,9 +24,12 @@ interface ChatStackProps {
 
 export function ChatStack({ hidden }: ChatStackProps) {
   const messages = usePingStore((s) => s.messages);
+  const addMessage = usePingStore((s) => s.addMessage);
+  const setPersistentState = usePingStore((s) => s.setPersistentState);
   const isLocked = useSettingsStore((s) => s.isLocked);
   const unlock = useSettingsStore((s) => s.unlock);
   const theme = useSettingsStore((s) => s.theme);
+  const connectionMode = useSettingsStore((s) => s.connectionMode);
   const displayed = messages.slice(-20);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -67,6 +72,24 @@ export function ChatStack({ hidden }: ChatStackProps) {
     scrollToBottom(isNewMessage ? 'smooth' : 'auto');
   }, [displayed.length, displayed[displayed.length - 1]?.revealedText, scrollToBottom]);
 
+  const handleButtonClick = (label: string, action: string) => {
+    // Add user message with button label
+    addMessage({
+      id: crypto.randomUUID(),
+      role: 'user',
+      text: label,
+      revealedText: label,
+      isRevealing: false,
+      ts: Date.now(),
+    });
+
+    const settings = useSettingsStore.getState();
+    playSend(settings.volume, settings.muted, settings.dnd);
+    setPersistentState('thinking');
+
+    handleDemoButtonClick(action);
+  };
+
   if (hidden) return null;
 
   if (displayed.length === 0 && !isLocked) return null;
@@ -90,6 +113,11 @@ export function ChatStack({ hidden }: ChatStackProps) {
     );
   }
 
+  const lastAssistantIndex = displayed.reduce(
+    (acc, msg, i) => (msg.role === 'assistant' ? i : acc),
+    -1
+  );
+
   return (
     <div className="absolute bottom-2 right-4 left-4 sm:left-auto sm:w-80 max-h-[40vh] sm:max-h-[60vh] z-10">
       <div className="relative">
@@ -99,23 +127,43 @@ export function ChatStack({ hidden }: ChatStackProps) {
           onScroll={handleScroll}
         >
           <div className="space-y-1.5 pr-1 pb-16">
-            {displayed.map((msg) => (
-              <div
-                key={msg.id}
-                className={cn(
-                  'text-sm sm:text-xs rounded-xl px-3 py-2 backdrop-blur-sm max-w-[78vw] sm:max-w-none',
-                  msg.role === 'user'
-                    ? 'bg-muted/50 ml-10 text-foreground'
-                    : 'mr-6 text-foreground',
-                )}
-                style={msg.role === 'assistant' ? assistantBgStyle : undefined}
-              >
-                <p className="leading-relaxed">
-                  {msg.isRevealing ? msg.revealedText || '…' : msg.text}
-                </p>
-                <span className="text-[10px] opacity-40 mt-0.5 block">
-                  {formatRelative(msg.ts)}
-                </span>
+            {displayed.map((msg, idx) => (
+              <div key={msg.id}>
+                <div
+                  className={cn(
+                    'text-sm sm:text-xs rounded-xl px-3 py-2 backdrop-blur-sm max-w-[78vw] sm:max-w-none',
+                    msg.role === 'user'
+                      ? 'bg-muted/50 ml-10 text-foreground'
+                      : 'mr-6 text-foreground',
+                  )}
+                  style={msg.role === 'assistant' ? assistantBgStyle : undefined}
+                >
+                  <p className="leading-relaxed">
+                    {msg.isRevealing ? msg.revealedText || '…' : msg.text}
+                  </p>
+                  <span className="text-[10px] opacity-40 mt-0.5 block">
+                    {formatRelative(msg.ts)}
+                  </span>
+                </div>
+                {/* Quick-reply buttons below the last assistant message */}
+                {connectionMode === 'demo' &&
+                  msg.role === 'assistant' &&
+                  idx === lastAssistantIndex &&
+                  !msg.isRevealing &&
+                  msg.buttons &&
+                  msg.buttons.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2 mr-6">
+                      {msg.buttons.map((btn) => (
+                        <button
+                          key={btn.action}
+                          onClick={() => handleButtonClick(btn.label, btn.action)}
+                          className="rounded-full px-3 py-1.5 text-xs border border-primary/30 bg-primary/5 hover:bg-primary/15 text-foreground transition-colors backdrop-blur-sm"
+                        >
+                          {btn.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
               </div>
             ))}
             <div ref={bottomRef} />

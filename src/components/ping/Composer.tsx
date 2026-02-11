@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { usePingStore } from '@/stores/usePingStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
-import { triggerDemoResponse } from '@/lib/demoEngine';
+import { handleDemoInput } from '@/lib/demoScriptEngine';
 import { sendMessage as bridgeSendMessage } from '@/lib/bridge';
 import { playSend } from '@/lib/audio';
 
@@ -36,7 +36,7 @@ export function Composer() {
     playSend(settings.volume, settings.muted, settings.dnd);
 
     if (connectionMode === 'demo') {
-      triggerDemoResponse();
+      handleDemoInput(trimmed);
     } else {
       bridgeSendMessage(trimmed);
     }

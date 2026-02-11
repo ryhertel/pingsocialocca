@@ -5,6 +5,16 @@ export type ThemePreset = 'mint' | 'sky' | 'berry' | 'honey';
 export type AnimationIntensity = 'low' | 'medium' | 'high';
 export type AutoLockMinutes = 5 | 15 | 30 | 60;
 
+export interface DemoButton {
+  label: string;
+  action: string;
+}
+
+export interface DemoAction {
+  type: 'triggerEyes' | 'triggerSound';
+  payload: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -12,6 +22,7 @@ export interface ChatMessage {
   revealedText: string;
   isRevealing: boolean;
   ts: number;
+  buttons?: DemoButton[];
 }
 
 export interface DiagnosticsEntry {
