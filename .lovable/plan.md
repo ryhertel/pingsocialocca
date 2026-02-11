@@ -1,82 +1,100 @@
 
 
-# Idle Spectacle System -- Random Visual Events
+# Sound System Redesign -- Video Game Audio Overhaul
 
-## Overview
+## The Problem
 
-Add a set of rare, delightful idle animations that fire randomly when Ping has been idle for a while. These go beyond the existing subtle bored routines -- they're full visual "moments" with particle effects rendered on the canvas and coordinated eye reactions.
+Every sound currently uses bare sine waves with simple envelope curves. They sound clinical and thin -- more like a medical device than a video game. There's no reverb, no harmonic layering, no "body" to the tones.
 
-## Spectacle Events (6 total)
+## What's Possible with Web Audio API (No Libraries Needed)
 
-| Event | Visual | Eyes | Sound | Avg. Frequency |
-|-------|--------|------|-------|----------------|
-| **Fireworks** | 2-3 particle bursts rising and exploding around the eyes | Widen + glow bright, then bounce with each burst | `playExcited` | ~90-150s idle |
-| **Eye Roll** | Eyes glance hard up-right, sweep clockwise in a full circle, return to center | Smooth circular glance path over ~1.5s | None (silent comedy) | ~120-180s idle |
-| **Sparkle Trail** | Tiny glowing dots drift outward from both eyes like fairy dust, fade over 2s | Slight widen + extra glow | Soft chime (reuse `playConfirm` at low volume) | ~60-120s idle |
-| **Gravity Drop** | Eyes "fall" downward with bounce physics (drop, bounce smaller, settle) | bounceY driven by simple gravity sim | None | ~100-160s idle |
-| **Dizzy Spin** | Glance coordinates trace a tight spiral outward then back in | Squint slightly during spin, widen at end | None | ~130-200s idle |
-| **Pulse Wave** | Concentric rings expand outward from center of eyes, fading as they grow | Glow pulses to 2.5x in sync with ring | `playNotify` at 50% volume | ~80-140s idle |
+The Web Audio API is surprisingly powerful. Here's what we can add using only built-in nodes:
 
-## Technical Approach
+- **Convolver reverb**: Creates spatial depth (like sounds happening in a room, not a vacuum)
+- **Waveshaping / soft distortion**: Adds warmth and harmonic overtones to make tones feel "chunky"
+- **Layered oscillators**: Stack 2-3 detuned oscillators for rich, retro-synth textures
+- **Sub-bass layers**: Add a low rumble underneath success sounds for satisfying "thump"
+- **Frequency sweeps**: Rapid pitch slides that sound like coin pickups, power-ups, and level-ups
+- **Noise bursts**: Short white noise mixed in creates percussive "pops" and "clicks"
+- **Delay echoes**: Quick stereo ping-pong for sparkle effects
 
-### Changes to `src/components/ping/FaceCanvas.tsx`
+## Sound-by-Sound Redesign
 
-**New particle system** (lightweight, canvas-native):
+| Sound | Current | Redesigned |
+|-------|---------|-----------|
+| **Motif** (app load) | 3 plain sine notes | 3-note power-up chord with detuned layers, sub-bass thump on each note, reverb tail, final note gets a triumphant 5th harmony |
+| **Send** | Thin click + chirp | Punchy triangle-wave "boop" with noise transient (like pressing a game button), short reverb |
+| **Receive** | Simple ding | Warm two-tone "coin collect" with square-wave body, octave shimmer, and reverb bloom |
+| **Confirm** | Two sine notes | Zelda-style "da-DING!" -- ascending perfect 5th with layered square+sine, sub-bass punch, long reverb tail |
+| **Error** | Quiet sawtooth | Retro "bonk" -- descending minor 2nd with waveshaper crunch, noise burst, dry (no reverb) for contrast |
+| **Notify** | Single sweep | Bright two-note "alert ping" with triangle wave body, detuned chorus effect, medium reverb |
+| **Thinking** | Quiet sine pulse | Soft bubbly "bloop" -- sine with pitch wobble (LFO on frequency), gentle reverb, feels like loading |
+| **Excited** | Two high sines | Sparkle cascade -- 4 rapid ascending notes with square wave, each slightly detuned, bright reverb |
+| **Idle Chirp** | Simple chirp | Playful R2-D2 style "bwee-doo" with rapid frequency modulation, triangle wave, light reverb |
+
+## Technical Architecture
+
+### Shared Audio Infrastructure (new)
 
 ```text
-Particle {
-  x, y        -- position
-  vx, vy      -- velocity
-  life, maxLife -- lifetime tracking
-  size         -- radius
-  hue          -- color from theme
-  type         -- 'spark' | 'ring' | 'dust'
-}
+ConvolverNode (reverb)
+  - Generated impulse response (no audio file needed)
+  - Algorithmic IR: exponential decay noise burst, ~0.4s tail
+  - Shared across all sounds via a wet/dry mix
+
+WaveShaperNode (warmth)
+  - Soft-clip curve for gentle saturation
+  - Makes square/triangle waves feel "full" not "harsh"
+
+Routing: oscillators -> waveshaper -> gain -> dry/wet split -> reverb -> destination
 ```
 
-- Array of up to 60 particles, managed in the existing animation loop
-- Particles are spawned by spectacle triggers, updated each frame, drawn after the eyes
-- No new DOM elements or React components -- pure canvas rendering
+### Key Techniques Per Sound
 
-**New spectacle scheduler**:
+**Detuned layers**: Stack 2 oscillators, one +3 cents, one -3 cents. Creates natural "chorus" width without any external effects.
 
-- Separate timer from the existing `boredRoutine` system
-- Only fires when `persistentState === 'idle'` and no emotion/bored routine is active
-- Minimum 60s between spectacles (scales inversely with energy level)
-- Each spectacle sets a `spectacleRoutine` string and `spectacleTimer` number
-- When a spectacle is active, it drives `targetGX`, `targetGY`, `targetBounceY`, `targetWiden`, `targetGlow`, and spawns particles
-- Spectacle is interrupted immediately if state changes away from idle
+**Noise transients**: Create a short (15-30ms) buffer of white noise, play it at the attack of percussive sounds. Makes clicks feel physical.
 
-**Spectacle implementations**:
+**Sub-bass punch**: A 60-80Hz sine that fades in 5ms and out in 80ms. Adds a "chest thump" to success/motif sounds.
 
-1. **Fireworks**: Spawn 3 "launcher" particles that rise upward. On reaching peak, spawn 8-12 "spark" particles in a radial burst with randomized velocity. Eyes widen + glow on each burst. Color uses theme glow hue.
+**Frequency modulation**: Connect one oscillator's output to another's frequency input for metallic, R2-D2-style tones.
 
-2. **Eye Roll**: Over 1.5s, `targetGX` and `targetGY` trace a circle: `cos(t)` and `sin(t)` with radius 0.5. Smooth easing at start/end.
+**Algorithmic reverb impulse**: Generate a Float32Array of decaying random noise. Load it into a ConvolverNode once. No external audio files needed.
 
-3. **Sparkle Trail**: Spawn 15-20 tiny "dust" particles from left and right eye centers, drifting outward with slight gravity. Eyes get extra glow.
+## Changes
 
-4. **Gravity Drop**: `targetBounceY` follows `y += vy; vy += gravity` with `vy *= -0.6` on bounce. 3-4 bounces over ~2s.
+### `src/lib/audio.ts` -- Full rewrite
 
-5. **Dizzy Spin**: Like eye roll but spiral -- radius grows from 0.1 to 0.5 then shrinks back. Slight squint during.
+- Add `createReverb()`: generates impulse response buffer, creates shared ConvolverNode
+- Add `createWarmth()`: creates shared WaveShaperNode with soft-clip curve  
+- Add `createNoiseBurst(ctx, duration)`: returns a short noise buffer source for percussive attacks
+- Add `createSubBass(ctx, volume)`: returns a 70Hz sine with fast attack/decay
+- Refactor `buildChain(ctx, osc, options)`: utility that wires oscillator through warmth, gain, dry/wet reverb split. Options: `{ reverb: 0-1, warmth: boolean }`
+- Rewrite all 9 sound functions with the new layered approach
+- Keep the same function signatures (volume, muted, dnd) so no other files need changes
+- Keep pitch variance (`pv()`) and cooldown logic
 
-6. **Pulse Wave**: Spawn 3 "ring" particles at staggered intervals. Each ring expands outward with decreasing opacity. `glowMult` pulses in sync.
+### Frequency Ranges (shifted to midrange "fun zone")
 
-### Changes to `src/lib/audio.ts`
+| Sound | Old Range | New Range | Character |
+|-------|-----------|-----------|-----------|
+| Motif | 880-1318 Hz | 440-880 Hz | Warmer, more "heroic" |
+| Send | 400-900 Hz | 330-660 Hz | Punchier "boop" |
+| Receive | 1100-2200 Hz | 520-1040 Hz | Warmer "coin" |
+| Confirm | 880-1320 Hz | 440-880 Hz | Satisfying "level up" |
+| Error | 220-330 Hz | 180-280 Hz | Crunchy "bonk" |
+| Notify | 660-880 Hz | 500-800 Hz | Bright but not shrill |
+| Thinking | 440-523 Hz | 330-440 Hz | Bubbly, lower |
+| Excited | 1200-1600 Hz | 660-1320 Hz | Sparkly but not piercing |
+| Idle | 800-1200 Hz | 400-800 Hz | Playful mid-chirp |
 
-No new sounds needed -- reuses existing `playExcited`, `playConfirm`, and `playNotify` at reduced volume for spectacle events.
+### No Other File Changes
 
-### Energy Level Integration
-
-- At energy 0-20: spectacles disabled entirely
-- At energy 21-50: only subtle ones (sparkle trail, gravity drop)
-- At energy 51-80: all except fireworks
-- At energy 81-100: all spectacles, shorter intervals, more particles
+All sound functions keep the same names and signatures. The spectacles, demo engine, and FaceCanvas all call these same functions -- they just sound dramatically better.
 
 ## File Summary
 
 | File | Action |
 |------|--------|
-| `src/components/ping/FaceCanvas.tsx` | Add particle system, spectacle scheduler, 6 spectacle routines, particle rendering after eyes |
-
-Single file change. Everything is canvas-native, no new dependencies, no new components.
+| `src/lib/audio.ts` | Full rewrite -- add reverb/warmth infrastructure, redesign all 9 sounds with layering, noise transients, sub-bass, and midrange frequencies |
 
