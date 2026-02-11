@@ -67,6 +67,7 @@ function getWhatIsPingResponse(): ResponseNode {
     text: "Ping visualizes AI agent activity as emotional feedback instead of logs. When your agent thinks, Ping's eyes shift. When it responds, they glow and you hear a sound. It's the emotional layer for your AI.",
     buttons: [
       { label: 'Notifications', action: 'notifications' },
+      { label: 'Animations', action: 'animations' },
       { label: 'Integrations', action: 'integrations' },
       { label: 'Privacy', action: 'privacy' },
     ],
@@ -232,6 +233,7 @@ function getSeeDemoResponse(): ResponseNode {
     text: "Let's explore! Ping reacts to agent events with expressive eyes and sounds. Try triggering a notification, or learn more about integrations.",
     buttons: [
       { label: 'Notifications', action: 'notifications' },
+      { label: 'Animations', action: 'animations' },
       { label: 'What is Ping?', action: 'whatIsPing' },
       { label: 'Integrations', action: 'integrations' },
     ],
@@ -252,6 +254,41 @@ function getTroubleshootingResponse(): ResponseNode {
   };
 }
 
+// ── Animations Menu ──
+
+function getAnimationsResponse(): ResponseNode {
+  return {
+    text: "Ping has 6 idle animations that play randomly when it's bored. Try them out! Each one has unique eye movements and particle effects.",
+    buttons: [
+      { label: '🎆 Fireworks', action: 'spectacle_fireworks' },
+      { label: '🙄 Eye Roll', action: 'spectacle_eyeRoll' },
+      { label: '✨ Sparkle Trail', action: 'spectacle_sparkleTrail' },
+      { label: '⬇️ Gravity Drop', action: 'spectacle_gravityDrop' },
+      { label: '😵 Dizzy Spin', action: 'spectacle_dizzySpin' },
+      { label: '💫 Pulse Wave', action: 'spectacle_pulseWave' },
+    ],
+  };
+}
+
+function getSpectacleTriggeredResponse(name: string): ResponseNode {
+  const labels: Record<string, string> = {
+    fireworks: '🎆 Fireworks',
+    eyeRoll: '🙄 Eye Roll',
+    sparkleTrail: '✨ Sparkle Trail',
+    gravityDrop: '⬇️ Gravity Drop',
+    dizzySpin: '😵 Dizzy Spin',
+    pulseWave: '💫 Pulse Wave',
+  };
+  return {
+    text: `Playing ${labels[name] || name}! Watch Ping's eyes react.`,
+    buttons: [
+      { label: 'Try another', action: 'animations' },
+      { label: 'Back to menu', action: 'see_demo' },
+    ],
+    demoActions: [{ type: 'triggerSpectacle', payload: name }],
+  };
+}
+
 // ── Action Router ──
 
 const ACTION_MAP: Record<string, () => ResponseNode> = {
@@ -267,6 +304,13 @@ const ACTION_MAP: Record<string, () => ResponseNode> = {
   privacy: getPrivacyResponse,
   pricing: getPricingResponse,
   troubleshooting: getTroubleshootingResponse,
+  animations: getAnimationsResponse,
+  spectacle_fireworks: () => getSpectacleTriggeredResponse('fireworks'),
+  spectacle_eyeRoll: () => getSpectacleTriggeredResponse('eyeRoll'),
+  spectacle_sparkleTrail: () => getSpectacleTriggeredResponse('sparkleTrail'),
+  spectacle_gravityDrop: () => getSpectacleTriggeredResponse('gravityDrop'),
+  spectacle_dizzySpin: () => getSpectacleTriggeredResponse('dizzySpin'),
+  spectacle_pulseWave: () => getSpectacleTriggeredResponse('pulseWave'),
   connect_bridge: () => {
     window.dispatchEvent(new CustomEvent('ping:openClawSetup'));
     return {
@@ -318,6 +362,7 @@ function resolveInput(text: string): ResponseNode {
       sound: 'notifications',
       eyes: 'notifications',
       privacy: 'privacy',
+      animations: 'animations',
     };
     if (topicActionMap[topic]) return resolveAction(topicActionMap[topic]);
   }
@@ -373,6 +418,8 @@ function executeDemoActions(actions?: DemoAction[]) {
       } else if (action.payload === 'motif') {
         playMotif(settings.volume, settings.muted, settings.dnd);
       }
+    } else if (action.type === 'triggerSpectacle') {
+      window.dispatchEvent(new CustomEvent('ping:triggerSpectacle', { detail: action.payload }));
     }
   }
 }

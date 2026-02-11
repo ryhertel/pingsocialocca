@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import { usePingStore } from '@/stores/usePingStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { themePresets } from '@/lib/themes';
-import { createSpectacleState, updateSpectacle, renderParticles } from '@/lib/spectacles';
+import { createSpectacleState, updateSpectacle, renderParticles, forceStartSpectacle } from '@/lib/spectacles';
 
 function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
@@ -170,6 +170,18 @@ export function FaceCanvas() {
       emotionTimer = detail.duration || 2000;
     };
     window.addEventListener('ping:emotion', onEmotion);
+
+    // Listen for spectacle trigger events from demo engine
+    const onTriggerSpectacle = (e: Event) => {
+      const routineName = (e as CustomEvent).detail;
+      forceStartSpectacle(spectacle, routineName);
+      // Temporarily force idle so spectacle isn't cancelled
+      const currentPs = usePingStore.getState().persistentState;
+      if (currentPs !== 'idle') {
+        usePingStore.getState().setPersistentState('idle');
+      }
+    };
+    window.addEventListener('ping:triggerSpectacle', onTriggerSpectacle);
 
     function animate(now: number) {
       if (!running) return;
@@ -533,6 +545,7 @@ export function FaceCanvas() {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('ping:emotion', onEmotion);
+      window.removeEventListener('ping:triggerSpectacle', onTriggerSpectacle);
       canvas.removeEventListener('mouseenter', onEnter);
       canvas.removeEventListener('mouseleave', onLeave);
     };
