@@ -11,7 +11,7 @@ export interface DemoButton {
 }
 
 export interface DemoAction {
-  type: 'triggerEyes' | 'triggerSound';
+  type: 'triggerEyes' | 'triggerSound' | 'triggerSpectacle';
   payload: string;
 }
 

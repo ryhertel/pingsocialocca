@@ -14,6 +14,7 @@ const TOPIC_KEYWORDS: Record<string, string[]> = {
   sound: ['sound', 'audio', 'music', 'tone', 'beep'],
   eyes: ['eye', 'eyes', 'face', 'visual', 'look', 'expression'],
   privacy: ['privacy', 'private', 'security', 'secure', 'token', 'safe', 'data'],
+  animations: ['animation', 'animations', 'idle', 'spectacle', 'fireworks', 'sparkle', 'particle', 'firework', 'gravity', 'dizzy', 'spin', 'pulse', 'eye roll'],
 };
 
 export interface RouteResult {

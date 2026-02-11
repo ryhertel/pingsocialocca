@@ -71,7 +71,21 @@ export function createSpectacleState(): SpectacleState {
   };
 }
 
+// ── Force-start (for demo commands) ──
+
+export function forceStartSpectacle(ss: SpectacleState, routineName: string) {
+  const validRoutines = ['fireworks', 'eyeRoll', 'sparkleTrail', 'gravityDrop', 'dizzySpin', 'pulseWave'];
+  if (!validRoutines.includes(routineName)) return;
+  ss.routine = routineName;
+  ss.timer = 0;
+  ss.soundPlayed = false;
+  ss.launchers = [];
+  ss.gravVY = 0;
+  ss.gravBounces = 0;
+}
+
 // ── Available routines by energy level ──
+
 
 function getAvailableRoutines(energy: number): string[] {
   if (energy <= 0.2) return [];
