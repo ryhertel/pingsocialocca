@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { usePingStore } from '@/stores/usePingStore';
 import { connectBridge, disconnectBridge } from '@/lib/bridge';
-import { startDemo, stopDemo } from '@/lib/demoEngine';
+import { startScriptedDemo, stopScriptedDemo } from '@/lib/demoScriptEngine';
 import { Plug2, Play } from 'lucide-react';
 
 interface ConnectModalProps {
@@ -19,8 +19,8 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
 
   const handleConnect = () => {
     if (connectionMode === 'demo') {
-      stopDemo();
-      startDemo();
+      stopScriptedDemo();
+      startScriptedDemo();
     } else {
       connectBridge(bridgeUrl);
     }
@@ -31,7 +31,7 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
     if (mode === 'demo') {
       disconnectBridge();
     } else {
-      stopDemo();
+      stopScriptedDemo();
     }
     setConnectionMode(mode);
   };
