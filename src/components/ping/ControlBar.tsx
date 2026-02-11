@@ -1,7 +1,7 @@
 import { type ComponentType } from 'react';
 import {
   Settings, Terminal, Plug2, Volume2, VolumeX,
-  Bell, BellOff, Play, Pause, Info, Menu, RotateCcw,
+  Bell, BellOff, Play, Pause, Info, Menu, RotateCcw, Rocket,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { startScriptedDemo } from '@/lib/demoScriptEngine';
@@ -14,6 +14,7 @@ import { useState } from 'react';
 
 interface ControlBarProps {
   onConnect: () => void;
+  onOpenClaw: () => void;
   onSettings: () => void;
   onDiagnostics: () => void;
   onAbout: () => void;
@@ -49,7 +50,7 @@ function ControlButton({
   );
 }
 
-export function ControlBar({ onConnect, onSettings, onDiagnostics, onAbout }: ControlBarProps) {
+export function ControlBar({ onConnect, onOpenClaw, onSettings, onDiagnostics, onAbout }: ControlBarProps) {
   const { connectionMode, setConnectionMode, muted, setMuted, dnd, setDnd } = useSettingsStore();
   const isDemoMode = connectionMode === 'demo';
 
@@ -82,6 +83,7 @@ export function ControlBar({ onConnect, onSettings, onDiagnostics, onAbout }: Co
       />
       <div className="w-px h-5 bg-border/50 mx-1" />
       <ControlButton icon={Plug2} label="Connect" onClick={onConnect} />
+      <ControlButton icon={Rocket} label="OpenClaw Setup" onClick={onOpenClaw} />
       <ControlButton icon={Settings} label="Settings" onClick={onSettings} />
       <ControlButton icon={Terminal} label="Diagnostics" onClick={onDiagnostics} />
       <ControlButton icon={Info} label="About" onClick={onAbout} />
@@ -112,7 +114,7 @@ function MobileMenuItem({
   );
 }
 
-export function MobileMenu({ onConnect, onSettings, onDiagnostics, onAbout }: ControlBarProps) {
+export function MobileMenu({ onConnect, onOpenClaw, onSettings, onDiagnostics, onAbout }: ControlBarProps) {
   const [open, setOpen] = useState(false);
   const { connectionMode, setConnectionMode, muted, setMuted, dnd, setDnd } = useSettingsStore();
   const isDemoMode = connectionMode === 'demo';
@@ -166,6 +168,7 @@ export function MobileMenu({ onConnect, onSettings, onDiagnostics, onAbout }: Co
             />
             <div className="h-px bg-border/50 my-2" />
             <MobileMenuItem icon={Plug2} label="Connect" onClick={() => act(onConnect)} />
+            <MobileMenuItem icon={Rocket} label="OpenClaw Setup" onClick={() => act(onOpenClaw)} />
             <MobileMenuItem icon={Settings} label="Settings" onClick={() => act(onSettings)} />
             <MobileMenuItem icon={Terminal} label="Diagnostics" onClick={() => act(onDiagnostics)} />
             <MobileMenuItem icon={Info} label="About" onClick={() => act(onAbout)} />
