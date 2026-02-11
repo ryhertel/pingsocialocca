@@ -133,10 +133,10 @@ function getNotificationsAgainResponse(): ResponseNode {
 
 function getIntegrationsResponse(): ResponseNode {
   return {
-    text: "Ping connects to your AI agents. Which are you interested in?",
+    text: "Ping connects to your AI agents and external services. Which are you interested in?",
     buttons: [
       { label: 'OpenClaw (local)', action: 'integrate_openclaw' },
-      { label: 'Discord (coming soon)', action: 'integrate_discord' },
+      { label: 'Webhooks', action: 'integrate_webhooks' },
       { label: 'Other', action: 'integrate_other' },
       { label: 'Just exploring', action: 'see_demo' },
     ],
@@ -169,9 +169,10 @@ function getOpenClawSetupResponse(): ResponseNode {
   };
 }
 
-function getDiscordResponse(): ResponseNode {
+function getWebhooksResponse(): ResponseNode {
+  window.dispatchEvent(new CustomEvent('ping:openWebhookPanel'));
   return {
-    text: "Discord integration is coming soon. We'll notify you when it's ready.",
+    text: "Webhooks let external services (Zapier, Make, GitHub, Stripe, your own scripts) send events to Ping. Each event triggers eye reactions, sounds, and overlays. I've opened the setup panel for you.",
     buttons: [
       { label: 'Back to integrations', action: 'integrations' },
       { label: 'Try notifications', action: 'notifications' },
@@ -299,7 +300,8 @@ const ACTION_MAP: Record<string, () => ResponseNode> = {
   integrations: getIntegrationsResponse,
   integrate_openclaw: getOpenClawResponse,
   openclaw_setup: getOpenClawSetupResponse,
-  integrate_discord: getDiscordResponse,
+  integrate_discord: getWebhooksResponse,
+  integrate_webhooks: getWebhooksResponse,
   integrate_other: getOtherIntegrationResponse,
   privacy: getPrivacyResponse,
   pricing: getPricingResponse,
@@ -336,7 +338,7 @@ function resolveInput(text: string): ResponseNode {
   const labelMap: Record<string, string> = {
     'yes': 'see_demo',
     'no': 'whatIsPing',
-    'discord': 'integrate_discord',
+    'discord': 'integrate_webhooks',
     'openclaw': 'integrate_openclaw',
     'privacy': 'privacy',
     'price': 'pricing',
@@ -357,7 +359,8 @@ function resolveInput(text: string): ResponseNode {
   if (topic) {
     const topicActionMap: Record<string, string> = {
       openclaw: 'integrate_openclaw',
-      discord: 'integrate_discord',
+      webhooks: 'integrate_webhooks',
+      discord: 'integrate_webhooks',
       notifications: 'notifications',
       sound: 'notifications',
       eyes: 'notifications',

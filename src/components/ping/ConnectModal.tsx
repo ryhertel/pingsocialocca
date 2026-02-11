@@ -6,14 +6,15 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { usePingStore } from '@/stores/usePingStore';
 import { connectBridge, disconnectBridge } from '@/lib/bridge';
 import { startScriptedDemo, stopScriptedDemo } from '@/lib/demoScriptEngine';
-import { Plug2, Play } from 'lucide-react';
+import { Plug2, Play, Webhook } from 'lucide-react';
 
 interface ConnectModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onOpenWebhooks?: () => void;
 }
 
-export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
+export function ConnectModal({ open, onOpenChange, onOpenWebhooks }: ConnectModalProps) {
   const { connectionMode, setConnectionMode, bridgeUrl, setBridgeUrl } = useSettingsStore();
   const bridgeStatus = usePingStore((s) => s.bridgeStatus);
 
@@ -34,6 +35,11 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
       stopScriptedDemo();
     }
     setConnectionMode(mode);
+  };
+
+  const handleOpenWebhooks = () => {
+    onOpenChange(false);
+    onOpenWebhooks?.();
   };
 
   return (
@@ -58,6 +64,13 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
               className="flex-1 gap-2"
             >
               <Plug2 className="h-4 w-4" /> Bridge
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleOpenWebhooks}
+              className="flex-1 gap-2"
+            >
+              <Webhook className="h-4 w-4" /> Webhooks
             </Button>
           </div>
 

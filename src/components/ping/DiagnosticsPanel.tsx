@@ -1,8 +1,13 @@
+import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { usePingStore } from '@/stores/usePingStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
+import { useIngestStore } from '@/stores/useIngestStore';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, CheckCircle2, Circle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ChevronDown, CheckCircle2, Circle, Shield } from 'lucide-react';
 
 interface DiagnosticsPanelProps {
   open: boolean;
@@ -31,10 +36,21 @@ function CheckItem({ label, passed }: { label: string; passed: boolean }) {
   );
 }
 
+function IsolationBadge({ label, color }: { label: string; color: string }) {
+  return (
+    <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${color}`}>
+      {label}
+    </Badge>
+  );
+}
+
 export function DiagnosticsPanel({ open, onOpenChange }: DiagnosticsPanelProps) {
   const { persistentState, bridgeStatus, diagnosticsLog, lastError, lastEventTs, messages } = usePingStore();
   const connectionMode = useSettingsStore((s) => s.connectionMode);
   const isLocked = useSettingsStore((s) => s.isLocked);
+  const ingestConnected = useIngestStore((s) => s.connected);
+  const rememberSecret = useIngestStore((s) => s.rememberSecret);
+  const [showDataHandling, setShowDataHandling] = useState(false);
 
   const unknownEvents = diagnosticsLog.filter((e) => e.type.startsWith('unknown:'));
   const hasAssistantMessage = messages.some((m) => m.role === 'assistant');
@@ -115,9 +131,67 @@ export function DiagnosticsPanel({ open, onOpenChange }: DiagnosticsPanelProps) 
                 </CollapsibleContent>
               </Collapsible>
             )}
+
+            {/* Isolation Status */}
+            <Collapsible>
+              <CollapsibleTrigger className="flex items-center justify-between w-full text-xs py-2 text-muted-foreground hover:text-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Shield className="h-3 w-3" /> Isolation Status
+                </span>
+                <ChevronDown className="h-3 w-3" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="space-y-2 pb-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground">OpenClaw</span>
+                    <IsolationBadge label="Local-only" color="bg-green-500/20 text-green-400 border-green-500/30" />
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground">Webhook ingest</span>
+                    <IsolationBadge
+                      label={ingestConnected ? 'Inbound-only' : 'Not connected'}
+                      color={ingestConnected ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-muted/30 text-muted-foreground border-border/30'}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground">Cross-forwarding</span>
+                    <IsolationBadge label="Disabled" color="bg-muted/30 text-muted-foreground border-border/30" />
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground">Token storage</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      OpenClaw: No · Webhook: {rememberSecret ? 'Stored locally' : 'Memory-only'}
+                    </span>
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowDataHandling(true)}
+                    className="text-[10px] text-muted-foreground/60 hover:text-foreground h-6 px-2"
+                  >
+                    View data handling →
+                  </Button>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         )}
       </SheetContent>
+
+      {/* Data handling modal */}
+      <Dialog open={showDataHandling} onOpenChange={setShowDataHandling}>
+        <DialogContent className="bg-card border-border sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold">Data Handling</DialogTitle>
+          </DialogHeader>
+          <ul className="space-y-2 text-xs text-muted-foreground list-disc pl-4">
+            <li>OpenClaw data stays on your machine — never sent externally.</li>
+            <li>Webhook events come into Ping — they are not forwarded elsewhere.</li>
+            <li>Ping does not send OpenClaw session data to the webhook pipeline or any external service.</li>
+          </ul>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   );
 }
