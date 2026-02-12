@@ -1,0 +1,70 @@
+import type { ConnectorTemplate } from './types';
+
+export const connectorTemplates: ConnectorTemplate[] = [
+  {
+    id: 'generic',
+    name: 'Generic Webhook',
+    description: 'Send events from any HTTP-capable service — scripts, Zapier, Make, n8n, or curl.',
+    icon: 'Webhook',
+    setupSteps: [
+      'Copy the Ingest URL below (includes your channel key).',
+      'Set the x-ping-secret header to your ingest secret.',
+      'POST a JSON payload matching the schema shown below.',
+      'Click "Send Test Event" to verify the connection.',
+    ],
+    testEvent: {
+      source: 'generic',
+      eventType: 'success',
+      title: 'Test event from Generic connector',
+      body: 'Hello from the Generic webhook!',
+    },
+    keywordsSupported: ['success', 'error', 'message', 'thinking', 'warning', 'incident', 'deploy'],
+    notes: 'Works with any service that can make HTTP POST requests. No middleware needed.',
+    securityCopy: 'Events are authenticated via shared secret or HMAC-SHA256 signature. All text fields are redacted server-side (URLs, tokens, code blocks stripped).',
+  },
+  {
+    id: 'stripe',
+    name: 'Stripe',
+    description: 'Get payment and subscription notifications — see Ping react to revenue events.',
+    icon: 'CreditCard',
+    setupSteps: [
+      'Option A (Recommended): Use Zapier or Make to forward Stripe events to Ping.',
+      'In Zapier/Make, create a Stripe trigger (e.g., "Payment Succeeded").',
+      'Map the event to Ping\'s JSON schema: set eventType to "success" and include $ amounts in body.',
+      'Set the webhook URL to the Ingest URL below with x-ping-secret header.',
+      'Option B (Advanced): Point Stripe webhooks directly at the Ingest URL and transform payloads via a middleware function.',
+    ],
+    testEvent: {
+      source: 'stripe',
+      eventType: 'success',
+      title: 'Payment succeeded',
+      body: 'Order #1234 — $49.99 from customer@email.com',
+    },
+    keywordsSupported: ['payment', 'subscription', 'invoice', '$', 'charge'],
+    notes: 'Money keywords ($, payment, invoice) trigger the sparkle trail + cheer reaction. Subscription events trigger success reactions.',
+    securityCopy: 'Never send raw Stripe webhook secrets to Ping. Use a middleware (Zapier/Make) to transform and forward only the fields you want. Ping redacts URLs and tokens automatically.',
+  },
+  {
+    id: 'github',
+    name: 'GitHub',
+    description: 'React to pushes, deployments, and issues — see Ping celebrate your deploys.',
+    icon: 'Github',
+    setupSteps: [
+      'In your GitHub repo, go to Settings → Webhooks → Add webhook.',
+      'Set the Payload URL to the Ingest URL below.',
+      'Set Content type to application/json.',
+      'Add x-ping-secret as a custom header with your ingest secret value.',
+      'Select events: Pushes, Deployments, Issues (or "Send me everything").',
+      'Use Zapier/Make as middleware to map GitHub payloads to Ping\'s JSON schema.',
+    ],
+    testEvent: {
+      source: 'github',
+      eventType: 'deploy',
+      title: 'Deployed to production',
+      body: 'main branch shipped — build #42 succeeded',
+    },
+    keywordsSupported: ['deploy', 'shipped', 'push', 'issue', 'pull request', 'build'],
+    notes: 'Deploy keywords trigger fireworks + proud reaction. Issue events map to message/warning. Use Zapier/Make for the cleanest experience.',
+    securityCopy: 'GitHub sends a signature header (X-Hub-Signature-256). For direct integration, you\'d verify this server-side. Using Zapier/Make as middleware is simpler and recommended for Stage 2.',
+  },
+];

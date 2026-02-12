@@ -10,6 +10,7 @@ const INTENT_KEYWORDS: Record<string, string[]> = {
 const TOPIC_KEYWORDS: Record<string, string[]> = {
   openclaw: ['openclaw', 'claw', 'bridge', 'local', 'websocket', 'ws://'],
   webhooks: ['webhook', 'webhooks', 'ingest', 'zapier', 'make', 'event', 'feed', 'endpoint'],
+  connectors: ['connector', 'connectors', 'stripe', 'github', 'template', 'templates'],
   discord: ['discord'],
   notifications: ['notification', 'notify', 'alert', 'sound', 'ping'],
   sound: ['sound', 'audio', 'music', 'tone', 'beep'],

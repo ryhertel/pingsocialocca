@@ -1,19 +1,23 @@
 /**
  * Ingest Edge Function — Webhook endpoint for external events.
  *
- * Stage 1: No realtime push. Returns normalized event in response for local injection.
- * Stage 2 will add Supabase Realtime subscriptions.
+ * Accepts events, validates, redacts, inserts into ping_events table,
+ * and returns the normalized event. Realtime subscription delivers
+ * events to the UI instantly.
+ *
+ * SUPABASE_SERVICE_ROLE_KEY is server-side only. Never expose in frontend code.
  */
+
+// Uses REST API for DB insert to avoid external import boot issues.
+// SUPABASE_SERVICE_ROLE_KEY is server-side only. Never expose in frontend code.
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-ping-signature, x-ping-secret',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-ping-signature, x-ping-secret, x-ping-channel-key',
 };
 
-// ── Best-effort MVP rate limiting ──
-// In-memory Map resets on cold start.
-// Not distributed across instances.
-// To be replaced in Stage 2/3 with persistent throttling.
+// ── Rate limiting (in-memory, per-instance) ──
+
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 30;
 const RATE_WINDOW_MS = 60_000;
@@ -35,11 +39,7 @@ function truncateIp(ip: string): string {
   return 'unknown';
 }
 
-// ── Redaction (applied at normalization time) ──
-// Redaction is applied to the normalized event object itself before any logging
-// or response return. Only redacted normalized fields are ever returned to the
-// client. There is no code path where raw title/body exists in a returnable or
-// loggable form.
+// ── Redaction ──
 
 const URL_REGEX = /https?:\/\/[^\s)>\]"']+/gi;
 const TOKEN_REGEX = /[A-Za-z0-9+/=_-]{20,}/g;
@@ -75,9 +75,11 @@ async function verifyHmac(body: string, signature: string, secret: string): Prom
   }
 }
 
-// ── Schema validation ──
+// ── Validation ──
 
 const VALID_EVENT_TYPES = ['success', 'error', 'message', 'thinking', 'warning', 'incident', 'deploy'] as const;
+const CHANNEL_KEY_REGEX = /^[0-9a-fA-F]{32}$/;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface ValidationResult {
   ok: boolean;
@@ -144,7 +146,7 @@ function validate(json: unknown): ValidationResult {
     severity = obj.severity;
   }
 
-  // Timestamp (optional, default to server time)
+  // Timestamp (optional)
   let timestamp = Date.now();
   if (obj.timestamp !== undefined) {
     if (typeof obj.timestamp !== 'number') {
@@ -153,12 +155,18 @@ function validate(json: unknown): ValidationResult {
     timestamp = obj.timestamp;
   }
 
+  // Optional client-provided id (any UUID format, case-insensitive)
+  let id: string;
+  if (typeof obj.id === 'string' && UUID_REGEX.test(obj.id)) {
+    id = obj.id.toLowerCase();
+  } else {
+    id = crypto.randomUUID();
+  }
+
   const now = Date.now();
 
-  // Build normalized + redacted event
-  // Ignore unknown fields. Only extract allow-listed normalized fields.
   const event = {
-    id: crypto.randomUUID(),
+    id,
     source: redactField(obj.source as string),
     eventType: obj.eventType as string,
     title: redactField(obj.title as string),
@@ -172,10 +180,34 @@ function validate(json: unknown): ValidationResult {
   return { ok: true, event };
 }
 
+// ── DB insert via REST API (service role, server-side only) ──
+
+async function insertEvent(row: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
+  const url = Deno.env.get('SUPABASE_URL');
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !key) return { ok: false, error: 'missing_config' };
+
+  const res = await fetch(`${url}/rest/v1/ping_events`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': key,
+      'Authorization': `Bearer ${key}`,
+      'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify(row),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    return { ok: false, error: text };
+  }
+  return { ok: true };
+}
+
 // ── Handler ──
 
 Deno.serve(async (req) => {
-  // CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -195,6 +227,17 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
+
+  // Channel key: header or query param
+  const url = new URL(req.url);
+  let channelKey = req.headers.get('x-ping-channel-key') ?? url.searchParams.get('key') ?? '';
+  if (!CHANNEL_KEY_REGEX.test(channelKey)) {
+    return new Response(JSON.stringify({ ok: false, error: 'channel_key: required 32-char hex' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  channelKey = channelKey.toLowerCase();
 
   // Read body with size cap (2KB)
   const rawBody = await req.text();
@@ -251,7 +294,29 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Logging hygiene — log only metadata, never body/secret/raw request
+  // Insert into ping_events via REST API (service role, server-side only)
+  const insertResult = await insertEvent({
+    id: result.event.id,
+    channel_key: channelKey,
+    source: result.event.source,
+    event_type: result.event.eventType,
+    title: result.event.title,
+    body: result.event.body ?? null,
+    tags: result.event.tags ?? null,
+    severity: result.event.severity,
+    timestamp: result.event.timestamp,
+    received_at: result.event.receivedAt,
+  });
+
+  if (!insertResult.ok) {
+    console.error('insert_failed', insertResult.error);
+    return new Response(JSON.stringify({ ok: false, error: 'insert_failed' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Log metadata only
   console.log(JSON.stringify({
     source: result.event.source,
     eventType: result.event.eventType,

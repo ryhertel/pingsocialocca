@@ -14,7 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ping_events: {
+        Row: {
+          body: string | null
+          channel_key: string
+          created_at: string
+          event_type: string
+          id: string
+          received_at: number
+          severity: number
+          source: string
+          tags: string[] | null
+          timestamp: number
+          title: string
+        }
+        Insert: {
+          body?: string | null
+          channel_key: string
+          created_at?: string
+          event_type: string
+          id?: string
+          received_at: number
+          severity?: number
+          source: string
+          tags?: string[] | null
+          timestamp: number
+          title: string
+        }
+        Update: {
+          body?: string | null
+          channel_key?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          received_at?: number
+          severity?: number
+          source?: string
+          tags?: string[] | null
+          timestamp?: number
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

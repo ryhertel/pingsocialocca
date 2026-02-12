@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import { FaceCanvas } from '@/components/ping/FaceCanvas';
 import { StatusChip } from '@/components/ping/StatusChip';
@@ -14,6 +15,8 @@ import { WebhookPanel } from '@/components/ping/WebhookPanel';
 import { EventFeed } from '@/components/ping/EventFeed';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { usePingStore } from '@/stores/usePingStore';
+import { useIngestStore } from '@/stores/useIngestStore';
+import { subscribeToEvents, unsubscribeFromEvents, fetchRecentEvents } from '@/lib/ingest/realtime';
 import { startScriptedDemo, stopScriptedDemo } from '@/lib/demoScriptEngine';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLandscape } from '@/hooks/use-landscape';
@@ -28,6 +31,7 @@ import {
 import pingLogo from '@/assets/ping-logo-white.png';
 
 const Index = () => {
+  const navigate = useNavigate();
   const [showConnect, setShowConnect] = useState(false);
   const [showOpenClaw, setShowOpenClaw] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -40,6 +44,16 @@ const Index = () => {
   const isMobile = useIsMobile();
   const isLandscape = useLandscape();
   const messages = usePingStore((s) => s.messages);
+  const channelKey = useIngestStore((s) => s.channelKey);
+
+  // Realtime subscription lifecycle
+  useEffect(() => {
+    if (channelKey) {
+      subscribeToEvents(channelKey);
+      fetchRecentEvents(channelKey);
+    }
+    return () => unsubscribeFromEvents();
+  }, [channelKey]);
 
   useEffect(() => {
     if (!localStorage.getItem('ping:welcomeSeen')) setShowAbout(true);
@@ -124,6 +138,7 @@ const Index = () => {
     onAbout: () => setShowAbout(true),
     onWebhooks: () => setShowWebhookPanel(true),
     onEventFeed: () => setShowEventFeed(true),
+    onConnectors: () => navigate('/connectors'),
   };
 
   const landscapeHideChat = isMobile && isLandscape;
