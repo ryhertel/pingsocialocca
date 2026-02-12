@@ -1,85 +1,58 @@
 /**
- * Realtime Subscription — Subscribes to ping_events INSERT via Supabase Realtime.
+ * Realtime — Secure stream for ping_events via edge functions.
  *
- * ISOLATION RULE: This module imports only from supabase/client, useIngestStore,
- * reactionRouter, reactionExecutor, and ingest types.
+ * Replaces direct Supabase Realtime subscription with SSE/polling
+ * through authenticated edge functions.
+ *
+ * ISOLATION RULE: This module imports only from useIngestStore,
+ * reactionRouter, reactionExecutor, ingest types, and privateReadClient.
  * It must NOT import bridge.ts, usePingStore messages, or OpenClaw modules.
  */
 
-import { supabase } from '@/integrations/supabase/client';
 import { useIngestStore } from '@/stores/useIngestStore';
 import { routeEvent } from '@/lib/ingest/reactionRouter';
 import { executeReaction } from '@/lib/ingest/reactionExecutor';
-import type { NormalizedEvent, IngestEventType } from '@/lib/ingest/types';
-import type { RealtimeChannel } from '@supabase/supabase-js';
+import { openSecureStream, fetchEventsSecure } from '@/lib/ingest/privateReadClient';
+import type { NormalizedEvent } from '@/lib/ingest/types';
 
-let activeChannel: RealtimeChannel | null = null;
+let cleanupFn: (() => void) | null = null;
 
-function mapRowToEvent(row: Record<string, unknown>): NormalizedEvent {
-  return {
-    id: row.id as string,
-    source: row.source as string,
-    eventType: row.event_type as IngestEventType,
-    title: row.title as string,
-    body: (row.body as string) ?? undefined,
-    tags: (row.tags as string[]) ?? undefined,
-    severity: row.severity as number,
-    timestamp: Number(row.timestamp),
-    receivedAt: Number(row.received_at),
-  };
-}
+export function startSecureStream(channelKey: string, readToken: string): void {
+  // Clean up any existing stream
+  stopSecureStream();
 
-export function subscribeToEvents(channelKey: string): void {
-  // Clean up any existing subscription
-  unsubscribeFromEvents();
-
-  const channel = supabase
-    .channel('ping-events:' + channelKey)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'ping_events',
-        filter: `channel_key=eq.${channelKey}`,
-      },
-      (payload) => {
-        const event = mapRowToEvent(payload.new as Record<string, unknown>);
-        const store = useIngestStore.getState();
-        store.pushEvent(event);
-        const reaction = routeEvent(event);
-        executeReaction(reaction);
-      },
-    )
-    .subscribe((status) => {
+  cleanupFn = openSecureStream(
+    channelKey,
+    readToken,
+    (event: NormalizedEvent) => {
       const store = useIngestStore.getState();
-      store.setRealtimeConnected(status === 'SUBSCRIBED');
-    });
-
-  activeChannel = channel;
+      store.pushEvent(event);
+      const reaction = routeEvent(event);
+      executeReaction(reaction);
+    },
+    (connected: boolean) => {
+      useIngestStore.getState().setSecureStreamConnected(connected);
+    },
+  );
 }
 
-export function unsubscribeFromEvents(): void {
-  if (activeChannel) {
-    supabase.removeChannel(activeChannel);
-    activeChannel = null;
+export function stopSecureStream(): void {
+  if (cleanupFn) {
+    cleanupFn();
+    cleanupFn = null;
   }
-  useIngestStore.getState().setRealtimeConnected(false);
+  useIngestStore.getState().setSecureStreamConnected(false);
 }
 
-export async function fetchRecentEvents(channelKey: string, limit = 50): Promise<void> {
-  const { data, error } = await supabase
-    .from('ping_events')
-    .select('*')
-    .eq('channel_key', channelKey)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (error || !data) return;
-
+export async function fetchRecentEventsSecure(
+  channelKey: string,
+  readToken: string,
+  limit = 50,
+): Promise<void> {
+  const events = await fetchEventsSecure(channelKey, readToken, limit);
   const store = useIngestStore.getState();
   // Push in reverse so oldest first, newest on top (pushEvent prepends)
-  for (let i = data.length - 1; i >= 0; i--) {
-    store.pushEvent(mapRowToEvent(data[i] as Record<string, unknown>));
+  for (let i = events.length - 1; i >= 0; i--) {
+    store.pushEvent(events[i]);
   }
 }

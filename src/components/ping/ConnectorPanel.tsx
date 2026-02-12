@@ -31,7 +31,7 @@ function CopyButton({ text }: { text: string }) {
 
 export function ConnectorPanel({ open, onOpenChange, template }: ConnectorPanelProps) {
   const ingestSecret = useIngestStore((s) => s.ingestSecret);
-  const realtimeConnected = useIngestStore((s) => s.realtimeConnected);
+  const secureStreamConnected = useIngestStore((s) => s.secureStreamConnected);
   const pushEvent = useIngestStore((s) => s.pushEvent);
   const [testing, setTesting] = useState(false);
 
@@ -58,13 +58,13 @@ export function ConnectorPanel({ open, onOpenChange, template }: ConnectorPanelP
       });
       const data = await res.json();
       if (data.ok && data.event) {
-        if (!realtimeConnected) {
+        if (!secureStreamConnected) {
           pushEvent(data.event);
           const reaction = routeEvent(data.event);
           executeReaction(reaction);
-          toast.info('Realtime disconnected: showing local preview only');
+          toast.info('Secure stream disconnected: showing local preview only');
         } else {
-          toast.success('Event received via Realtime!');
+          toast.success('Event received via secure stream!');
         }
       } else {
         toast.error(data.error || 'Test event failed');
@@ -166,11 +166,11 @@ export function ConnectorPanel({ open, onOpenChange, template }: ConnectorPanelP
             {testing ? 'Sending…' : 'Send Test Event'}
           </Button>
 
-          {/* Realtime Status */}
+          {/* Secure Stream Status */}
           <div className="flex items-center gap-2 text-xs">
-            <div className={`h-2 w-2 rounded-full ${realtimeConnected ? 'bg-green-400' : 'bg-red-400'}`} />
+            <div className={`h-2 w-2 rounded-full ${secureStreamConnected ? 'bg-green-400' : 'bg-red-400'}`} />
             <span className="text-muted-foreground">
-              Realtime: {realtimeConnected ? 'Connected' : 'Disconnected'}
+              Secure stream: {secureStreamConnected ? 'Connected' : 'Disconnected'}
             </span>
           </div>
 

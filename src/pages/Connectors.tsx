@@ -42,7 +42,7 @@ export default function Connectors() {
   const navigate = useNavigate();
   const channelKey = useIngestStore((s) => s.channelKey);
   const ingestSecret = useIngestStore((s) => s.ingestSecret);
-  const realtimeConnected = useIngestStore((s) => s.realtimeConnected);
+  const secureStreamConnected = useIngestStore((s) => s.secureStreamConnected);
   const pushEvent = useIngestStore((s) => s.pushEvent);
   const [selectedTemplate, setSelectedTemplate] = useState<ConnectorTemplate | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -70,13 +70,13 @@ export default function Connectors() {
       });
       const data = await res.json();
       if (data.ok && data.event) {
-        if (!realtimeConnected) {
+        if (!secureStreamConnected) {
           pushEvent(data.event);
           const reaction = routeEvent(data.event);
           executeReaction(reaction);
-          toast.info('Realtime disconnected: showing local preview only');
+          toast.info('Secure stream disconnected: showing local preview only');
         } else {
-          toast.success('Event received via Realtime!');
+          toast.success('Event received via secure stream!');
         }
       } else {
         toast.error(data.error || 'Test event failed');
@@ -100,9 +100,9 @@ export default function Connectors() {
           <p className="text-xs text-muted-foreground">Connect external services to Ping</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className={`h-2 w-2 rounded-full ${realtimeConnected ? 'bg-green-400' : 'bg-red-400'}`} />
+          <div className={`h-2 w-2 rounded-full ${secureStreamConnected ? 'bg-green-400' : 'bg-red-400'}`} />
           <span className="text-[10px] text-muted-foreground">
-            {realtimeConnected ? 'Realtime' : 'Offline'}
+            {secureStreamConnected ? 'Secure' : 'Offline'}
           </span>
         </div>
       </header>
