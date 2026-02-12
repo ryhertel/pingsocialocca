@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      ping_channels: {
+        Row: {
+          channel_key: string
+          created_at: string
+          read_token_hash: string
+          rotated_at: string | null
+        }
+        Insert: {
+          channel_key: string
+          created_at?: string
+          read_token_hash: string
+          rotated_at?: string | null
+        }
+        Update: {
+          channel_key?: string
+          created_at?: string
+          read_token_hash?: string
+          rotated_at?: string | null
+        }
+        Relationships: []
+      }
       ping_events: {
         Row: {
           body: string | null

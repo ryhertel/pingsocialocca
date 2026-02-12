@@ -16,7 +16,8 @@ import { EventFeed } from '@/components/ping/EventFeed';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { usePingStore } from '@/stores/usePingStore';
 import { useIngestStore } from '@/stores/useIngestStore';
-import { subscribeToEvents, unsubscribeFromEvents, fetchRecentEvents } from '@/lib/ingest/realtime';
+import { startSecureStream, stopSecureStream, fetchRecentEventsSecure } from '@/lib/ingest/realtime';
+import { issueReadToken } from '@/lib/ingest/privateReadClient';
 import { startScriptedDemo, stopScriptedDemo } from '@/lib/demoScriptEngine';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLandscape } from '@/hooks/use-landscape';
@@ -45,15 +46,32 @@ const Index = () => {
   const isLandscape = useLandscape();
   const messages = usePingStore((s) => s.messages);
   const channelKey = useIngestStore((s) => s.channelKey);
+  const ingestSecret = useIngestStore((s) => s.ingestSecret);
+  const setReadToken = useIngestStore((s) => s.setReadToken);
 
-  // Realtime subscription lifecycle
+  // Secure stream lifecycle: issue token, fetch events, start stream
   useEffect(() => {
-    if (channelKey) {
-      subscribeToEvents(channelKey);
-      fetchRecentEvents(channelKey);
-    }
-    return () => unsubscribeFromEvents();
-  }, [channelKey]);
+    if (!channelKey || !ingestSecret) return;
+
+    let cancelled = false;
+
+    const boot = async () => {
+      const token = await issueReadToken(channelKey, ingestSecret);
+      if (cancelled || !token) return;
+      setReadToken(token);
+      await fetchRecentEventsSecure(channelKey, token);
+      if (cancelled) return;
+      startSecureStream(channelKey, token);
+    };
+
+    boot();
+
+    return () => {
+      cancelled = true;
+      stopSecureStream();
+      setReadToken(null);
+    };
+  }, [channelKey, ingestSecret, setReadToken]);
 
   useEffect(() => {
     if (!localStorage.getItem('ping:welcomeSeen')) setShowAbout(true);

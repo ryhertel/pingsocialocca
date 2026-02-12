@@ -39,6 +39,8 @@ interface IngestState {
   showBodyPreview: boolean;
   channelKey: string;
   realtimeConnected: boolean;
+  readToken: string | null;
+  secureStreamConnected: boolean;
 
   pushEvent: (event: NormalizedEvent) => void;
   clearEvents: () => void;
@@ -50,6 +52,8 @@ interface IngestState {
   setChannelKey: (key: string) => void;
   regenerateChannelKey: () => string;
   setRealtimeConnected: (value: boolean) => void;
+  setReadToken: (token: string | null) => void;
+  setSecureStreamConnected: (value: boolean) => void;
 }
 
 export const useIngestStore = create<IngestState>()((set, get) => ({
@@ -73,6 +77,8 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
   showBodyPreview: false,
   channelKey: loadOrCreateChannelKey(),
   realtimeConnected: false,
+  readToken: null,
+  secureStreamConnected: false,
 
   pushEvent: (event) =>
     set((s) => {
@@ -137,6 +143,8 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
   },
 
   setRealtimeConnected: (value) => set({ realtimeConnected: value }),
+  setReadToken: (token) => set({ readToken: token }),
+  setSecureStreamConnected: (value) => set({ secureStreamConnected: value }),
 }));
 
 /**

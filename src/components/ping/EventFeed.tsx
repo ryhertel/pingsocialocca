@@ -5,7 +5,7 @@ import { useIngestStore } from '@/stores/useIngestStore';
 import { routeEvent } from '@/lib/ingest/reactionRouter';
 import { executeReaction } from '@/lib/ingest/reactionExecutor';
 import type { NormalizedEvent } from '@/lib/ingest/types';
-import { fetchRecentEvents } from '@/lib/ingest/realtime';
+import { fetchRecentEventsSecure } from '@/lib/ingest/realtime';
 import { Trash2 } from 'lucide-react';
 import { useEffect } from 'react';
 
@@ -64,13 +64,14 @@ export function EventFeed({ open, onOpenChange }: EventFeedProps) {
   const events = useIngestStore((s) => s.events);
   const clearEvents = useIngestStore((s) => s.clearEvents);
   const channelKey = useIngestStore((s) => s.channelKey);
-  const realtimeConnected = useIngestStore((s) => s.realtimeConnected);
+  const secureStreamConnected = useIngestStore((s) => s.secureStreamConnected);
+  const readToken = useIngestStore((s) => s.readToken);
 
   useEffect(() => {
-    if (open && channelKey) {
-      fetchRecentEvents(channelKey);
+    if (open && channelKey && readToken) {
+      fetchRecentEventsSecure(channelKey, readToken);
     }
-  }, [open, channelKey]);
+  }, [open, channelKey, readToken]);
 
   const displayEvents = events.slice(0, 20);
 
@@ -91,9 +92,9 @@ export function EventFeed({ open, onOpenChange }: EventFeedProps) {
         <div className="mt-4 space-y-1">
           {/* Realtime indicator */}
           <div className="flex items-center gap-2 pb-2">
-            <div className={`h-2 w-2 rounded-full ${realtimeConnected ? 'bg-green-400' : 'bg-red-400'}`} />
+            <div className={`h-2 w-2 rounded-full ${secureStreamConnected ? 'bg-green-400' : 'bg-red-400'}`} />
             <span className="text-[10px] text-muted-foreground">
-              {realtimeConnected ? 'Realtime connected' : 'Realtime disconnected'}
+              {secureStreamConnected ? 'Secure stream connected' : 'Secure stream disconnected'}
             </span>
           </div>
 

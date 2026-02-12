@@ -42,7 +42,7 @@ function maskKey(s: string): string {
 
 export function WebhookPanel({ open, onOpenChange }: WebhookPanelProps) {
   const {
-    ingestSecret, rememberSecret, connected, showBodyPreview, channelKey, realtimeConnected,
+    ingestSecret, rememberSecret, connected, showBodyPreview, channelKey, secureStreamConnected,
     setSecret, setRememberSecret, clearSecret, regenerateSecret, disconnect,
     pushEvent,
   } = useIngestStore();
@@ -90,13 +90,13 @@ export function WebhookPanel({ open, onOpenChange }: WebhookPanelProps) {
       });
       const data = await res.json();
       if (data.ok && data.event) {
-        if (!realtimeConnected) {
+        if (!secureStreamConnected) {
           pushEvent(data.event);
           const reaction = routeEvent(data.event);
           executeReaction(reaction);
-          toast.info('Realtime disconnected: showing local preview only');
+          toast.info('Secure stream disconnected: showing local preview only');
         } else {
-          toast.success('Event received via Realtime!');
+          toast.success('Event received via secure stream!');
         }
       } else {
         toast.error(data.error || 'Test event failed');
@@ -133,13 +133,16 @@ export function WebhookPanel({ open, onOpenChange }: WebhookPanelProps) {
         </SheetHeader>
 
         <div className="mt-4 space-y-5">
-          {/* Realtime Status */}
+          {/* Secure Stream Status */}
           <div className="flex items-center gap-2">
-            <div className={`h-2 w-2 rounded-full ${realtimeConnected ? 'bg-green-400' : 'bg-red-400'}`} />
+            <div className={`h-2 w-2 rounded-full ${secureStreamConnected ? 'bg-green-400' : 'bg-red-400'}`} />
             <span className="text-xs text-muted-foreground">
-              Realtime: {realtimeConnected ? 'Connected' : 'Disconnected'}
+              Secure stream: {secureStreamConnected ? 'Connected' : 'Disconnected'}
             </span>
           </div>
+          <p className="text-[9px] text-muted-foreground/60">
+            Events are private; this device must be authorized to read.
+          </p>
 
           {/* Ingest URL */}
           <div className="space-y-1.5">

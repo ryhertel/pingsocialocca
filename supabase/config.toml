@@ -2,3 +2,12 @@ project_id = "hmbsdwvykoxjzmowxvvp"
 
 [functions.ingest]
 verify_jwt = false
+
+[functions.issue-read-token]
+verify_jwt = false
+
+[functions.events-read]
+verify_jwt = false
+
+[functions.events-stream]
+verify_jwt = false
