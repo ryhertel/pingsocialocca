@@ -50,6 +50,8 @@ export function DiagnosticsPanel({ open, onOpenChange }: DiagnosticsPanelProps) 
   const isLocked = useSettingsStore((s) => s.isLocked);
   const ingestConnected = useIngestStore((s) => s.connected);
   const rememberSecret = useIngestStore((s) => s.rememberSecret);
+  const realtimeConnected = useIngestStore((s) => s.realtimeConnected);
+  const channelKey = useIngestStore((s) => s.channelKey);
   const [showDataHandling, setShowDataHandling] = useState(false);
 
   const unknownEvents = diagnosticsLog.filter((e) => e.type.startsWith('unknown:'));
@@ -132,6 +134,13 @@ export function DiagnosticsPanel({ open, onOpenChange }: DiagnosticsPanelProps) 
               </Collapsible>
             )}
 
+            <Row
+              label="Realtime"
+              value={realtimeConnected ? 'Connected' : 'Disconnected'}
+              color={realtimeConnected ? 'text-green-400 font-medium' : 'text-muted-foreground'}
+            />
+            <Row label="Channel Key" value={channelKey.slice(0, 4) + '••••' + channelKey.slice(-4)} />
+
             {/* Isolation Status */}
             <Collapsible>
               <CollapsibleTrigger className="flex items-center justify-between w-full text-xs py-2 text-muted-foreground hover:text-foreground">
@@ -149,8 +158,8 @@ export function DiagnosticsPanel({ open, onOpenChange }: DiagnosticsPanelProps) 
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-muted-foreground">Webhook ingest</span>
                     <IsolationBadge
-                      label={ingestConnected ? 'Inbound-only' : 'Not connected'}
-                      color={ingestConnected ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-muted/30 text-muted-foreground border-border/30'}
+                      label={realtimeConnected ? 'Inbound-only (Realtime)' : ingestConnected ? 'Inbound-only' : 'Not connected'}
+                      color={realtimeConnected || ingestConnected ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-muted/30 text-muted-foreground border-border/30'}
                     />
                   </div>
                   <div className="flex justify-between items-center text-xs">

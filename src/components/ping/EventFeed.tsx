@@ -5,7 +5,9 @@ import { useIngestStore } from '@/stores/useIngestStore';
 import { routeEvent } from '@/lib/ingest/reactionRouter';
 import { executeReaction } from '@/lib/ingest/reactionExecutor';
 import type { NormalizedEvent } from '@/lib/ingest/types';
-import { Trash2, RotateCcw } from 'lucide-react';
+import { fetchRecentEvents } from '@/lib/ingest/realtime';
+import { Trash2 } from 'lucide-react';
+import { useEffect } from 'react';
 
 interface EventFeedProps {
   open: boolean;
@@ -61,6 +63,14 @@ function EventRow({ event }: { event: NormalizedEvent }) {
 export function EventFeed({ open, onOpenChange }: EventFeedProps) {
   const events = useIngestStore((s) => s.events);
   const clearEvents = useIngestStore((s) => s.clearEvents);
+  const channelKey = useIngestStore((s) => s.channelKey);
+  const realtimeConnected = useIngestStore((s) => s.realtimeConnected);
+
+  useEffect(() => {
+    if (open && channelKey) {
+      fetchRecentEvents(channelKey);
+    }
+  }, [open, channelKey]);
 
   const displayEvents = events.slice(0, 20);
 
@@ -79,11 +89,19 @@ export function EventFeed({ open, onOpenChange }: EventFeedProps) {
         </SheetHeader>
 
         <div className="mt-4 space-y-1">
+          {/* Realtime indicator */}
+          <div className="flex items-center gap-2 pb-2">
+            <div className={`h-2 w-2 rounded-full ${realtimeConnected ? 'bg-green-400' : 'bg-red-400'}`} />
+            <span className="text-[10px] text-muted-foreground">
+              {realtimeConnected ? 'Realtime connected' : 'Realtime disconnected'}
+            </span>
+          </div>
+
           {displayEvents.length === 0 ? (
             <div className="text-center py-8 space-y-2">
               <p className="text-xs text-muted-foreground">No events yet</p>
               <p className="text-[10px] text-muted-foreground/60">
-                Use "Send Test Event" in the Webhooks panel to get started.
+                Use "Send Test Event" in the Webhooks panel or Connectors page to get started.
               </p>
             </div>
           ) : (
@@ -92,7 +110,7 @@ export function EventFeed({ open, onOpenChange }: EventFeedProps) {
                 <EventRow key={event.id} event={event} />
               ))}
               <p className="text-[9px] text-muted-foreground/50 text-center pt-2">
-                Click any event to replay its reaction. Events from external webhooks will appear here in a future update (Stage 2).
+                Click any event to replay its reaction.
               </p>
             </>
           )}

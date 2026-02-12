@@ -1,7 +1,7 @@
 import { type ComponentType } from 'react';
 import {
   Settings, Terminal, Plug2, Volume2, VolumeX,
-  Bell, BellOff, Play, Pause, Info, Menu, RotateCcw, Rocket, Webhook, Rss,
+  Bell, BellOff, Play, Pause, Info, Menu, RotateCcw, Rocket, Webhook, Rss, LayoutGrid,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { startScriptedDemo } from '@/lib/demoScriptEngine';
@@ -20,6 +20,7 @@ interface ControlBarProps {
   onAbout: () => void;
   onWebhooks?: () => void;
   onEventFeed?: () => void;
+  onConnectors?: () => void;
 }
 
 function ControlButton({
@@ -52,7 +53,7 @@ function ControlButton({
   );
 }
 
-export function ControlBar({ onConnect, onOpenClaw, onSettings, onDiagnostics, onAbout, onWebhooks, onEventFeed }: ControlBarProps) {
+export function ControlBar({ onConnect, onOpenClaw, onSettings, onDiagnostics, onAbout, onWebhooks, onEventFeed, onConnectors }: ControlBarProps) {
   const { connectionMode, setConnectionMode, muted, setMuted, dnd, setDnd } = useSettingsStore();
   const isDemoMode = connectionMode === 'demo';
 
@@ -87,6 +88,7 @@ export function ControlBar({ onConnect, onOpenClaw, onSettings, onDiagnostics, o
       <ControlButton icon={Plug2} label="Connect" onClick={onConnect} />
       <ControlButton icon={Webhook} label="Webhooks" onClick={() => onWebhooks?.()} />
       <ControlButton icon={Rss} label="Event Feed" onClick={() => onEventFeed?.()} />
+      <ControlButton icon={LayoutGrid} label="Connectors" onClick={() => onConnectors?.()} />
       <ControlButton icon={Rocket} label="OpenClaw Setup" onClick={onOpenClaw} />
       <ControlButton icon={Settings} label="Settings" onClick={onSettings} />
       <ControlButton icon={Terminal} label="Diagnostics" onClick={onDiagnostics} />
@@ -118,7 +120,7 @@ function MobileMenuItem({
   );
 }
 
-export function MobileMenu({ onConnect, onOpenClaw, onSettings, onDiagnostics, onAbout, onWebhooks, onEventFeed }: ControlBarProps) {
+export function MobileMenu({ onConnect, onOpenClaw, onSettings, onDiagnostics, onAbout, onWebhooks, onEventFeed, onConnectors }: ControlBarProps) {
   const [open, setOpen] = useState(false);
   const { connectionMode, setConnectionMode, muted, setMuted, dnd, setDnd } = useSettingsStore();
   const isDemoMode = connectionMode === 'demo';
@@ -174,6 +176,7 @@ export function MobileMenu({ onConnect, onOpenClaw, onSettings, onDiagnostics, o
             <MobileMenuItem icon={Plug2} label="Connect" onClick={() => act(onConnect)} />
             <MobileMenuItem icon={Webhook} label="Webhooks" onClick={() => act(() => onWebhooks?.())} />
             <MobileMenuItem icon={Rss} label="Event Feed" onClick={() => act(() => onEventFeed?.())} />
+            <MobileMenuItem icon={LayoutGrid} label="Connectors" onClick={() => act(() => onConnectors?.())} />
             <MobileMenuItem icon={Rocket} label="OpenClaw Setup" onClick={() => act(onOpenClaw)} />
             <MobileMenuItem icon={Settings} label="Settings" onClick={() => act(onSettings)} />
             <MobileMenuItem icon={Terminal} label="Diagnostics" onClick={() => act(onDiagnostics)} />

@@ -1,14 +1,14 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { useIngestStore, getIngestUrl } from '@/stores/useIngestStore';
+import { useIngestStore, getIngestUrlWithKey } from '@/stores/useIngestStore';
 import { routeEvent } from '@/lib/ingest/reactionRouter';
 import { executeReaction } from '@/lib/ingest/reactionExecutor';
-import { Copy, Check, Send, Trash2, RefreshCw, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { Copy, Check, Send, Trash2, RefreshCw, AlertTriangle, Eye, EyeOff, LayoutGrid } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface WebhookPanelProps {
@@ -16,7 +16,7 @@ interface WebhookPanelProps {
   onOpenChange: (open: boolean) => void;
 }
 
-function CopyButton({ text, label }: { text: string; label?: string }) {
+function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
     navigator.clipboard.writeText(text);
@@ -35,19 +35,26 @@ function maskSecret(s: string): string {
   return '••••••' + s.slice(-6);
 }
 
+function maskKey(s: string): string {
+  if (s.length <= 8) return '••••••••';
+  return s.slice(0, 4) + '••••' + s.slice(-4);
+}
+
 export function WebhookPanel({ open, onOpenChange }: WebhookPanelProps) {
   const {
-    ingestSecret, rememberSecret, connected, showBodyPreview,
+    ingestSecret, rememberSecret, connected, showBodyPreview, channelKey, realtimeConnected,
     setSecret, setRememberSecret, clearSecret, regenerateSecret, disconnect,
     pushEvent,
   } = useIngestStore();
 
+  const navigate = useNavigate();
   const [secretInput, setSecretInput] = useState('');
   const [showSecret, setShowSecret] = useState(false);
+  const [showChannelKey, setShowChannelKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const [regeneratedValue, setRegeneratedValue] = useState<string | null>(null);
 
-  const ingestUrl = getIngestUrl();
+  const ingestUrl = getIngestUrlWithKey();
 
   const handleSetSecret = () => {
     if (secretInput.trim()) {
@@ -65,7 +72,9 @@ export function WebhookPanel({ open, onOpenChange }: WebhookPanelProps) {
     if (!ingestUrl || !ingestSecret) return;
     setTesting(true);
     try {
+      const testId = crypto.randomUUID();
       const payload = {
+        id: testId,
         source: 'ping-test',
         eventType: 'success',
         title: 'Test event from Ping UI',
@@ -81,21 +90,25 @@ export function WebhookPanel({ open, onOpenChange }: WebhookPanelProps) {
       });
       const data = await res.json();
       if (data.ok && data.event) {
-        pushEvent(data.event);
-        const reaction = routeEvent(data.event);
-        executeReaction(reaction);
-        toast.success('Test event sent successfully');
+        if (!realtimeConnected) {
+          pushEvent(data.event);
+          const reaction = routeEvent(data.event);
+          executeReaction(reaction);
+          toast.info('Realtime disconnected: showing local preview only');
+        } else {
+          toast.success('Event received via Realtime!');
+        }
       } else {
         toast.error(data.error || 'Test event failed');
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to send test event');
     } finally {
       setTesting(false);
     }
   };
 
-  const curlExample = `curl -X POST ${ingestUrl || 'https://<project>.supabase.co/functions/v1/ingest'} \\
+  const curlExample = `curl -X POST "${ingestUrl || 'https://<project>.supabase.co/functions/v1/ingest?key=<channelKey>'}" \\
   -H "Content-Type: application/json" \\
   -H "x-ping-secret: YOUR_SECRET" \\
   -d '{
@@ -120,15 +133,40 @@ export function WebhookPanel({ open, onOpenChange }: WebhookPanelProps) {
         </SheetHeader>
 
         <div className="mt-4 space-y-5">
+          {/* Realtime Status */}
+          <div className="flex items-center gap-2">
+            <div className={`h-2 w-2 rounded-full ${realtimeConnected ? 'bg-green-400' : 'bg-red-400'}`} />
+            <span className="text-xs text-muted-foreground">
+              Realtime: {realtimeConnected ? 'Connected' : 'Disconnected'}
+            </span>
+          </div>
+
           {/* Ingest URL */}
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Ingest URL</Label>
+            <Label className="text-xs text-muted-foreground">Ingest URL (with channel key)</Label>
             <div className="flex items-center gap-1 p-2 rounded-lg bg-muted/30">
               <code className="text-[10px] text-foreground font-mono break-all flex-1">
                 {ingestUrl || 'Not available'}
               </code>
               {ingestUrl && <CopyButton text={ingestUrl} />}
             </div>
+          </div>
+
+          {/* Channel Key */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Channel Key</Label>
+            <div className="flex items-center gap-1 p-2 rounded-lg bg-muted/30">
+              <code className="text-[10px] text-foreground font-mono flex-1">
+                {showChannelKey ? channelKey : maskKey(channelKey)}
+              </code>
+              <Button variant="ghost" size="icon" onClick={() => setShowChannelKey(!showChannelKey)} className="h-7 w-7 shrink-0">
+                {showChannelKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              </Button>
+              <CopyButton text={channelKey} />
+            </div>
+            <p className="text-[9px] text-muted-foreground/60">
+              Scopes events to this Ping instance. Included in the ingest URL.
+            </p>
           </div>
 
           {/* Secret */}
@@ -168,7 +206,6 @@ export function WebhookPanel({ open, onOpenChange }: WebhookPanelProps) {
               </div>
             )}
 
-            {/* Regenerated value instructions */}
             {regeneratedValue && (
               <div className="p-2 rounded-lg bg-primary/10 border border-primary/20 space-y-1">
                 <p className="text-[10px] text-foreground font-medium">New secret generated</p>
@@ -220,6 +257,16 @@ export function WebhookPanel({ open, onOpenChange }: WebhookPanelProps) {
             />
           </div>
 
+          {/* Browse Connectors */}
+          <Button
+            variant="outline"
+            className="w-full gap-2 text-xs"
+            onClick={() => { onOpenChange(false); navigate('/connectors'); }}
+          >
+            <LayoutGrid className="h-4 w-4" />
+            Browse connector templates
+          </Button>
+
           {/* Curl example */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
@@ -250,11 +297,6 @@ export function WebhookPanel({ open, onOpenChange }: WebhookPanelProps) {
           >
             Disconnect
           </Button>
-
-          {/* Stage note */}
-          <p className="text-[9px] text-muted-foreground/50 text-center">
-            External webhook events appear in the feed via test flow only. Realtime push coming in Stage 2.
-          </p>
         </div>
       </SheetContent>
     </Sheet>

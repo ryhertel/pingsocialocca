@@ -172,10 +172,10 @@ function getOpenClawSetupResponse(): ResponseNode {
 function getWebhooksResponse(): ResponseNode {
   window.dispatchEvent(new CustomEvent('ping:openWebhookPanel'));
   return {
-    text: "Webhooks let external services (Zapier, Make, GitHub, Stripe, your own scripts) send events to Ping. Each event triggers eye reactions, sounds, and overlays. I've opened the setup panel for you.",
+    text: "Webhooks let external services (Zapier, Make, GitHub, Stripe, your own scripts) send events to Ping. Each event triggers eye reactions, sounds, and overlays. I've opened the setup panel — you can also browse connector templates at /connectors.",
     buttons: [
+      { label: 'Browse Connectors', action: 'open_connectors' },
       { label: 'Back to integrations', action: 'integrations' },
-      { label: 'Try notifications', action: 'notifications' },
       { label: 'Keep exploring', action: 'see_demo' },
     ],
     module: 'integrations',
@@ -302,6 +302,16 @@ const ACTION_MAP: Record<string, () => ResponseNode> = {
   openclaw_setup: getOpenClawSetupResponse,
   integrate_discord: getWebhooksResponse,
   integrate_webhooks: getWebhooksResponse,
+  open_connectors: () => {
+    window.location.href = '/connectors';
+    return {
+      text: "Opening the Connectors page — you'll find setup templates for Generic, Stripe, and GitHub webhooks there.",
+      buttons: [
+        { label: 'Back to menu', action: 'whatIsPing' },
+      ],
+      module: 'integrations' as const,
+    };
+  },
   integrate_other: getOtherIntegrationResponse,
   privacy: getPrivacyResponse,
   pricing: getPricingResponse,
@@ -360,6 +370,7 @@ function resolveInput(text: string): ResponseNode {
     const topicActionMap: Record<string, string> = {
       openclaw: 'integrate_openclaw',
       webhooks: 'integrate_webhooks',
+      connectors: 'open_connectors',
       discord: 'integrate_webhooks',
       notifications: 'notifications',
       sound: 'notifications',
