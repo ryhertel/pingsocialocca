@@ -324,7 +324,7 @@ export function FaceCanvas() {
           if (blink > 0.9) { blinkPhase = 'closed'; blinkPhaseTimer = 0; }
         } else if (blinkPhase === 'closed') {
           blinkPhaseTimer += dt;
-          if (blinkPhaseTimer > 60) { blinkPhase = 'opening'; targetBlink = 0; }
+          if (blinkPhaseTimer > 150) { blinkPhase = 'opening'; targetBlink = 0; }
         } else if (blinkPhase === 'opening') {
           if (blink < 0.05) {
             blink = 0;
@@ -406,11 +406,17 @@ export function FaceCanvas() {
               targetGY = (Math.random() - 0.5) * 1.2 * iMult;
               isGlancing = true;
               glanceHoldTimer = rand(800, 1800);
-              nextGlanceTime = rand(1000, 3000);
+              nextGlanceTime = rand(3000, 6000);
             }
           } else {
             glanceHoldTimer -= dt;
-            if (glanceHoldTimer <= 0) { targetGX = 0; targetGY = 0; isGlancing = false; }
+            if (glanceHoldTimer <= 0) {
+              // Pick next target directly instead of snapping to (0,0)
+              targetGX = (Math.random() - 0.5) * 1.5 * iMult;
+              targetGY = (Math.random() - 0.5) * 1.2 * iMult;
+              isGlancing = false;
+              nextGlanceTime = rand(3000, 6000);
+            }
           }
         }
       }
@@ -429,11 +435,11 @@ export function FaceCanvas() {
       if (boredRoutine) {
         boredTimer += dt;
         if (boredRoutine === 'scan') {
-          targetGX = Math.sin(boredTimer * 0.0015) * 1.2;
+          targetGX = Math.sin(boredTimer * 0.001) * 1.2;
           if (boredTimer > 4000) { targetGX = 0; boredRoutine = null; }
         } else if (boredRoutine === 'orbit') {
-          targetGX = Math.cos(boredTimer * 0.003) * 1.0;
-          targetGY = Math.sin(boredTimer * 0.003) * 0.8;
+          targetGX = Math.cos(boredTimer * 0.0015) * 1.0;
+          targetGY = Math.sin(boredTimer * 0.0015) * 0.8;
           if (boredTimer > 3500) { targetGX = 0; targetGY = 0; boredRoutine = null; }
         } else if (boredRoutine === 'sleepDrift') {
           targetSquint = Math.min(0.5, boredTimer * 0.0003);
@@ -445,8 +451,8 @@ export function FaceCanvas() {
           else if (boredTimer < 450) targetBlink = 0;
           else boredRoutine = null;
         } else if (boredRoutine === 'wiggle') {
-          targetBounceY = Math.sin(boredTimer * 0.01) * 25 * energy;
-          targetGX = Math.sin(boredTimer * 0.005) * 0.8;
+          targetBounceY = Math.sin(boredTimer * 0.005) * 25 * energy;
+          targetGX = Math.sin(boredTimer * 0.0025) * 0.8;
           if (boredTimer > 2000) { targetBounceY = 0; targetGX = 0; boredRoutine = null; }
         }
       }
@@ -472,14 +478,14 @@ export function FaceCanvas() {
       }
 
       // — Interpolate —
-      const ls = 0.04;
-      blink = lerp(blink, targetBlink, dt, ls * 3);
+      const ls = 0.015;
+      blink = lerp(blink, targetBlink, dt, 0.06);
       glanceX = lerp(glanceX, targetGX, dt, ls);
       glanceY = lerp(glanceY, targetGY, dt, ls);
       squint = lerp(squint, targetSquint, dt, ls);
-      widen = lerp(widen, targetWiden, dt, ls * 4);
-      glowMult = lerp(glowMult, targetGlow, dt, ls * 3);
-      bounceY = lerp(bounceY, targetBounceY, dt, ls * 5);
+      widen = lerp(widen, targetWiden, dt, ls * 2);
+      glowMult = lerp(glowMult, targetGlow, dt, ls * 2);
+      bounceY = lerp(bounceY, targetBounceY, dt, ls * 2.5);
 
       // — Render —
       const w = canvas.width;
