@@ -4,6 +4,7 @@ import { MessageCircle } from 'lucide-react';
 import { FaceCanvas } from '@/components/ping/FaceCanvas';
 import { StatusChip } from '@/components/ping/StatusChip';
 import { ChatStack } from '@/components/ping/ChatStack';
+import { DockedChat } from '@/components/ping/DockedChat';
 import { Composer } from '@/components/ping/Composer';
 import { ControlBar, MobileMenu } from '@/components/ping/ControlBar';
 import { ConnectModal } from '@/components/ping/ConnectModal';
@@ -48,13 +49,14 @@ const Index = () => {
   const channelKey = useIngestStore((s) => s.channelKey);
   const ingestSecret = useIngestStore((s) => s.ingestSecret);
   const setReadToken = useIngestStore((s) => s.setReadToken);
+  const chatLayout = useSettingsStore((s) => s.chatLayout);
 
-  // Secure stream lifecycle: issue token, fetch events, start stream
+  const isDocked = chatLayout === 'docked' && !isMobile;
+
+  // Secure stream lifecycle
   useEffect(() => {
     if (!channelKey || !ingestSecret) return;
-
     let cancelled = false;
-
     const boot = async () => {
       const token = await issueReadToken(channelKey, ingestSecret);
       if (cancelled || !token) return;
@@ -63,28 +65,20 @@ const Index = () => {
       if (cancelled) return;
       startSecureStream(channelKey, token);
     };
-
     boot();
-
-    return () => {
-      cancelled = true;
-      stopSecureStream();
-      setReadToken(null);
-    };
+    return () => { cancelled = true; stopSecureStream(); setReadToken(null); };
   }, [channelKey, ingestSecret, setReadToken]);
 
   useEffect(() => {
     if (!localStorage.getItem('ping:welcomeSeen')) setShowAbout(true);
   }, []);
 
-  // Listen for demo engine requesting OpenClaw setup modal
   useEffect(() => {
     const handler = () => setShowOpenClaw(true);
     window.addEventListener('ping:openClawSetup', handler);
     return () => window.removeEventListener('ping:openClawSetup', handler);
   }, []);
 
-  // Listen for webhook panel open event (from demo script)
   useEffect(() => {
     const handler = () => setShowWebhookPanel(true);
     window.addEventListener('ping:openWebhookPanel', handler);
@@ -98,21 +92,17 @@ const Index = () => {
   const isDemoMode = connectionMode === 'demo';
 
   useEffect(() => {
-    if (connectionMode === 'demo') {
-      startScriptedDemo();
-    }
+    if (connectionMode === 'demo') startScriptedDemo();
     return () => stopScriptedDemo();
   }, [connectionMode]);
 
-  // Privacy Lock: inactivity timer with throttled mousemove
+  // Privacy Lock: inactivity timer
   const inactivityTimer = useRef<number | null>(null);
   const lastResetTs = useRef(Date.now());
 
   const resetInactivityTimer = useCallback(() => {
     if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
-    inactivityTimer.current = window.setTimeout(() => {
-      lock();
-    }, autoLockMinutes * 60 * 1000);
+    inactivityTimer.current = window.setTimeout(() => lock(), autoLockMinutes * 60 * 1000);
   }, [autoLockMinutes, lock]);
 
   useEffect(() => {
@@ -120,26 +110,18 @@ const Index = () => {
       if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
       return;
     }
-
     lastResetTs.current = Date.now();
     resetInactivityTimer();
-
-    const onImmediate = () => {
-      lastResetTs.current = Date.now();
-      resetInactivityTimer();
-    };
-
+    const onImmediate = () => { lastResetTs.current = Date.now(); resetInactivityTimer(); };
     const onMouseMove = () => {
       const now = Date.now();
       if (now - lastResetTs.current < 3000) return;
       lastResetTs.current = now;
       resetInactivityTimer();
     };
-
     window.addEventListener('keydown', onImmediate);
     window.addEventListener('touchstart', onImmediate);
     window.addEventListener('mousemove', onMouseMove);
-
     return () => {
       if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
       window.removeEventListener('keydown', onImmediate);
@@ -201,21 +183,31 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Main — face + chat overlay */}
-      <main className="flex-1 min-h-0 relative">
-        <FaceCanvas />
-        {!landscapeHideChat && <ChatStack />}
+      {/* Main — face + chat */}
+      <main className="flex-1 min-h-0 relative flex">
+        {/* Face area */}
+        <div className={`relative ${isDocked ? 'flex-1' : 'w-full'}`}>
+          <FaceCanvas />
+          {!isDocked && !landscapeHideChat && <ChatStack />}
 
-        {/* Landscape chat toggle button */}
-        {landscapeHideChat && messages.length > 0 && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowLandscapeChat(true)}
-            className="absolute bottom-2 right-2 z-10 h-9 w-9 rounded-full bg-muted/60 backdrop-blur-sm text-foreground hover:bg-muted/80"
-          >
-            <MessageCircle className="h-4 w-4" />
-          </Button>
+          {/* Landscape chat toggle button */}
+          {landscapeHideChat && messages.length > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowLandscapeChat(true)}
+              className="absolute bottom-2 right-2 z-10 h-9 w-9 rounded-full bg-muted/60 backdrop-blur-sm text-foreground hover:bg-muted/80"
+            >
+              <MessageCircle className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        {/* Docked chat panel */}
+        {isDocked && (
+          <div className="w-80 shrink-0 border-l border-border/30 bg-card/50 backdrop-blur-md flex flex-col">
+            <DockedChat className="flex-1 min-h-0" />
+          </div>
         )}
       </main>
 

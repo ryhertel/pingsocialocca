@@ -2,7 +2,7 @@ import { usePingStore } from '@/stores/usePingStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { startTextReveal } from './textReveal';
 import { playError, playReceive } from './audio';
-import type { ChatMessage } from './types';
+import type { ChatMessage, Attachment, BridgeCapabilities } from './types';
 
 let ws: WebSocket | null = null;
 let heartbeatTimer: number | null = null;
@@ -37,7 +37,7 @@ export function connectBridge(url: string) {
   };
 
   ws.onclose = () => {
-    usePingStore.getState().setBridgeStatus({ connected: false });
+    usePingStore.getState().setBridgeStatus({ connected: false, capabilities: undefined });
     usePingStore.getState().setPersistentState('disconnected');
     stopHeartbeat();
     if (useSettingsStore.getState().connectionMode === 'bridge') {
@@ -55,26 +55,42 @@ function handleEvent(data: Record<string, unknown>) {
 
   switch (type) {
     case 'status':
-      store.setBridgeStatus({
+    case 'bridge_status': {
+      const statusUpdate: Partial<ReturnType<typeof usePingStore.getState>['bridgeStatus']> = {
         connected: (data.connected as boolean) ?? true,
         agentId: data.agentId as string | undefined,
         agentName: data.agentName as string | undefined,
-        protocolVersion: data.protocolVersion as string | undefined,
-      });
+        protocolVersion: (data.version as string) ?? (data.protocolVersion as string | undefined),
+      };
+      // Parse capabilities if present
+      if (data.capabilities) {
+        statusUpdate.capabilities = data.capabilities as BridgeCapabilities;
+      }
+      store.setBridgeStatus(statusUpdate);
+      break;
+    }
+
+    case 'ack':
+      // Bridge acknowledged receipt — no UI action needed
       break;
 
-    case 'message': {
+    case 'message':
+    case 'assistant_message': {
+      const isAssistantMsg = type === 'assistant_message';
+      const text = (isAssistantMsg ? data.message : data.text) as string;
+      const role = isAssistantMsg ? 'assistant' : (data.role as 'user' | 'assistant');
       const msg: ChatMessage = {
         id: (data.id as string) || crypto.randomUUID(),
-        role: data.role as 'user' | 'assistant',
-        text: data.text as string,
-        revealedText: data.role === 'user' ? (data.text as string) : '',
-        isRevealing: data.role === 'assistant',
+        role,
+        text,
+        revealedText: role === 'user' ? text : '',
+        isRevealing: role === 'assistant',
         ts: (data.ts as number) || Date.now(),
+        attachmentSummaries: data.attachmentSummaries as ChatMessage['attachmentSummaries'],
       };
       store.addMessage(msg);
 
-      if (data.role === 'assistant') {
+      if (role === 'assistant') {
         store.setPersistentState('speaking');
         resetIdleTimer();
         const settings = useSettingsStore.getState();
@@ -160,9 +176,27 @@ export function disconnectBridge() {
   }
 }
 
-export function sendMessage(text: string) {
+export function sendMessage(text: string, attachments?: Attachment[]) {
   if (ws?.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'send', text }));
+    const payload: Record<string, unknown> = {
+      type: 'user_message',
+      id: crypto.randomUUID(),
+      text,
+      context: {
+        source: 'ping-ui',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+    };
+    if (attachments && attachments.length > 0) {
+      payload.attachments = attachments.map((a) => ({
+        id: a.id,
+        name: a.name,
+        mime: a.mime,
+        size: a.size,
+        dataBase64: a.dataBase64,
+      }));
+    }
+    ws.send(JSON.stringify(payload));
   }
 }
 

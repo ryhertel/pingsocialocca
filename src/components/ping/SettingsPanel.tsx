@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettingsStore, ENERGY_PRESETS } from '@/stores/useSettingsStore';
 import { themePresets } from '@/lib/themes';
-import type { ThemePreset, AutoLockMinutes } from '@/lib/types';
+import type { ThemePreset, AutoLockMinutes, ChatLayout } from '@/lib/types';
+import { MessageCircle, PanelRight } from 'lucide-react';
 
 interface SettingsPanelProps {
   open: boolean;
@@ -61,6 +62,30 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
                   />
                 ),
               )}
+            </div>
+          </div>
+
+          {/* Chat Layout */}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Chat Style</Label>
+            <div className="flex gap-2">
+              {([
+                { key: 'bubbles' as ChatLayout, icon: MessageCircle, label: 'Bubbles' },
+                { key: 'docked' as ChatLayout, icon: PanelRight, label: 'Docked Panel' },
+              ]).map(({ key, icon: Icon, label }) => (
+                <button
+                  key={key}
+                  onClick={() => settings.setChatLayout(key)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs border transition-all ${
+                    settings.chatLayout === key
+                      ? 'border-primary/50 bg-primary/10 text-foreground'
+                      : 'border-border/30 bg-muted/20 text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 

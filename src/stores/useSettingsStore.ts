@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { ThemePreset, AnimationIntensity, ConnectionMode, AutoLockMinutes } from '@/lib/types';
+import type { ThemePreset, AnimationIntensity, ConnectionMode, AutoLockMinutes, ChatLayout } from '@/lib/types';
 import { themePresets } from '@/lib/themes';
 
 interface SettingsState {
@@ -17,6 +17,7 @@ interface SettingsState {
   privacyLock: boolean;
   autoLockMinutes: AutoLockMinutes;
   isLocked: boolean;
+  chatLayout: ChatLayout;
 
   setDisplayName: (name: string) => void;
   setTheme: (theme: ThemePreset) => void;
@@ -32,6 +33,7 @@ interface SettingsState {
   setAutoLockMinutes: (minutes: AutoLockMinutes) => void;
   lock: () => void;
   unlock: () => void;
+  setChatLayout: (layout: ChatLayout) => void;
 }
 
 const ENERGY_PRESETS = { minimal: 15, balanced: 50, expressive: 75, hyper: 100 };
@@ -52,6 +54,7 @@ export const useSettingsStore = create<SettingsState>()(
       privacyLock: false,
       autoLockMinutes: 15,
       isLocked: false,
+      chatLayout: 'bubbles',
 
       setDisplayName: (displayName) => set({ displayName }),
       setTheme: (theme) => set({ theme }),
@@ -67,6 +70,7 @@ export const useSettingsStore = create<SettingsState>()(
       setAutoLockMinutes: (autoLockMinutes) => set({ autoLockMinutes }),
       lock: () => set({ isLocked: true }),
       unlock: () => set({ isLocked: false }),
+      setChatLayout: (chatLayout) => set({ chatLayout }),
     }),
     {
       name: 'ping-settings',
@@ -83,6 +87,7 @@ export const useSettingsStore = create<SettingsState>()(
         bridgeUrl: state.bridgeUrl,
         privacyLock: state.privacyLock,
         autoLockMinutes: state.autoLockMinutes,
+        chatLayout: state.chatLayout,
       }),
     },
   ),
