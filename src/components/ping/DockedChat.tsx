@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { handleDemoButtonClick } from '@/lib/demoScriptEngine';
 import { playSend } from '@/lib/audio';
 import type { Attachment, AttachmentSummary } from '@/lib/types';
+import { ChatMarkdown } from '@/components/ping/ChatMarkdown';
 
 function formatRelative(ts: number): string {
   const diff = Date.now() - ts;
@@ -163,9 +164,10 @@ export function DockedChat({ className }: DockedChatProps) {
                 )}
                 style={msg.role === 'assistant' ? assistantBgStyle : undefined}
               >
-                <p className="leading-relaxed chat-selectable cursor-text">
-                  {msg.isRevealing ? msg.revealedText || '…' : msg.text}
-                </p>
+                <ChatMarkdown
+                  text={msg.isRevealing ? msg.revealedText || '…' : msg.text}
+                  className="leading-relaxed chat-selectable cursor-text"
+                />
                 <AttachmentPreviews attachments={msg.attachments} />
                 <SummaryNotes summaries={msg.attachmentSummaries} />
                 <span className="text-[10px] opacity-40 mt-0.5 block">

@@ -72,3 +72,39 @@
     font-family: 'Sora', sans-serif;
   }
 }
+
+/* Chat Markdown styles */
+.chat-markdown p {
+  margin-bottom: 0.4em;
+}
+.chat-markdown p:last-child {
+  margin-bottom: 0;
+}
+.chat-markdown .chat-md-ul,
+.chat-markdown .chat-md-ol {
+  padding-left: 1.25em;
+  margin: 0.3em 0;
+}
+.chat-markdown .chat-md-ul {
+  list-style-type: disc;
+}
+.chat-markdown .chat-md-ol {
+  list-style-type: decimal;
+}
+.chat-markdown .chat-md-ul li,
+.chat-markdown .chat-md-ol li {
+  margin-bottom: 0.15em;
+}
+.chat-markdown .chat-md-code {
+  @apply bg-muted/60 rounded px-1 py-0.5 text-[0.9em] font-mono;
+}
+.chat-markdown .chat-md-codeblock {
+  @apply bg-muted/40 rounded-md px-3 py-2 my-1.5 overflow-x-auto text-[0.85em] font-mono;
+}
+.chat-markdown .chat-md-link {
+  @apply underline underline-offset-2;
+  color: hsl(var(--primary));
+}
+.chat-markdown .chat-md-link:hover {
+  opacity: 0.8;
+}
