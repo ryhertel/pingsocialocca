@@ -453,6 +453,98 @@ export function playExcited(volume: number, muted: boolean, dnd: boolean) {
   });
 }
 
+// ── Ka-Ching: Cash register coin sound for money events ──
+export function playKaChing(volume: number, muted: boolean, dnd: boolean) {
+  if (!canBeep(muted, dnd)) return;
+  lastBeepTime = Date.now();
+  const ctx = getCtx();
+  const p = pv();
+  const t = ctx.currentTime;
+
+  // Metallic "ting" — triangle wave at ~1200Hz
+  const ting = ctx.createOscillator();
+  ting.type = 'triangle';
+  ting.frequency.setValueAtTime(1200 * p, t);
+  ting.frequency.exponentialRampToValueAtTime(800 * p, t + 0.15);
+  const gTing = buildChain(ctx, ting, 0, { reverb: 0.35, warmth: false });
+  gTing.gain.setValueAtTime(0, t);
+  gTing.gain.linearRampToValueAtTime(volume * 0.18, t + 0.003);
+  gTing.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+  ting.start(t);
+  ting.stop(t + 0.25);
+
+  // Descending shimmer harmonics
+  const shimmerFreqs = [1800, 1500, 1100];
+  shimmerFreqs.forEach((freq, i) => {
+    const st = t + 0.03 + i * 0.035;
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq * p, st);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.6 * p, st + 0.1);
+    const g = buildChain(ctx, osc, 0, { reverb: 0.5 });
+    g.gain.setValueAtTime(0, st);
+    g.gain.linearRampToValueAtTime(volume * 0.06, st + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.001, st + 0.1);
+    osc.start(st);
+    osc.stop(st + 0.12);
+  });
+
+  // Sub-bass thump
+  playSubBass(ctx, volume * 0.2, t);
+
+  // Noise transient for click
+  playNoiseBurst(ctx, volume * 0.15, 0.01, t);
+}
+
+// ── Level Up: Ascending chime for new subscribers ──
+export function playLevelUp(volume: number, muted: boolean, dnd: boolean) {
+  if (!canBeep(muted, dnd)) return;
+  lastBeepTime = Date.now();
+  const ctx = getCtx();
+  const p = pv();
+  const notes = [523, 659, 784]; // C5-E5-G5 ascending arpeggio
+  const spacing = 0.08;
+
+  notes.forEach((freq, i) => {
+    const st = ctx.currentTime + i * spacing;
+
+    // Bright square wave with warmth
+    detunedPair(ctx, 'square', freq * p, st, st + 0.18, volume * 0.1, {
+      reverb: 0.4,
+      warmth: true,
+      envelope: (g, t0) => {
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(volume * 0.1, t0 + 0.006);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.18);
+      },
+    });
+
+    // Sine body for warmth
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq * p;
+    const g = buildChain(ctx, osc, 0, { reverb: 0.35 });
+    g.gain.setValueAtTime(0, st);
+    g.gain.linearRampToValueAtTime(volume * 0.12, st + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.001, st + 0.15);
+    osc.start(st);
+    osc.stop(st + 0.2);
+
+    // Final note: add octave shimmer
+    if (i === notes.length - 1) {
+      const shimmer = ctx.createOscillator();
+      shimmer.type = 'sine';
+      shimmer.frequency.value = freq * 2 * p;
+      const gs = buildChain(ctx, shimmer, 0, { reverb: 0.5 });
+      gs.gain.setValueAtTime(0, st + 0.02);
+      gs.gain.linearRampToValueAtTime(volume * 0.06, st + 0.03);
+      gs.gain.exponentialRampToValueAtTime(0.001, st + 0.25);
+      shimmer.start(st + 0.02);
+      shimmer.stop(st + 0.3);
+    }
+  });
+}
+
 // ── Idle chirp: R2-D2 style "bwee-doo" ──
 export function playIdleChirp(volume: number, muted: boolean, dnd: boolean) {
   if (!canBeep(muted, dnd)) return;

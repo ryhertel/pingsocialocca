@@ -102,6 +102,14 @@ export function FaceCanvas() {
     // Spectacles
     const spectacle = createSpectacleState();
 
+    // Floating notification icons
+    interface FloatingIcon {
+      type: 'dollar' | 'heart' | 'chat' | 'rocket';
+      x: number; y: number; startY: number;
+      born: number; lifetime: number;
+    }
+    const floatingIcons: FloatingIcon[] = [];
+
     // Speaking
     let speakPhase = 0;
 
@@ -183,6 +191,20 @@ export function FaceCanvas() {
     };
     window.addEventListener('ping:triggerSpectacle', onTriggerSpectacle);
 
+    // Listen for notification icon events
+    const onNotificationIcon = (e: Event) => {
+      const iconType = (e as CustomEvent).detail as FloatingIcon['type'];
+      const cw = canvas.width, ch = canvas.height;
+      floatingIcons.push({
+        type: iconType,
+        x: cw / 2 + rand(-80, 80),
+        y: ch / 2 - 30,
+        startY: ch / 2 - 30,
+        born: performance.now(),
+        lifetime: 2500,
+      });
+    };
+    window.addEventListener('ping:notificationIcon', onNotificationIcon);
     function animate(now: number) {
       if (!running) return;
       const dt = Math.min(50, now - lastFrameTime);
@@ -534,6 +556,53 @@ export function FaceCanvas() {
         ctx.restore();
       }
 
+      // — Floating notification icons —
+      for (let i = floatingIcons.length - 1; i >= 0; i--) {
+        const icon = floatingIcons[i];
+        const age = now - icon.born;
+        if (age > icon.lifetime) { floatingIcons.splice(i, 1); continue; }
+        const t = age / icon.lifetime; // 0→1
+        // Smooth ease-out cubic for upward drift
+        const drift = (1 - Math.pow(1 - t, 3)) * 120;
+        const wobble = Math.sin(age * 0.004) * 8;
+        const drawX = icon.x + wobble;
+        const drawY = icon.startY - drift;
+        // Bouncy scale-in then fade
+        const scaleIn = t < 0.15 ? 1 - Math.pow(1 - t / 0.15, 3) : 1;
+        const fadeOut = t > 0.7 ? 1 - (t - 0.7) / 0.3 : 1;
+        const scale = scaleIn * (0.8 + 0.2 * Math.sin(age * 0.006));
+        const alpha = fadeOut * 0.9;
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(drawX, drawY);
+        ctx.scale(scale, scale);
+
+        const iconColors: Record<string, string> = {
+          dollar: 'hsl(45, 100%, 60%)',
+          heart: 'hsl(340, 90%, 65%)',
+          chat: 'hsl(190, 90%, 65%)',
+          rocket: 'hsl(30, 95%, 60%)',
+        };
+        const glowColors: Record<string, string> = {
+          dollar: 'hsla(45, 100%, 60%, 0.6)',
+          heart: 'hsla(340, 90%, 65%, 0.6)',
+          chat: 'hsla(190, 90%, 65%, 0.6)',
+          rocket: 'hsla(30, 95%, 60%, 0.6)',
+        };
+        ctx.fillStyle = iconColors[icon.type] || 'white';
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = glowColors[icon.type] || 'white';
+        ctx.font = 'bold 28px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const symbols: Record<string, string> = { dollar: '$', heart: '♥', chat: '💬', rocket: '🚀' };
+        ctx.fillText(symbols[icon.type] || '•', 0, 0);
+
+        ctx.restore();
+      }
+
       // — Spectacle particles —
       renderParticles(ctx, spectacle.particles, theme.glowPrimary);
 
@@ -557,6 +626,7 @@ export function FaceCanvas() {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('ping:emotion', onEmotion);
       window.removeEventListener('ping:triggerSpectacle', onTriggerSpectacle);
+      window.removeEventListener('ping:notificationIcon', onNotificationIcon);
       canvas.removeEventListener('mouseenter', onEnter);
       canvas.removeEventListener('mouseleave', onLeave);
     };

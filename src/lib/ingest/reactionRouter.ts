@@ -8,7 +8,9 @@ import type { NormalizedEvent, ReactionOutput } from './types';
 
 // ── Keyword sets ──
 
-const MONEY_WORDS = ['paid', 'payment', 'purchase', 'sale', 'invoice', 'subscription', 'charge', '$', 'usd', 'eur', 'money'];
+const MONEY_WORDS = ['paid', 'payment', 'purchase', 'sale', 'invoice', 'subscription', 'charge', '$', 'usd', 'eur', 'money', 'revenue'];
+const SUBSCRIBER_WORDS = ['subscriber', 'signup', 'sign up', 'registered', 'new user', 'joined', 'follower', 'follow', 'member'];
+const MESSAGE_WORDS = ['message', 'comment', 'reply', 'mention', 'dm', 'chat', 'inbox'];
 const DEPLOY_WORDS = ['deploy', 'shipped', 'released', 'build succeeded', 'pipeline green'];
 const ERROR_WORDS = ['failed', 'exception', 'panic', 'downtime', 'incident', 'crash', '500'];
 
@@ -40,15 +42,21 @@ const BASE_MAP: Record<string, ReactionOutput> = {
 export function routeEvent(event: NormalizedEvent): ReactionOutput {
   const text = collectText(event);
 
-  // Keyword routing (overrides base mapping)
+  // Keyword routing (overrides base mapping) — priority order
   if (textContains(text, MONEY_WORDS)) {
-    return { eyeState: 'idle', emotionType: 'cheer', soundFn: 'playExcited', overlayType: 'sparkleTrail' };
+    return { eyeState: 'idle', emotionType: 'cheer', soundFn: 'playKaChing', overlayType: 'coinRain', notificationIcon: 'dollar' };
+  }
+  if (textContains(text, SUBSCRIBER_WORDS)) {
+    return { eyeState: 'idle', emotionType: 'proud', soundFn: 'playLevelUp', overlayType: 'confettiBurst', notificationIcon: 'heart' };
   }
   if (textContains(text, ERROR_WORDS)) {
     return { eyeState: 'error', soundFn: 'playError', overlayType: 'pulseWave' };
   }
   if (textContains(text, DEPLOY_WORDS)) {
-    return { eyeState: 'idle', emotionType: 'proud', soundFn: 'playExcited', overlayType: 'fireworks' };
+    return { eyeState: 'idle', emotionType: 'proud', soundFn: 'playExcited', overlayType: 'fireworks', notificationIcon: 'rocket' };
+  }
+  if (textContains(text, MESSAGE_WORDS)) {
+    return { eyeState: 'idle', emotionType: 'surprise', soundFn: 'playReceive', overlayType: 'sparkleTrail', notificationIcon: 'chat' };
   }
 
   // Fall back to base eventType mapping
