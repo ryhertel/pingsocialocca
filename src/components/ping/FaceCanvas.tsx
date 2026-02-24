@@ -90,7 +90,7 @@ export function FaceCanvas() {
     // Glance
     let isGlancing = false;
     let glanceHoldTimer = 0;
-    let nextGlanceTime = rand(2000, 5000);
+    let nextGlanceTime = rand(1000, 3000);
     let gazeOverrideTimer = 0;
 
     // Bored
@@ -223,47 +223,47 @@ export function FaceCanvas() {
         emotionTimer -= dt;
         switch (currentEmotion) {
           case 'happy':
-            targetWiden = 0.6 * iMult;
-            targetGlow = Math.max(targetGlow, 1.5);
-            targetBounceY = Math.sin(now * 0.008) * 12 * iMult;
+            targetWiden = 1.2 * iMult;
+            targetGlow = Math.max(targetGlow, 2.0);
+            targetBounceY = Math.sin(now * 0.008) * 40 * iMult;
             break;
           case 'laugh':
-            targetWiden = 0.7 * iMult;
-            targetSquint = 0.2 * iMult;
-            targetGlow = Math.max(targetGlow, 1.6);
-            targetBounceY = Math.sin(now * 0.012) * 16 * iMult;
+            targetWiden = 1.4 * iMult;
+            targetSquint = 0.3 * iMult;
+            targetGlow = Math.max(targetGlow, 2.2);
+            targetBounceY = Math.sin(now * 0.012) * 50 * iMult;
             break;
           case 'shock':
-            targetWiden = 0.9 * iMult;
-            targetGlow = Math.max(targetGlow, 2.5);
-            targetBounceY = -8 * iMult;
+            targetWiden = 1.8 * iMult;
+            targetGlow = Math.max(targetGlow, 3.5);
+            targetBounceY = -35 * iMult;
             break;
           case 'curious':
-            targetWiden = 0.45 * iMult;
-            targetGX = Math.sin(now * 0.003) * 0.3 * iMult;
-            targetGY = -0.15 * iMult;
-            targetBounceY = Math.sin(now * 0.005) * 4 * iMult;
+            targetWiden = 1.0 * iMult;
+            targetGX = Math.sin(now * 0.003) * 0.6 * iMult;
+            targetGY = -0.3 * iMult;
+            targetBounceY = Math.sin(now * 0.005) * 15 * iMult;
             break;
           case 'concern':
-            targetSquint = 0.5 * iMult;
-            targetGY = 0.1;
+            targetSquint = 0.8 * iMult;
+            targetGY = 0.2;
             targetGlow = Math.max(targetGlow, 0.8);
-            targetBounceY = 3 * iMult;
+            targetBounceY = 12 * iMult;
             break;
           case 'proud':
-            targetWiden = 0.55 * iMult;
-            targetGlow = Math.max(targetGlow, 2.0);
-            targetBounceY = -10 * iMult;
+            targetWiden = 1.2 * iMult;
+            targetGlow = Math.max(targetGlow, 2.8);
+            targetBounceY = -40 * iMult;
             break;
           case 'surprise':
-            targetWiden = 0.85 * iMult;
-            targetGlow = Math.max(targetGlow, 2.2);
-            targetBounceY = -14 * iMult;
+            targetWiden = 1.7 * iMult;
+            targetGlow = Math.max(targetGlow, 3.0);
+            targetBounceY = -50 * iMult;
             break;
           case 'cheer':
-            targetWiden = 0.65 * iMult;
-            targetGlow = Math.max(targetGlow, 1.8);
-            targetBounceY = Math.abs(Math.sin(now * 0.01)) * 20 * iMult;
+            targetWiden = 1.3 * iMult;
+            targetGlow = Math.max(targetGlow, 2.5);
+            targetBounceY = Math.abs(Math.sin(now * 0.01)) * 60 * iMult;
             break;
         }
         if (emotionTimer <= 0) {
@@ -272,8 +272,8 @@ export function FaceCanvas() {
       }
 
       if (ps === 'thinking') {
-        targetSquint = Math.max(targetSquint, 0.55);
-        scanY += dt * 0.0025;
+        targetSquint = Math.max(targetSquint, 0.7);
+        scanY += dt * 0.004;
         if (scanY > 1.2) scanY = -1.2;
       } else {
         scanY = -1.2;
@@ -281,8 +281,8 @@ export function FaceCanvas() {
 
       if (ps === 'speaking') {
         speakPhase += dt * 0.004;
-        targetGlow = Math.max(targetGlow, 1 + 1.0 * Math.sin(speakPhase * Math.PI) * iMult);
-        targetBounceY = Math.sin(speakPhase * Math.PI * 0.5) * 3 * iMult;
+        targetGlow = Math.max(targetGlow, 1 + 2.0 * Math.sin(speakPhase * Math.PI) * iMult);
+        targetBounceY = Math.sin(speakPhase * Math.PI * 0.5) * 10 * iMult;
       } else {
         speakPhase = 0;
       }
@@ -290,7 +290,7 @@ export function FaceCanvas() {
       if (ps === 'error') {
         errorShakeTime += dt;
         if (errorShakeTime < 600) {
-          shakeX = Math.sin(errorShakeTime * 0.08) * 6 * iMult;
+          shakeX = Math.sin(errorShakeTime * 0.08) * 15 * iMult;
         } else {
           shakeX *= 0.85;
         }
@@ -300,15 +300,15 @@ export function FaceCanvas() {
       }
 
       if (tr === 'success') {
-        targetWiden = Math.max(targetWiden, 0.5 * iMult);
-        targetGlow = Math.max(targetGlow, 1.6);
-        targetBounceY = -4 * iMult;
+        targetWiden = Math.max(targetWiden, 1.0 * iMult);
+        targetGlow = Math.max(targetGlow, 2.5);
+        targetBounceY = -15 * iMult;
       } else if (tr === 'notify') {
         targetGlow = Math.max(targetGlow, 2.2);
       }
 
       if (isHovered && !tr && !currentEmotion) {
-        targetWiden = Math.max(targetWiden, 0.25 * iMult);
+        targetWiden = Math.max(targetWiden, 0.5 * iMult);
       }
 
       // — Blink —
@@ -373,14 +373,14 @@ export function FaceCanvas() {
               noticeReactionTimer = 300;
             }
           } else if (cursorTrackingPhase === 'tracking') {
-            const trackScale = 0.6 * iMult;
+            const trackScale = 1.0 * iMult;
             targetGX = mouseNX * trackScale;
             targetGY = mouseNY * trackScale;
 
             if (noticeReactionTimer > 0) {
               noticeReactionTimer -= dt;
-              targetWiden = Math.max(targetWiden, 0.3 * iMult);
-              targetGlow = Math.max(targetGlow, 1.3);
+              targetWiden = Math.max(targetWiden, 0.5 * iMult);
+              targetGlow = Math.max(targetGlow, 1.6);
             }
 
             cursorPhaseTimer -= dt;
@@ -402,11 +402,11 @@ export function FaceCanvas() {
           if (!isGlancing) {
             nextGlanceTime -= dt;
             if (nextGlanceTime <= 0) {
-              targetGX = (Math.random() - 0.5) * 0.9 * iMult;
-              targetGY = (Math.random() - 0.5) * 0.7 * iMult;
+              targetGX = (Math.random() - 0.5) * 1.5 * iMult;
+              targetGY = (Math.random() - 0.5) * 1.2 * iMult;
               isGlancing = true;
-              glanceHoldTimer = rand(500, 1000);
-              nextGlanceTime = rand(2000, 5000);
+              glanceHoldTimer = rand(800, 1800);
+              nextGlanceTime = rand(1000, 3000);
             }
           } else {
             glanceHoldTimer -= dt;
@@ -429,11 +429,11 @@ export function FaceCanvas() {
       if (boredRoutine) {
         boredTimer += dt;
         if (boredRoutine === 'scan') {
-          targetGX = Math.sin(boredTimer * 0.002) * 0.5;
-          if (boredTimer > 3000) { targetGX = 0; boredRoutine = null; }
+          targetGX = Math.sin(boredTimer * 0.0015) * 1.2;
+          if (boredTimer > 4000) { targetGX = 0; boredRoutine = null; }
         } else if (boredRoutine === 'orbit') {
-          targetGX = Math.cos(boredTimer * 0.003) * 0.5;
-          targetGY = Math.sin(boredTimer * 0.003) * 0.4;
+          targetGX = Math.cos(boredTimer * 0.003) * 1.0;
+          targetGY = Math.sin(boredTimer * 0.003) * 0.8;
           if (boredTimer > 3500) { targetGX = 0; targetGY = 0; boredRoutine = null; }
         } else if (boredRoutine === 'sleepDrift') {
           targetSquint = Math.min(0.5, boredTimer * 0.0003);
@@ -445,8 +445,8 @@ export function FaceCanvas() {
           else if (boredTimer < 450) targetBlink = 0;
           else boredRoutine = null;
         } else if (boredRoutine === 'wiggle') {
-          targetBounceY = Math.sin(boredTimer * 0.01) * 8 * energy;
-          targetGX = Math.sin(boredTimer * 0.005) * 0.35;
+          targetBounceY = Math.sin(boredTimer * 0.01) * 25 * energy;
+          targetGX = Math.sin(boredTimer * 0.005) * 0.8;
           if (boredTimer > 2000) { targetBounceY = 0; targetGX = 0; boredRoutine = null; }
         }
       }
@@ -472,14 +472,14 @@ export function FaceCanvas() {
       }
 
       // — Interpolate —
-      const ls = 0.022;
-      blink = lerp(blink, targetBlink, dt, ls * 2.5);
+      const ls = 0.04;
+      blink = lerp(blink, targetBlink, dt, ls * 3);
       glanceX = lerp(glanceX, targetGX, dt, ls);
       glanceY = lerp(glanceY, targetGY, dt, ls);
       squint = lerp(squint, targetSquint, dt, ls);
-      widen = lerp(widen, targetWiden, dt, ls * 2.5);
-      glowMult = lerp(glowMult, targetGlow, dt, ls * 2);
-      bounceY = lerp(bounceY, targetBounceY, dt, ls * 3);
+      widen = lerp(widen, targetWiden, dt, ls * 4);
+      glowMult = lerp(glowMult, targetGlow, dt, ls * 3);
+      bounceY = lerp(bounceY, targetBounceY, dt, ls * 5);
 
       // — Render —
       const w = canvas.width;

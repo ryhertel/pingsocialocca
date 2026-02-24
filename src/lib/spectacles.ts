@@ -62,7 +62,7 @@ export function createSpectacleState(): SpectacleState {
   return {
     routine: null,
     timer: 0,
-    nextTime: rand(60000, 120000),
+    nextTime: rand(25000, 50000),
     particles: [],
     launchers: [],
     gravVY: 0,
@@ -123,7 +123,7 @@ export function updateSpectacle(
     p.y += p.vy * dt;
     if (p.type === 'spark') p.vy += 0.0003 * dt; // gravity
     if (p.type === 'dust') p.vy += 0.00005 * dt; // gentle gravity
-    if (p.type === 'ring' && p.radius !== undefined) p.radius += 0.15 * dt;
+    if (p.type === 'ring' && p.radius !== undefined) p.radius += 0.4 * dt;
   }
 
   // If not idle or higher-priority anim active, cancel spectacle
@@ -181,7 +181,7 @@ export function updateSpectacle(
       ss.gravBounces = 0;
     }
     // Scale interval inversely with energy
-    const base = energy > 0.8 ? rand(50000, 90000) : rand(60000, 120000);
+    const base = energy > 0.8 ? rand(15000, 30000) : rand(25000, 50000);
     ss.nextTime = base;
   }
 
@@ -199,12 +199,12 @@ function runFireworks(
   const iMult = energy;
   // Phase 1: spawn launchers at t=0
   if (ss.timer < dt + 1 && ss.launchers.length === 0) {
-    const count = energy > 0.8 ? 3 : 2;
+    const count = energy > 0.8 ? 6 : 5;
     for (let i = 0; i < count; i++) {
       ss.launchers.push({
-        x: cx + rand(-eyeW * 1.5, eyeW * 1.5),
+        x: cx + rand(-eyeW * 2.5, eyeW * 2.5),
         y: cy + baseH,
-        vy: -rand(0.25, 0.4),
+        vy: -rand(0.35, 0.55),
         exploded: false,
       });
     }
@@ -217,32 +217,32 @@ function runFireworks(
     l.vy += 0.0002 * dt; // decelerate
 
     // Trail particle
-    if (Math.random() < 0.3) {
+    if (Math.random() < 0.7) {
       ss.particles.push({
-        x: l.x, y: l.y, vx: rand(-0.01, 0.01), vy: 0.02,
-        life: 400, maxLife: 400, size: 2, hue, type: 'spark',
+        x: l.x, y: l.y, vx: rand(-0.02, 0.02), vy: 0.03,
+        life: 600, maxLife: 600, size: 3, hue, type: 'spark',
       });
     }
 
     // Explode when velocity near zero or above center
     if (l.vy > -0.05 || l.y < cy - baseH * 0.5) {
       l.exploded = true;
-      const sparkCount = energy > 0.8 ? 12 : 8;
+      const sparkCount = energy > 0.8 ? 30 : 20;
       for (let i = 0; i < sparkCount; i++) {
-        const angle = (Math.PI * 2 * i) / sparkCount + rand(-0.2, 0.2);
-        const speed = rand(0.08, 0.2);
+        const angle = (Math.PI * 2 * i) / sparkCount + rand(-0.3, 0.3);
+        const speed = rand(0.12, 0.35);
         ss.particles.push({
           x: l.x, y: l.y,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
-          life: rand(600, 1000), maxLife: 1000,
-          size: rand(2, 4), hue: hue + rand(-20, 20), type: 'spark',
+          life: rand(1500, 2500), maxLife: 2500,
+          size: rand(3, 7), hue: hue + rand(-30, 30), type: 'spark',
         });
       }
       // Eye reaction per burst
-      t.targetWiden = 0.4 * iMult;
-      t.targetGlow = 2.5;
-      t.targetBounceY = -4 * iMult;
+      t.targetWiden = 1.5 * iMult;
+      t.targetGlow = 4.0;
+      t.targetBounceY = -20 * iMult;
 
       if (!ss.soundPlayed) {
         ss.soundPlayed = true;
@@ -255,24 +255,24 @@ function runFireworks(
   t.targetGlow = Math.max(t.targetGlow, 1.5);
 
   // End when all exploded and particles mostly gone
-  if (ss.launchers.every(l => l.exploded) && ss.timer > 2500) {
+  if (ss.launchers.every(l => l.exploded) && ss.timer > 5000) {
     ss.routine = null;
   }
 }
 
 function runEyeRoll(ss: SpectacleState, t: SpectacleTargets, iMult: number) {
-  const duration = 1500;
+  const duration = 600;
   const progress = Math.min(ss.timer / duration, 1);
-  // Ease in-out
   const ease = progress < 0.5
     ? 2 * progress * progress
     : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-  const angle = ease * Math.PI * 2;
-  t.targetGX = Math.cos(angle - Math.PI / 2) * 0.5 * iMult;
-  t.targetGY = Math.sin(angle - Math.PI / 2) * 0.4 * iMult;
+  const angle = ease * Math.PI * 6; // 3 full rotations
+  t.targetGX = Math.cos(angle - Math.PI / 2) * 1.2 * iMult;
+  t.targetGY = Math.sin(angle - Math.PI / 2) * 1.0 * iMult;
 
   if (ss.timer >= duration) {
     t.targetGX = 0; t.targetGY = 0;
+    t.targetBounceY = -10 * iMult;
     ss.routine = null;
   }
 }
@@ -284,23 +284,23 @@ function runSparkleTrail(
   vol: number, muted: boolean, dnd: boolean,
 ) {
   // Spawn particles in first 300ms
-  if (ss.timer < 300 && Math.random() < 0.4) {
-    const count = energy > 0.8 ? 2 : 1;
+  if (ss.timer < 800 && Math.random() < 0.6) {
+    const count = energy > 0.8 ? 6 : 4;
     for (let i = 0; i < count; i++) {
       const side = Math.random() < 0.5 ? -1 : 1;
       ss.particles.push({
-        x: cx + side * eyeW * 0.5 + rand(-5, 5),
-        y: cy + rand(-5, 5),
-        vx: side * rand(0.02, 0.06),
-        vy: rand(-0.03, 0.01),
-        life: rand(1200, 2000), maxLife: 2000,
-        size: rand(1.5, 3), hue: hue + rand(-15, 15), type: 'dust',
+        x: cx + side * eyeW * 0.5 + rand(-10, 10),
+        y: cy + rand(-10, 10),
+        vx: side * rand(0.04, 0.1),
+        vy: rand(-0.06, 0.02),
+        life: rand(1500, 2500), maxLife: 2500,
+        size: rand(3, 6), hue: hue + rand(-20, 20), type: 'dust',
       });
     }
   }
 
-  t.targetWiden = 0.15 * energy;
-  t.targetGlow = Math.max(1.4, t.targetGlow);
+  t.targetWiden = 0.6 * energy;
+  t.targetGlow = Math.max(2.5, t.targetGlow);
 
   if (!ss.soundPlayed) {
     ss.soundPlayed = true;
@@ -318,36 +318,35 @@ function runGravityDrop(ss: SpectacleState, dt: number, t: SpectacleTargets, ene
     ss.gravBounces = 0;
   }
 
-  ss.gravVY += 0.02 * dt; // gravity
+  ss.gravVY += 0.06 * dt; // gravity
   t.targetBounceY = (t.targetBounceY || 0) + ss.gravVY;
 
-  // Bounce at floor (bounceY = 15)
-  if (t.targetBounceY > 15) {
-    t.targetBounceY = 15;
+  // Bounce at floor (bounceY = 40)
+  if (t.targetBounceY > 40) {
+    t.targetBounceY = 40;
     ss.gravVY *= -0.6;
     ss.gravBounces++;
   }
 
-  if (ss.gravBounces >= 4 || ss.timer > 2500) {
+  if (ss.gravBounces >= 6 || ss.timer > 4000) {
     t.targetBounceY = 0;
     ss.routine = null;
   }
 }
 
 function runDizzySpin(ss: SpectacleState, t: SpectacleTargets, iMult: number) {
-  const duration = 2000;
+  const duration = 1200;
   const progress = Math.min(ss.timer / duration, 1);
-  const angle = progress * Math.PI * 4; // 2 full rotations
-  // Spiral: radius grows then shrinks
+  const angle = progress * Math.PI * 8; // 4 full rotations
   const radius = progress < 0.5
-    ? 0.1 + progress * 0.8
-    : 0.5 - (progress - 0.5) * 0.8;
+    ? 0.1 + progress * 1.8
+    : 1.0 - (progress - 0.5) * 1.8;
   t.targetGX = Math.cos(angle) * radius * iMult;
-  t.targetGY = Math.sin(angle) * radius * 0.6 * iMult;
-  t.targetSquint = progress < 0.8 ? 0.25 * iMult : 0;
+  t.targetGY = Math.sin(angle) * radius * 0.8 * iMult;
+  t.targetSquint = progress < 0.8 ? 0.5 * iMult : 0;
 
   if (progress >= 1) {
-    t.targetWiden = 0.2 * iMult;
+    t.targetWiden = 0.8 * iMult;
     ss.routine = null;
   }
 }
@@ -358,27 +357,27 @@ function runPulseWave(
   vol: number, muted: boolean, dnd: boolean,
 ) {
   // Spawn 3 rings staggered
-  const ringTimes = [0, 400, 800];
+  const ringTimes = [0, 250, 500, 750, 1000, 1250];
   for (const rt of ringTimes) {
     if (ss.timer >= rt && ss.timer < rt + 20) {
       ss.particles.push({
         x: cx, y: cy, vx: 0, vy: 0,
-        life: 1500, maxLife: 1500,
-        size: 2, hue, type: 'ring', radius: 5,
+        life: 2000, maxLife: 2000,
+        size: 4, hue, type: 'ring', radius: 5,
       });
     }
   }
 
   // Pulse glow in sync
   const pulse = Math.sin(ss.timer * 0.006) * 0.5 + 0.5;
-  t.targetGlow = Math.max(t.targetGlow, 1 + pulse * 1.5);
+  t.targetGlow = Math.max(t.targetGlow, 1 + pulse * 3.0);
 
   if (!ss.soundPlayed) {
     ss.soundPlayed = true;
     playNotify(vol * 0.5, muted, dnd);
   }
 
-  if (ss.timer > 2500 && ss.particles.filter(p => p.type === 'ring').length === 0) {
+  if (ss.timer > 3500 && ss.particles.filter(p => p.type === 'ring').length === 0) {
     ss.routine = null;
   }
 }
@@ -401,8 +400,8 @@ export function renderParticles(
       ctx.beginPath();
       ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
       ctx.strokeStyle = `hsla(${p.hue}, 100%, 60%, ${alpha * 0.6})`;
-      ctx.lineWidth = 2;
-      ctx.shadowBlur = 15;
+      ctx.lineWidth = 4;
+      ctx.shadowBlur = 30;
       ctx.shadowColor = `hsla(${p.hue}, 100%, 60%, ${alpha * 0.4})`;
       ctx.stroke();
     } else {
