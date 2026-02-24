@@ -12,7 +12,8 @@ import { usePingStore } from '@/stores/usePingStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import {
   playConfirm, playError, playReceive, playNotify,
-  playThinking, playExcited, triggerEmotion,
+  playThinking, playExcited, playKaChing, playLevelUp,
+  triggerEmotion,
 } from '@/lib/audio';
 
 let lastSoundTime = 0;
@@ -25,6 +26,8 @@ const SOUND_FN_MAP: Record<string, (vol: number, muted: boolean, dnd: boolean) =
   playNotify,
   playThinking,
   playExcited,
+  playKaChing,
+  playLevelUp,
 };
 
 export function executeReaction(reaction: ReactionOutput): void {
@@ -52,6 +55,11 @@ export function executeReaction(reaction: ReactionOutput): void {
   // Overlay (skip if reduced motion)
   if (reaction.overlayType && settings.animationIntensity !== 'low') {
     window.dispatchEvent(new CustomEvent('ping:triggerSpectacle', { detail: reaction.overlayType }));
+  }
+
+  // Notification icon
+  if (reaction.notificationIcon) {
+    window.dispatchEvent(new CustomEvent('ping:notificationIcon', { detail: reaction.notificationIcon }));
   }
 
   // Trigger transient reaction for UI feedback

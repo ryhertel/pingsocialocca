@@ -20,4 +20,5 @@ export interface ReactionOutput {
   soundFn: string;
   overlayType?: string;
   pulseLevel?: number;
+  notificationIcon?: 'dollar' | 'heart' | 'chat' | 'rocket';
 }

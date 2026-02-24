@@ -6,7 +6,7 @@
  * All rendering is canvas-native — no DOM elements.
  */
 
-import { playExcited, playConfirm, playNotify } from './audio';
+import { playExcited, playConfirm, playNotify, playKaChing, playLevelUp } from './audio';
 
 // ── Types ──
 
@@ -74,7 +74,7 @@ export function createSpectacleState(): SpectacleState {
 // ── Force-start (for demo commands) ──
 
 export function forceStartSpectacle(ss: SpectacleState, routineName: string) {
-  const validRoutines = ['fireworks', 'eyeRoll', 'sparkleTrail', 'gravityDrop', 'dizzySpin', 'pulseWave'];
+  const validRoutines = ['fireworks', 'eyeRoll', 'sparkleTrail', 'gravityDrop', 'dizzySpin', 'pulseWave', 'coinRain', 'confettiBurst'];
   if (!validRoutines.includes(routineName)) return;
   ss.routine = routineName;
   ss.timer = 0;
@@ -161,6 +161,12 @@ export function updateSpectacle(
         break;
       case 'pulseWave':
         runPulseWave(ss, cx, cy, hue, targets, energy, volume, muted, dnd);
+        break;
+      case 'coinRain':
+        runCoinRain(ss, dt, cx, cy, eyeW, baseH, targets, energy, volume, muted, dnd);
+        break;
+      case 'confettiBurst':
+        runConfettiBurst(ss, dt, cx, cy, eyeW, baseH, targets, energy, volume, muted, dnd);
         break;
     }
     return targets;
@@ -378,6 +384,85 @@ function runPulseWave(
   }
 
   if (ss.timer > 3500 && ss.particles.filter(p => p.type === 'ring').length === 0) {
+    ss.routine = null;
+  }
+}
+
+// ── Coin Rain: Golden coins falling for money events ──
+
+function runCoinRain(
+  ss: SpectacleState, dt: number,
+  cx: number, cy: number, eyeW: number, baseH: number,
+  t: SpectacleTargets, energy: number,
+  vol: number, muted: boolean, dnd: boolean,
+) {
+  // Spawn golden particles in first 400ms
+  if (ss.timer < 400 && Math.random() < 0.8) {
+    const count = energy > 0.8 ? 5 : 3;
+    for (let i = 0; i < count; i++) {
+      ss.particles.push({
+        x: cx + rand(-eyeW * 3, eyeW * 3),
+        y: cy - baseH * 2 + rand(-20, 20),
+        vx: rand(-0.02, 0.02),
+        vy: rand(0.05, 0.12),
+        life: rand(2500, 3500), maxLife: 3500,
+        size: rand(4, 8), hue: rand(45, 55), type: 'dust',
+      });
+    }
+  }
+
+  // Eye reaction: wide + golden glow
+  t.targetWiden = Math.max(t.targetWiden, 1.2 * energy);
+  t.targetGlow = Math.max(t.targetGlow, 3.5);
+  t.targetBounceY = Math.sin(ss.timer * 0.004) * 20 * energy;
+
+  if (!ss.soundPlayed) {
+    ss.soundPlayed = true;
+    playKaChing(vol, muted, dnd);
+  }
+
+  if (ss.timer > 3000 && ss.particles.filter(p => p.type === 'dust').length === 0) {
+    ss.routine = null;
+  }
+}
+
+// ── Confetti Burst: Multi-colored explosion for subscriber events ──
+
+function runConfettiBurst(
+  ss: SpectacleState, dt: number,
+  cx: number, cy: number, eyeW: number, baseH: number,
+  t: SpectacleTargets, energy: number,
+  vol: number, muted: boolean, dnd: boolean,
+) {
+  // Spawn confetti burst at start
+  if (ss.timer < dt + 1) {
+    const count = energy > 0.8 ? 55 : 40;
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + rand(-0.2, 0.2);
+      const speed = rand(0.08, 0.25);
+      ss.particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 0.05, // bias upward
+        life: rand(3000, 4000), maxLife: 4000,
+        size: rand(3, 6),
+        hue: rand(0, 360), // rainbow
+        type: Math.random() < 0.5 ? 'spark' : 'dust',
+      });
+    }
+  }
+
+  // Eye reaction: proud puff-up + bounce
+  t.targetWiden = Math.max(t.targetWiden, 1.4 * energy);
+  t.targetGlow = Math.max(t.targetGlow, 3.0);
+  t.targetBounceY = -30 * energy;
+
+  if (!ss.soundPlayed) {
+    ss.soundPlayed = true;
+    playLevelUp(vol, muted, dnd);
+  }
+
+  if (ss.timer > 4000 && ss.particles.length === 0) {
     ss.routine = null;
   }
 }
