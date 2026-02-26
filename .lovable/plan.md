@@ -1,37 +1,61 @@
 
 
-# Fix Eye Squishing When Dock Is Open
+# Fix Markdown Headings Not Rendering in Multi-Line Blocks
 
-## Root Cause
-In `FaceCanvas.tsx`, the `handleResize` function sets `canvas.width = window.innerWidth` and `canvas.height = window.innerHeight`. But the canvas element is inside a flex container that shrinks when the dock panel opens (from `w-full` to `flex-1`). The CSS (`absolute inset-0 w-full h-full`) visually constrains the canvas to that smaller container, but the internal resolution still thinks it's full-window-sized. This mismatch causes the browser to scale down the entire canvas rendering, making the eyes appear smaller.
+## Problem
+The `ChatMarkdown` parser only detects headings when a block contains exactly one line (`lines.length === 1`). If a heading like `## Agent/automation vibe` is followed by body text with a single newline (no blank line separator), the entire block is treated as a plain paragraph -- so `##` renders as literal text.
 
-## The Fix
-Change `handleResize` to use the canvas element's actual display dimensions (`clientWidth` / `clientHeight`) instead of `window.innerWidth/Height`. This way the canvas pixel buffer always matches its CSS display size, and the eyes render at the correct scale regardless of dock state.
-
-## File Changed
-
-| File | Change |
-|------|--------|
-| `src/components/ping/FaceCanvas.tsx` | Update `handleResize` to use container dimensions instead of window dimensions |
+## Fix
+Change `parseBlock` in `ChatMarkdown.tsx` to process each line individually instead of only checking single-line blocks. When a line starts with `#`, render it as a heading element. Other lines continue through the existing list/paragraph logic.
 
 ## Technical Detail
-One function changes in `FaceCanvas.tsx`:
 
-```js
-// Before
-const handleResize = () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-};
+**File: `src/components/ping/ChatMarkdown.tsx`**
 
-// After
-const handleResize = () => {
-  const parent = canvas.parentElement;
-  canvas.width = parent ? parent.clientWidth : window.innerWidth;
-  canvas.height = parent ? parent.clientHeight : window.innerHeight;
-};
+Replace the current `parseBlock` function logic:
+
+1. Remove the `lines.length === 1` guard around heading detection
+2. Process lines one at a time: split the block into "runs" where heading lines become their own elements and consecutive non-heading lines get grouped into paragraphs/lists as before
+3. This handles both standalone headings and headings mixed into multi-line content
+
+The key change is roughly:
+
+```tsx
+function parseBlock(block: string, blockKey: number): React.ReactNode {
+  const lines = block.split('\n');
+  const headingRe = /^(#{1,6})\s+(.+)$/;
+
+  // If block has mixed heading + non-heading lines, split into sub-blocks
+  const elements: React.ReactNode[] = [];
+  let nonHeadingBuffer: string[] = [];
+  let subKey = 0;
+
+  const flushBuffer = () => {
+    if (nonHeadingBuffer.length > 0) {
+      elements.push(parseNonHeadingLines(nonHeadingBuffer, subKey++));
+      nonHeadingBuffer = [];
+    }
+  };
+
+  for (const line of lines) {
+    const hm = headingRe.exec(line.trim());
+    if (hm) {
+      flushBuffer();
+      const level = Math.min(hm[1].length, 6);
+      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+      elements.push(<Tag key={subKey++} className={`chat-md-h${level}`}>{parseLine(hm[2])}</Tag>);
+    } else {
+      nonHeadingBuffer.push(line);
+    }
+  }
+  flushBuffer();
+
+  if (elements.length === 1) return React.cloneElement(elements[0] as React.ReactElement, { key: blockKey });
+  return <React.Fragment key={blockKey}>{elements}</React.Fragment>;
+}
 ```
 
-This also adds a `ResizeObserver` on the parent element so the canvas re-measures when the flex layout changes (dock open/close), not just on window resize.
+The existing code-block, list, and paragraph logic moves into a helper `parseNonHeadingLines()` function that handles the non-heading line groups.
 
-The eye geometry code (`unit = h / 8.5`) remains unchanged -- it already uses canvas height correctly. The only problem was that the canvas resolution didn't match the visual container size.
+No other files need changes -- the heading CSS styles already exist in `index.css`.
+
