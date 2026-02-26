@@ -1,25 +1,37 @@
 
 
-# Fix Eye Size Consistency When Docked Chat Is Open
+# Fix Eye Squishing When Dock Is Open
 
-## The Problem
-The eye geometry in `FaceCanvas.tsx` calculates size using `Math.min(canvas.width, canvas.height) / 8.5`. When the docked chat panel opens, it steals 320px of width from the canvas. Once `canvas.width` becomes smaller than `canvas.height`, the eyes suddenly shrink -- they "squish" compared to how they look in normal bubble mode.
+## Root Cause
+In `FaceCanvas.tsx`, the `handleResize` function sets `canvas.width = window.innerWidth` and `canvas.height = window.innerHeight`. But the canvas element is inside a flex container that shrinks when the dock panel opens (from `w-full` to `flex-1`). The CSS (`absolute inset-0 w-full h-full`) visually constrains the canvas to that smaller container, but the internal resolution still thinks it's full-window-sized. This mismatch causes the browser to scale down the entire canvas rendering, making the eyes appear smaller.
 
 ## The Fix
-Use `canvas.height` as the sole reference for eye sizing instead of `Math.min(w, h)`. The viewport height stays constant regardless of whether the docked panel is open, so the eyes will remain the exact same size in both layouts.
-
-This is a single-line change applied in both places where `unit` is calculated (the spectacle pre-compute and the main render section).
+Change `handleResize` to use the canvas element's actual display dimensions (`clientWidth` / `clientHeight`) instead of `window.innerWidth/Height`. This way the canvas pixel buffer always matches its CSS display size, and the eyes render at the correct scale regardless of dock state.
 
 ## File Changed
 
 | File | Change |
 |------|--------|
-| `src/components/ping/FaceCanvas.tsx` | Replace `Math.min(w, h)` and `Math.min(cw, ch)` with just `ch` / `h` (canvas height only) in both unit calculations |
+| `src/components/ping/FaceCanvas.tsx` | Update `handleResize` to use container dimensions instead of window dimensions |
 
 ## Technical Detail
-Two lines change in `FaceCanvas.tsx`:
-- Line ~484: spectacle pre-compute `const preUnit = Math.min(cw, ch) / 8.5` becomes `const preUnit = ch / 8.5`
-- Line ~517: render section `const unit = Math.min(w, h) / 8.5` becomes `const unit = h / 8.5`
+One function changes in `FaceCanvas.tsx`:
 
-Everything else (corner radius, gap, blink, glow, animations) stays identical since they all derive from `unit`.
+```js
+// Before
+const handleResize = () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+};
 
+// After
+const handleResize = () => {
+  const parent = canvas.parentElement;
+  canvas.width = parent ? parent.clientWidth : window.innerWidth;
+  canvas.height = parent ? parent.clientHeight : window.innerHeight;
+};
+```
+
+This also adds a `ResizeObserver` on the parent element so the canvas re-measures when the flex layout changes (dock open/close), not just on window resize.
+
+The eye geometry code (`unit = h / 8.5`) remains unchanged -- it already uses canvas height correctly. The only problem was that the canvas resolution didn't match the visual container size.
