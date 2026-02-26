@@ -51,25 +51,12 @@ function parseLine(line: string): React.ReactNode {
   return <>{parseInline(line)}</>;
 }
 
-function parseBlock(block: string, blockKey: number): React.ReactNode {
-  const lines = block.split('\n');
-
-  // Check for ATX heading (single-line block only)
-  if (lines.length === 1) {
-    const headingRe = /^(#{1,6})\s+(.+)$/;
-    const hm = headingRe.exec(lines[0].trim());
-    if (hm) {
-      const level = Math.min(hm[1].length, 6) as 1 | 2 | 3 | 4 | 5 | 6;
-      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
-      return <Tag key={blockKey} className={`chat-md-h${level}`}>{parseLine(hm[2])}</Tag>;
-    }
-  }
-
+function parseNonHeadingLines(lines: string[], key: number): React.ReactNode {
   // Check for code block
   if (lines[0]?.startsWith('```')) {
     const code = lines.slice(1, lines[lines.length - 1] === '```' ? -1 : undefined).join('\n');
     return (
-      <pre key={blockKey} className="chat-md-codeblock">
+      <pre key={key} className="chat-md-codeblock">
         <code>{code}</code>
       </pre>
     );
@@ -84,7 +71,7 @@ function parseBlock(block: string, blockKey: number): React.ReactNode {
 
   if (allBullets && lines.length > 0) {
     return (
-      <ul key={blockKey} className="chat-md-ul">
+      <ul key={key} className="chat-md-ul">
         {lines.map((l, i) => {
           const m = bulletRe.exec(l.trim());
           return <li key={i}>{m ? parseLine(m[1]) : parseLine(l)}</li>;
@@ -95,7 +82,7 @@ function parseBlock(block: string, blockKey: number): React.ReactNode {
 
   if (allOrdered && lines.length > 0) {
     return (
-      <ol key={blockKey} className="chat-md-ol">
+      <ol key={key} className="chat-md-ol">
         {lines.map((l, i) => {
           const m = orderedRe.exec(l.trim());
           return <li key={i}>{m ? parseLine(m[1]) : parseLine(l)}</li>;
@@ -104,9 +91,9 @@ function parseBlock(block: string, blockKey: number): React.ReactNode {
     );
   }
 
-  // Regular paragraph — preserve single newlines as <br />
+  // Regular paragraph
   return (
-    <p key={blockKey}>
+    <p key={key}>
       {lines.map((l, i) => (
         <React.Fragment key={i}>
           {i > 0 && <br />}
@@ -115,6 +102,43 @@ function parseBlock(block: string, blockKey: number): React.ReactNode {
       ))}
     </p>
   );
+}
+
+function parseBlock(block: string, blockKey: number): React.ReactNode {
+  const lines = block.split('\n');
+
+  // Code blocks pass through directly
+  if (lines[0]?.startsWith('```')) {
+    return parseNonHeadingLines(lines, blockKey);
+  }
+
+  const headingRe = /^(#{1,6})\s+(.+)$/;
+  const elements: React.ReactNode[] = [];
+  let nonHeadingBuffer: string[] = [];
+  let subKey = 0;
+
+  const flushBuffer = () => {
+    if (nonHeadingBuffer.length > 0) {
+      elements.push(parseNonHeadingLines(nonHeadingBuffer, subKey++));
+      nonHeadingBuffer = [];
+    }
+  };
+
+  for (const line of lines) {
+    const hm = headingRe.exec(line.trim());
+    if (hm) {
+      flushBuffer();
+      const level = Math.min(hm[1].length, 6) as 1 | 2 | 3 | 4 | 5 | 6;
+      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+      elements.push(<Tag key={subKey++} className={`chat-md-h${level}`}>{parseLine(hm[2])}</Tag>);
+    } else {
+      nonHeadingBuffer.push(line);
+    }
+  }
+  flushBuffer();
+
+  if (elements.length === 1) return React.cloneElement(elements[0] as React.ReactElement, { key: blockKey });
+  return <React.Fragment key={blockKey}>{elements}</React.Fragment>;
 }
 
 export function ChatMarkdown({ text, className }: ChatMarkdownProps) {
