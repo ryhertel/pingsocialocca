@@ -108,3 +108,22 @@
 .chat-markdown .chat-md-link:hover {
   opacity: 0.8;
 }
+/* Heading styles */
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3,
+.chat-markdown h4,
+.chat-markdown h5,
+.chat-markdown h6 {
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 0.5em;
+  margin-bottom: 0.25em;
+  color: hsl(var(--foreground));
+}
+.chat-markdown h1 { font-size: 1.35em; }
+.chat-markdown h2 { font-size: 1.2em; }
+.chat-markdown h3 { font-size: 1.1em; }
+.chat-markdown h4 { font-size: 1.0em; font-weight: 600; }
+.chat-markdown h5,
+.chat-markdown h6 { font-size: 0.95em; font-weight: 600; }

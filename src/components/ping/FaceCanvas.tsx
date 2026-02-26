@@ -482,7 +482,7 @@ export function FaceCanvas() {
       // — Spectacles (pre-compute canvas dims for particle positioning) —
       const cw = canvas.width, ch = canvas.height;
       const preUnit = Math.min(cw, ch) / 8.5;
-      const preEyeW = preUnit * 1.4, preBaseH = preUnit * 0.95;
+      const preEyeW = preUnit * 1.2, preBaseH = preUnit * 1.15;
       const spectacleTargets = updateSpectacle(
         spectacle, dt, now, energy,
         ps === 'idle', !!boredRoutine, !!currentEmotion,
@@ -514,14 +514,14 @@ export function FaceCanvas() {
       const h = canvas.height;
       ctx.clearRect(0, 0, w, h);
 
-      // Eyes 30-40% larger: increased from /12 to /8.5
+      // Eye profile constants — single source of truth for both layouts
       const unit = Math.min(w, h) / 8.5;
-      const eyeW = unit * 1.4;
-      const baseH = unit * 1.1;
+      const eyeW = unit * 1.2;
+      const baseH = unit * 1.15;
       const eyeH = baseH * (1 - squint * 0.5) * (1 + widen * 0.3);
       const gap = unit * 0.7;
-      // Slightly more square: reduced corner radius ratio
-      const cornerR = baseH * 0.45;
+      // Near-square with soft rounded corners
+      const cornerR = baseH * 0.25;
 
       const cx = w / 2 + shakeX;
       const cy = h / 2;
