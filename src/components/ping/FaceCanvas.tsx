@@ -142,11 +142,15 @@ export function FaceCanvas() {
     let slowTimeoutId: number;
 
     const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const parent = canvas.parentElement;
+      canvas.width = parent ? parent.clientWidth : window.innerWidth;
+      canvas.height = parent ? parent.clientHeight : window.innerHeight;
     };
     handleResize();
     window.addEventListener('resize', handleResize);
+
+    const resizeObserver = new ResizeObserver(handleResize);
+    if (canvas.parentElement) resizeObserver.observe(canvas.parentElement);
 
     const onEnter = () => { isHovered = true; };
     const onLeave = () => { isHovered = false; };
@@ -623,6 +627,7 @@ export function FaceCanvas() {
       cancelAnimationFrame(animId);
       clearTimeout(slowTimeoutId);
       window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('ping:emotion', onEmotion);
       window.removeEventListener('ping:triggerSpectacle', onTriggerSpectacle);
