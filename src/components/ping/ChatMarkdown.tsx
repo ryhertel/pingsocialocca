@@ -54,6 +54,17 @@ function parseLine(line: string): React.ReactNode {
 function parseBlock(block: string, blockKey: number): React.ReactNode {
   const lines = block.split('\n');
 
+  // Check for ATX heading (single-line block only)
+  if (lines.length === 1) {
+    const headingRe = /^(#{1,6})\s+(.+)$/;
+    const hm = headingRe.exec(lines[0].trim());
+    if (hm) {
+      const level = Math.min(hm[1].length, 6) as 1 | 2 | 3 | 4 | 5 | 6;
+      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+      return <Tag key={blockKey} className={`chat-md-h${level}`}>{parseLine(hm[2])}</Tag>;
+    }
+  }
+
   // Check for code block
   if (lines[0]?.startsWith('```')) {
     const code = lines.slice(1, lines[lines.length - 1] === '```' ? -1 : undefined).join('\n');

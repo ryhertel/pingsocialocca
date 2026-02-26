@@ -174,6 +174,9 @@ export function disconnectBridge() {
     ws.close();
     ws = null;
   }
+  // Force-reset store so UI reflects disconnected state immediately
+  usePingStore.getState().setBridgeStatus({ connected: false, capabilities: undefined, agentId: undefined, agentName: undefined, protocolVersion: undefined });
+  usePingStore.getState().setPersistentState('disconnected');
 }
 
 export function sendMessage(text: string, attachments?: Attachment[]) {
