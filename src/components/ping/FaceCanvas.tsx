@@ -481,7 +481,7 @@ export function FaceCanvas() {
 
       // — Spectacles (pre-compute canvas dims for particle positioning) —
       const cw = canvas.width, ch = canvas.height;
-      const preUnit = Math.min(cw, ch) / 8.5;
+      const preUnit = ch / 8.5;
       const preEyeW = preUnit * 1.2, preBaseH = preUnit * 1.15;
       const spectacleTargets = updateSpectacle(
         spectacle, dt, now, energy,
@@ -515,7 +515,7 @@ export function FaceCanvas() {
       ctx.clearRect(0, 0, w, h);
 
       // Eye profile constants — single source of truth for both layouts
-      const unit = Math.min(w, h) / 8.5;
+      const unit = h / 8.5;
       const eyeW = unit * 1.2;
       const baseH = unit * 1.15;
       const eyeH = baseH * (1 - squint * 0.5) * (1 + widen * 0.3);
