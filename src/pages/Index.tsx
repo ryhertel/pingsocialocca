@@ -139,6 +139,7 @@ const Index = () => {
     onWebhooks: () => setShowWebhookPanel(true),
     onEventFeed: () => setShowEventFeed(true),
     onConnectors: () => navigate('/connectors'),
+    onDocs: () => navigate('/docs'),
   };
 
   const landscapeHideChat = isMobile && isLandscape;
