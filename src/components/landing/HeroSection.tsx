@@ -128,9 +128,9 @@ export function HeroSection() {
               <Tooltip key={key}>
                 <TooltipTrigger asChild>
                   <motion.button
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: theme === key ? 1 : 0.7, scale: theme === key ? 1.1 : 1 }}
-                    transition={{ duration: 0.4, delay: 1.0 + index * 0.1 }}
+                    initial={{ opacity: 0, y: 12, scale: 0.5 }}
+                    animate={{ opacity: theme === key ? 1 : 0.7, y: 0, scale: theme === key ? 1.1 : 1 }}
+                    transition={{ duration: 0.4, delay: 1.0 + index * 0.08 }}
                     whileHover={{ scale: 1.1, opacity: 1 }}
                     onClick={(e) => {
                       vibrate('tap');
