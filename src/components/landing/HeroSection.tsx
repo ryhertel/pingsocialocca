@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FaceCanvas } from '@/components/ping/FaceCanvas';
 import { motion } from 'framer-motion';
+import { useSettingsStore } from '@/stores/useSettingsStore';
+import { themePresets } from '@/lib/themes';
+import type { ThemePreset } from '@/lib/types';
 
 export function HeroSection() {
   const navigate = useNavigate();
