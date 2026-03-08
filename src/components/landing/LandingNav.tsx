@@ -178,6 +178,13 @@ export function LandingNav() {
                 >
                   Docs
                 </button>
+                <button
+                  onClick={() => setColorMode(isDark ? 'light' : 'dark')}
+                  className="flex items-center gap-2 text-left text-base py-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                  {isDark ? 'Light Mode' : 'Dark Mode'}
+                </button>
                 <Button onClick={() => { setSheetOpen(false); navigate('/app'); }} className="gap-1.5 mt-4">
                   Launch App <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
