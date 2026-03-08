@@ -603,6 +603,22 @@ export function handleDemoInput(text: string) {
   if (demoMatch) {
     const effectName = demoMatch[1].trim().toLowerCase();
 
+    // /demo list — show all available effects
+    if (effectName === 'list') {
+      const names = Object.keys(DEMO_EFFECTS);
+      const list = names.map(n => `• \`${n}\` — ${DEMO_EFFECTS[n].title}`).join('\n');
+      deliverResponse({
+        text: `**Available effects (${names.length}):**\n\n${list}\n\nUsage: \`/demo <name>\` or \`/demo all\` for the full reel.`,
+        buttons: [
+          { label: '▶️ Play all', action: 'demo_all' },
+          { label: '🎉 Party', action: 'demo_party' },
+          { label: '🎯 Milestone', action: 'demo_milestone' },
+        ],
+        module: state.currentModule,
+      });
+      return;
+    }
+
     // /demo stop — cancel showcase reel
     if (effectName === 'stop') {
       if (showcaseRunning) {
