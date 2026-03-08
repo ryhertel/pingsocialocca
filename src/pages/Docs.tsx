@@ -227,52 +227,82 @@ export default function Docs() {
             Send events to Ping via HTTP webhooks and watch it react in real time.
             This guide covers the JSON schema, setup for each connector, cURL examples, and troubleshooting.
           </p>
+
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search docs…"
+              className="w-full h-10 pl-9 pr-9 rounded-lg border border-border/40 bg-card text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </section>
 
-        {/* Quick nav */}
-        <nav className="flex flex-wrap gap-2">
-          {connectorTemplates.map((t) => (
-            <a
-              key={t.id}
-              href={`#${t.id}`}
-              className="text-xs px-3 py-1.5 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
-            >
-              {t.name}
-            </a>
-          ))}
-          <a
-            href="#schema"
-            className="text-xs px-3 py-1.5 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
-          >
-            Schema
-          </a>
-          <a
-            href="#troubleshooting"
-            className="text-xs px-3 py-1.5 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
-          >
-            Troubleshooting
-          </a>
-        </nav>
+        {(() => {
+          const q = search.toLowerCase().trim();
+          const matchConnector = (t: ConnectorTemplate) =>
+            !q ||
+            t.name.toLowerCase().includes(q) ||
+            t.description.toLowerCase().includes(q) ||
+            t.keywordsSupported.some((kw) => kw.toLowerCase().includes(q)) ||
+            t.setupSteps.some((s) => s.toLowerCase().includes(q));
 
-        {/* JSON Schema */}
-        <section id="schema" className="scroll-mt-20 space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">Event Schema</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Every event POSTed to the ingest endpoint must follow this JSON shape.
-            Only <code className="text-primary/80 bg-muted px-1 rounded">source</code>,{' '}
-            <code className="text-primary/80 bg-muted px-1 rounded">eventType</code>, and{' '}
-            <code className="text-primary/80 bg-muted px-1 rounded">title</code> are required.
-          </p>
-          <CodeBlock code={SCHEMA_EXAMPLE} lang="json" />
-        </section>
+          const filteredConnectors = connectorTemplates.filter(matchConnector);
+          const showSchema = !q || 'event schema json source eventtype title body severity tags timestamp'.includes(q);
+          const showTroubleshooting = !q || 'troubleshooting 401 403 rate limit events not showing'.includes(q);
+          const hasResults = filteredConnectors.length > 0 || showSchema || showTroubleshooting;
 
-        {/* Connector docs — generated from templates */}
-        {connectorTemplates.map((t) => (
-          <ConnectorDoc key={t.id} template={t} />
-        ))}
+          return (
+            <>
+              {/* Quick nav */}
+              {!q && (
+                <nav className="flex flex-wrap gap-2">
+                  {connectorTemplates.map((t) => (
+                    <a key={t.id} href={`#${t.id}`} className="text-xs px-3 py-1.5 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
+                      {t.name}
+                    </a>
+                  ))}
+                  <a href="#schema" className="text-xs px-3 py-1.5 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">Schema</a>
+                  <a href="#troubleshooting" className="text-xs px-3 py-1.5 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">Troubleshooting</a>
+                </nav>
+              )}
 
-        {/* Troubleshooting */}
-        <Troubleshooting />
+              {/* JSON Schema */}
+              {showSchema && (
+                <section id="schema" className="scroll-mt-20 space-y-4">
+                  <h2 className="text-xl font-semibold text-foreground">Event Schema</h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Every event POSTed to the ingest endpoint must follow this JSON shape.
+                    Only <code className="text-primary/80 bg-muted px-1 rounded">source</code>,{' '}
+                    <code className="text-primary/80 bg-muted px-1 rounded">eventType</code>, and{' '}
+                    <code className="text-primary/80 bg-muted px-1 rounded">title</code> are required.
+                  </p>
+                  <CodeBlock code={SCHEMA_EXAMPLE} lang="json" />
+                </section>
+              )}
+
+              {/* Connector docs */}
+              {filteredConnectors.map((t) => (
+                <ConnectorDoc key={t.id} template={t} />
+              ))}
+
+              {/* Troubleshooting */}
+              {showTroubleshooting && <Troubleshooting />}
+
+              {/* No results */}
+              {!hasResults && (
+                <p className="text-sm text-muted-foreground text-center py-8">No results for "{search}"</p>
+              )}
+            </>
+          );
+        })()}
       </main>
     </div>
   );
