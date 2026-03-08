@@ -223,9 +223,13 @@ export default function Landing() {
           </p>
 
           <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
-            {integrations.map((i) => (
-              <button
+            {integrations.map((i, idx) => (
+              <motion.button
                 key={i.name}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-60px' }}
+                transition={{ duration: 0.5, delay: idx * 0.08, ease: [0.16, 1, 0.3, 1] }}
                 onClick={() => navigate(`/docs#${i.name.toLowerCase().replace(/\s/g, '')}`)}
                 className="group flex flex-col items-center gap-3 rounded-xl border border-border/30 bg-card/30 p-5 hover:border-primary/30 hover:bg-card/60 transition-colors text-center"
               >
@@ -236,7 +240,7 @@ export default function Landing() {
                   <p className="text-sm font-medium">{i.name}</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{i.desc}</p>
                 </div>
-              </button>
+              </motion.button>
             ))}
           </div>
 
