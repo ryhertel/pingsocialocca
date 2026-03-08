@@ -130,18 +130,24 @@ export function OnboardingTour({ open, onComplete }: OnboardingTourProps) {
     };
   } else if (rect) {
     const centerX = rect.left + rect.width / 2;
+    const clampedLeft = Math.max(160, Math.min(centerX, window.innerWidth - 160));
     if (current.position === 'bottom') {
+      const top = rect.bottom + padding + 12;
+      // If tooltip would overflow bottom, place it inside the target area instead
+      const maxTop = window.innerHeight - 200;
       tooltipStyle = {
         position: 'fixed',
-        top: rect.bottom + padding + 12,
-        left: Math.max(160, Math.min(centerX, window.innerWidth - 160)),
+        top: Math.min(top, maxTop),
+        left: clampedLeft,
         transform: 'translateX(-50%)',
       };
     } else {
+      const bottomVal = window.innerHeight - rect.top + padding + 12;
+      const maxBottom = window.innerHeight - 200;
       tooltipStyle = {
         position: 'fixed',
-        bottom: window.innerHeight - rect.top + padding + 12,
-        left: Math.max(160, Math.min(centerX, window.innerWidth - 160)),
+        bottom: Math.min(bottomVal, maxBottom),
+        left: clampedLeft,
         transform: 'translateX(-50%)',
       };
     }
