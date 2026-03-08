@@ -707,7 +707,7 @@ export function handleDemoInput(text: string) {
       showcaseRunning = true;
 
       const effectNames = Object.keys(DEMO_EFFECTS);
-      const INTERVAL = 3000;
+      const INTERVAL = 3000 * showcaseSpeed;
       deliverResponse({
         text: `🎬 **Showcase reel starting!** Cycling through all ${effectNames.length} effects… Type \`/demo stop\` to cancel.`,
         buttons: [{ label: '⏹️ Stop', action: 'demo_stop' }],
