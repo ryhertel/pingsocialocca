@@ -1,10 +1,11 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight, Menu, X } from 'lucide-react';
+import { ArrowRight, Menu, Sun, Moon } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import pingLogo from '@/assets/ping-logo-white.png';
 import { cn } from '@/lib/utils';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 
 const NAV_SECTIONS = [
   { id: 'how-it-works', label: 'How It Works', fallback: '/docs' },
@@ -47,6 +48,8 @@ export function LandingNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const isLanding = location.pathname === '/';
+  const { colorMode, setColorMode } = useSettingsStore();
+  const isDark = colorMode === 'dark' || (colorMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const sectionIds = useMemo(() => NAV_SECTIONS.map((s) => s.id), []);
   const activeSection = useActiveSection(sectionIds);
 
@@ -131,6 +134,13 @@ export function LandingNav() {
           >
             Docs
           </button>
+          <button
+            onClick={() => setColorMode(isDark ? 'light' : 'dark')}
+            className="hidden sm:inline-flex p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Toggle theme"
+          >
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
           <Button size="sm" onClick={() => navigate('/app')} className="gap-1.5 hidden sm:flex">
             Launch App <ArrowRight className="h-3.5 w-3.5" />
           </Button>
@@ -167,6 +177,13 @@ export function LandingNav() {
                   className="text-left text-base py-2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Docs
+                </button>
+                <button
+                  onClick={() => setColorMode(isDark ? 'light' : 'dark')}
+                  className="flex items-center gap-2 text-left text-base py-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                  {isDark ? 'Light Mode' : 'Dark Mode'}
                 </button>
                 <Button onClick={() => { setSheetOpen(false); navigate('/app'); }} className="gap-1.5 mt-4">
                   Launch App <ArrowRight className="h-3.5 w-3.5" />
