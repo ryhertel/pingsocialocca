@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      ping_analytics: {
+        Row: {
+          country: string | null
+          created_at: string
+          event_name: string
+          id: string
+          page: string | null
+          referrer: string | null
+          screen_h: number | null
+          screen_w: number | null
+          user_agent: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          event_name: string
+          id?: string
+          page?: string | null
+          referrer?: string | null
+          screen_h?: number | null
+          screen_w?: number | null
+          user_agent?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          event_name?: string
+          id?: string
+          page?: string | null
+          referrer?: string | null
+          screen_h?: number | null
+          screen_w?: number | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       ping_channels: {
         Row: {
           channel_key: string
