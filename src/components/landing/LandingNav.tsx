@@ -63,7 +63,7 @@ export function LandingNav() {
   const { colorMode, setColorMode } = useSettingsStore();
   const isDark = colorMode === 'dark' || (colorMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const sectionIds = useMemo(() => NAV_SECTIONS.map((s) => s.id), []);
-  const activeSection = useActiveSection(sectionIds);
+  const { active: activeSection, forceActive } = useActiveSection(sectionIds);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -99,6 +99,7 @@ export function LandingNav() {
 
   const handleNav = (sectionId: string, fallbackRoute: string) => {
     if (isLanding) {
+      forceActive(sectionId);
       scrollToSection(sectionId);
     } else {
       navigate(fallbackRoute);
