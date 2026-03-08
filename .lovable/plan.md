@@ -1,61 +1,43 @@
 
 
-# Fix Markdown Headings Not Rendering in Multi-Line Blocks
+## Two Issues
 
-## Problem
-The `ChatMarkdown` parser only detects headings when a block contains exactly one line (`lines.length === 1`). If a heading like `## Agent/automation vibe` is followed by body text with a single newline (no blank line separator), the entire block is treated as a plain paragraph -- so `##` renders as literal text.
+### 1. Add OpenClaw to the Integrations Section
 
-## Fix
-Change `parseBlock` in `ChatMarkdown.tsx` to process each line individually instead of only checking single-line blocks. When a line starts with `#`, render it as a heading element. Other lines continue through the existing list/paragraph logic.
+OpenClaw is the primary local AI agent bridge and the most important connector, but it's completely missing from the landing page integrations grid. It needs to be added as the first (or prominently placed) item.
 
-## Technical Detail
+**Files to change:**
 
-**File: `src/components/ping/ChatMarkdown.tsx`**
+- **`src/components/landing/IntegrationsSection.tsx`**: Add OpenClaw to the `integrations` array as the first entry, using the `Bot` icon from lucide-react (or `Terminal`). Name: "OpenClaw", desc: "Local AI agent bridge. Connect your own agent over WebSocket." Update the subtitle copy to say "9 connectors" instead of "8". Link it to the OpenClaw setup or docs anchor.
 
-Replace the current `parseBlock` function logic:
+- **`src/lib/connectors/connectorTemplates.ts`**: Add an OpenClaw connector template entry at the top of the array with id `openclaw`, appropriate setup steps referencing the WebSocket bridge at `ws://127.0.0.1:3939/ping`, and a test event. This ensures it also appears on the `/connectors` page.
 
-1. Remove the `lines.length === 1` guard around heading detection
-2. Process lines one at a time: split the block into "runs" where heading lines become their own elements and consecutive non-heading lines get grouped into paragraphs/lists as before
-3. This handles both standalone headings and headings mixed into multi-line content
+- **`src/pages/Connectors.tsx`**: Ensure the ICON_MAP includes the icon used for OpenClaw so it renders correctly on that page too.
 
-The key change is roughly:
+### 2. Remove All Emdashes from User-Facing Copy
 
-```tsx
-function parseBlock(block: string, blockKey: number): React.ReactNode {
-  const lines = block.split('\n');
-  const headingRe = /^(#{1,6})\s+(.+)$/;
+Replace every `—` (emdash) with either `. ` (period + space), `,` (comma), or `-` (hyphen) depending on context across the entire site. Files with emdashes in user-facing copy:
 
-  // If block has mixed heading + non-heading lines, split into sub-blocks
-  const elements: React.ReactNode[] = [];
-  let nonHeadingBuffer: string[] = [];
-  let subKey = 0;
+| File | Emdash locations |
+|------|-----------------|
+| `src/components/landing/HeroSection.tsx` | Line 30: "webhook, or automation —" |
+| `src/components/landing/HeroSection.tsx` | Line 52: "Live preview —" |
+| `src/components/landing/IntegrationsSection.tsx` | Line 31: "events —" |
+| `src/components/landing/FeaturesSection.tsx` | Line 6: "happen —" |
+| `src/components/landing/FeaturesSection.tsx` | Line 9: "do-not-disturb —" (keep the hyphens in "do-not-disturb", remove emdash) |
+| `src/components/landing/HowItWorksSection.tsx` | Line 4: "app —" |
+| `src/components/ping/WelcomeDialog.tsx` | Line 30: "companion —" |
+| `src/components/ping/OnboardingTour.tsx` | Line 18: "Ping —" |
+| `src/components/ping/DiagnosticsPanel.tsx` | Lines 87, 112, 198, 199 |
+| `src/components/ping/WebhookPanel.tsx` | Line 125: "Order #1234 —" |
+| `src/components/ping/FaceCanvas.tsx` | Lines 226, 240 (code comments only, not user-facing) |
+| `src/components/ErrorBoundary.tsx` | Line 26: "reloading —" |
+| `src/pages/Index.tsx` | Line 207 (tooltip copy) |
+| `src/lib/connectors/connectorTemplates.ts` | Multiple descriptions and notes fields |
+| `src/lib/bridge.ts` | Code comments only |
+| `src/lib/spectacles.ts` | Code comments only |
+| `src/stores/useIngestStore.ts` | Code comment only |
+| `src/lib/ingest/realtime.ts` | Code comment only |
 
-  const flushBuffer = () => {
-    if (nonHeadingBuffer.length > 0) {
-      elements.push(parseNonHeadingLines(nonHeadingBuffer, subKey++));
-      nonHeadingBuffer = [];
-    }
-  };
-
-  for (const line of lines) {
-    const hm = headingRe.exec(line.trim());
-    if (hm) {
-      flushBuffer();
-      const level = Math.min(hm[1].length, 6);
-      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
-      elements.push(<Tag key={subKey++} className={`chat-md-h${level}`}>{parseLine(hm[2])}</Tag>);
-    } else {
-      nonHeadingBuffer.push(line);
-    }
-  }
-  flushBuffer();
-
-  if (elements.length === 1) return React.cloneElement(elements[0] as React.ReactElement, { key: blockKey });
-  return <React.Fragment key={blockKey}>{elements}</React.Fragment>;
-}
-```
-
-The existing code-block, list, and paragraph logic moves into a helper `parseNonHeadingLines()` function that handles the non-heading line groups.
-
-No other files need changes -- the heading CSS styles already exist in `index.css`.
+Code comments will be left as-is. Only user-visible strings (JSX text, template data strings) will be updated. Each emdash will be replaced with the most natural alternative for its context (typically ". " or ", " or " - ").
 
