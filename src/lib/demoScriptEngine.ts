@@ -556,7 +556,7 @@ export function handleDemoInput(text: string) {
       const reaction = routeEvent({
         id: crypto.randomUUID(),
         source: 'demo',
-        eventType: 'info',
+        eventType: 'message',
         title: effect.title,
         body: effect.keywords,
         severity: 1,
