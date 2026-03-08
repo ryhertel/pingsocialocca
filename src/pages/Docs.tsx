@@ -204,6 +204,7 @@ function Troubleshooting() {
 /* ------------------------------------------------------------------ */
 export default function Docs() {
   const navigate = useNavigate();
+  const [search, setSearch] = useState('');
 
   return (
     <div className="min-h-screen bg-background">
