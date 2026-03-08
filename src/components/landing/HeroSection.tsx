@@ -10,6 +10,7 @@ import type { ThemePreset } from '@/lib/types';
 
 export function HeroSection() {
   const navigate = useNavigate();
+  const { theme, setTheme } = useSettingsStore();
 
   return (
     <section className="relative pt-32 pb-20 sm:pb-28 px-6 flex flex-col items-center text-center">
