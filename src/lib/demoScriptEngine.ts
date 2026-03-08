@@ -336,6 +336,15 @@ const ACTION_MAP: Record<string, () => ResponseNode> = {
       module: 'integrations' as const,
     };
   },
+  // Demo effect trigger buttons
+  demo_milestone: () => { triggerDemoEffect('milestone'); return getDemoEffectResponse('milestone'); },
+  demo_party: () => { triggerDemoEffect('party'); return getDemoEffectResponse('party'); },
+  demo_money: () => { triggerDemoEffect('money'); return getDemoEffectResponse('money'); },
+  demo_love: () => { triggerDemoEffect('love'); return getDemoEffectResponse('love'); },
+  demo_alert: () => { triggerDemoEffect('alert'); return getDemoEffectResponse('alert'); },
+  demo_deploy: () => { triggerDemoEffect('deploy'); return getDemoEffectResponse('deploy'); },
+  demo_subscriber: () => { triggerDemoEffect('subscriber'); return getDemoEffectResponse('subscriber'); },
+  demo_error: () => { triggerDemoEffect('error'); return getDemoEffectResponse('error'); },
 };
 
 function resolveAction(action: string): ResponseNode {
