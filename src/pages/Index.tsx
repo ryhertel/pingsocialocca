@@ -2,6 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
+import { useHaptics } from '@/hooks/useHaptics';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { PullIndicator } from '@/components/ping/PullIndicator';
 import { FaceCanvas } from '@/components/ping/FaceCanvas';
 import { StatusChip } from '@/components/ping/StatusChip';
 import { ChatStack } from '@/components/ping/ChatStack';
@@ -158,6 +161,17 @@ const Index = () => {
     onConnectors: () => navigate('/connectors'),
     onDocs: () => navigate('/docs'),
   };
+  const { vibrate } = useHaptics();
+
+  const handleRefresh = useCallback(async () => {
+    vibrate('success');
+    window.location.reload();
+  }, [vibrate]);
+
+  const { containerRef: pullRef, pulling, pullDistance, refreshing } = usePullToRefresh({
+    onRefresh: handleRefresh,
+    disabled: !isMobile,
+  });
 
   const landscapeHideChat = isMobile && isLandscape;
 
