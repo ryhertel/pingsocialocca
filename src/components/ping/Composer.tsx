@@ -197,6 +197,7 @@ export function Composer() {
             }
           }}
           placeholder="Type a message…"
+          data-composer-input
           className="bg-muted/30 border-border/40 text-foreground placeholder:text-muted-foreground/40 backdrop-blur-sm"
         />
         <Button

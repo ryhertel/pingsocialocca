@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSettingsStore, ENERGY_PRESETS } from '@/stores/useSettingsStore';
 import { usePingStore } from '@/stores/usePingStore';
 import { themePresets } from '@/lib/themes';
-import type { ThemePreset, AutoLockMinutes, ChatLayout } from '@/lib/types';
-import { MessageCircle, PanelRight, Trash2 } from 'lucide-react';
+import type { ThemePreset, ColorMode, AutoLockMinutes, ChatLayout } from '@/lib/types';
+import { MessageCircle, PanelRight, Trash2, Sun, Moon, Monitor } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface SettingsPanelProps {
@@ -64,6 +64,31 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
                   />
                 ),
               )}
+            </div>
+          </div>
+
+          {/* Color Mode */}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Appearance</Label>
+            <div className="flex gap-2">
+              {([
+                { key: 'dark' as ColorMode, icon: Moon, label: 'Dark' },
+                { key: 'light' as ColorMode, icon: Sun, label: 'Light' },
+                { key: 'system' as ColorMode, icon: Monitor, label: 'System' },
+              ]).map(({ key, icon: Icon, label }) => (
+                <button
+                  key={key}
+                  onClick={() => settings.setColorMode(key)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs border transition-all ${
+                    settings.colorMode === key
+                      ? 'border-primary/50 bg-primary/10 text-foreground'
+                      : 'border-border/30 bg-muted/20 text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 

@@ -2,6 +2,7 @@ export type PersistentState = 'disconnected' | 'idle' | 'thinking' | 'speaking' 
 export type TransientReaction = 'success' | 'notify' | null;
 export type ConnectionMode = 'demo' | 'bridge';
 export type ThemePreset = 'mint' | 'sky' | 'berry' | 'honey';
+export type ColorMode = 'dark' | 'light' | 'system';
 export type AnimationIntensity = 'low' | 'medium' | 'high';
 export type AutoLockMinutes = 5 | 15 | 30 | 60;
 export type ChatLayout = 'bubbles' | 'docked';

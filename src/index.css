@@ -63,6 +63,47 @@
   }
 }
 
+/* Light mode overrides */
+.light {
+  --ping-bg: 210 20% 96%;
+  --ping-surface: 210 20% 92%;
+  --ping-stroke: 210 15% 82%;
+  --ping-text: 216 28% 10%;
+  --ping-text-secondary: 215 12% 40%;
+
+  --background: 210 20% 96%;
+  --foreground: 216 28% 10%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 216 28% 10%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 216 28% 10%;
+
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 210 18% 90%;
+  --secondary-foreground: 216 28% 10%;
+
+  --muted: 210 18% 90%;
+  --muted-foreground: 215 12% 40%;
+
+  --accent-foreground: 216 28% 10%;
+
+  --destructive: 0 84% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 210 15% 82%;
+  --input: 210 15% 82%;
+
+  --sidebar-background: 210 20% 94%;
+  --sidebar-foreground: 216 28% 10%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 210 18% 90%;
+  --sidebar-accent-foreground: 216 28% 10%;
+  --sidebar-border: 210 15% 82%;
+}
+
 @layer base {
   * {
     @apply border-border;

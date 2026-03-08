@@ -1,0 +1,21 @@
+{
+  "name": "Ping — Notification Visualizer",
+  "short_name": "Ping",
+  "description": "A friendly, eyes-only presence UI for AI agents.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e15",
+  "theme_color": "#0a0e15",
+  "icons": [
+    {
+      "src": "/ping-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/ping-square.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
