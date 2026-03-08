@@ -48,6 +48,8 @@ export function LandingNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const isLanding = location.pathname === '/';
+  const { colorMode, setColorMode } = useSettingsStore();
+  const isDark = colorMode === 'dark' || (colorMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const sectionIds = useMemo(() => NAV_SECTIONS.map((s) => s.id), []);
   const activeSection = useActiveSection(sectionIds);
 
