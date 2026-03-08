@@ -713,6 +713,28 @@ export function playPartyHorn(volume: number, muted: boolean, dnd: boolean) {
   shim.stop(t + 0.25);
 }
 
+// ── Swatch Pop: Bright pop for theme swatch clicks ──
+export function playSwatchPop(volume = 0.5) {
+  const ctx = getCtx();
+  const p = pv();
+  const t = ctx.currentTime;
+
+  // Quick sine sweep 800→1200Hz
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(800 * p, t);
+  osc.frequency.exponentialRampToValueAtTime(1200 * p, t + 0.06);
+  const g = buildChain(ctx, osc, 0, { reverb: 0.2, warmth: false });
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(volume * 0.15, t + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+  osc.start(t);
+  osc.stop(t + 0.12);
+
+  // Tiny noise transient
+  playNoiseBurst(ctx, volume * 0.1, 0.01, t);
+}
+
 // ── Utility: trigger emotion on eyes ──
 export function triggerEmotion(emotion: string, duration = 2000) {
   window.dispatchEvent(new CustomEvent('ping:emotion', { detail: { emotion, duration } }));

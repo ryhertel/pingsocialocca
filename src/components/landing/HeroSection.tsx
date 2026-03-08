@@ -9,6 +9,7 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { themePresets } from '@/lib/themes';
 import type { ThemePreset } from '@/lib/types';
 import { useState, useCallback } from 'react';
+import { playSwatchPop } from '@/lib/audio';
 
 interface Particle {
   id: number;
@@ -120,6 +121,7 @@ export function HeroSection() {
                     whileHover={{ scale: 1.1, opacity: 1 }}
                     onClick={(e) => {
                       spawnParticles(e, `hsl(${preset.glowPrimary})`);
+                      playSwatchPop();
                       setTheme(key);
                     }}
                     aria-label={`${preset.name} theme`}
