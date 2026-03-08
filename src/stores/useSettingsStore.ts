@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { ThemePreset, AnimationIntensity, ConnectionMode, AutoLockMinutes, ChatLayout } from '@/lib/types';
+import type { ThemePreset, ColorMode, AnimationIntensity, ConnectionMode, AutoLockMinutes, ChatLayout } from '@/lib/types';
 import { themePresets } from '@/lib/themes';
 
 interface SettingsState {
   displayName: string;
   theme: ThemePreset;
+  colorMode: ColorMode;
   animationIntensity: AnimationIntensity;
   energyLevel: number; // 0-100
   muted: boolean;
@@ -21,6 +22,7 @@ interface SettingsState {
 
   setDisplayName: (name: string) => void;
   setTheme: (theme: ThemePreset) => void;
+  setColorMode: (mode: ColorMode) => void;
   setAnimationIntensity: (intensity: AnimationIntensity) => void;
   setEnergyLevel: (level: number) => void;
   setMuted: (muted: boolean) => void;
@@ -43,6 +45,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       displayName: 'Ping',
       theme: 'mint',
+      colorMode: 'dark',
       animationIntensity: 'medium',
       energyLevel: 50,
       muted: false,
@@ -58,6 +61,7 @@ export const useSettingsStore = create<SettingsState>()(
 
       setDisplayName: (displayName) => set({ displayName }),
       setTheme: (theme) => set({ theme }),
+      setColorMode: (colorMode) => set({ colorMode }),
       setAnimationIntensity: (animationIntensity) => set({ animationIntensity }),
       setEnergyLevel: (energyLevel) => set({ energyLevel: Math.max(0, Math.min(100, energyLevel)) }),
       setMuted: (muted) => set({ muted }),
@@ -77,6 +81,7 @@ export const useSettingsStore = create<SettingsState>()(
       partialize: (state) => ({
         displayName: state.displayName,
         theme: state.theme,
+        colorMode: state.colorMode,
         animationIntensity: state.animationIntensity,
         energyLevel: state.energyLevel,
         muted: state.muted,
@@ -110,9 +115,37 @@ function applyThemeToCSS() {
   root.style.setProperty('--accent', toSpaced(preset.accent));
 }
 
+// Apply color mode class to <html>
+function applyColorMode() {
+  const { colorMode } = useSettingsStore.getState();
+  const root = document.documentElement;
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  const isDark = colorMode === 'dark' || (colorMode === 'system' && mq.matches);
+  root.classList.toggle('light', !isDark);
+}
+
+let mqListener: ((e: MediaQueryListEvent) => void) | null = null;
+
 if (typeof document !== 'undefined') {
-  setTimeout(applyThemeToCSS, 0);
+  setTimeout(() => { applyThemeToCSS(); applyColorMode(); }, 0);
   useSettingsStore.subscribe((state, prev) => {
     if (state.theme !== prev.theme) applyThemeToCSS();
+    if (state.colorMode !== prev.colorMode) {
+      applyColorMode();
+      // Manage system listener
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      if (mqListener) { mq.removeEventListener('change', mqListener); mqListener = null; }
+      if (state.colorMode === 'system') {
+        mqListener = () => applyColorMode();
+        mq.addEventListener('change', mqListener);
+      }
+    }
   });
+  // Init system listener if needed
+  const initial = useSettingsStore.getState().colorMode;
+  if (initial === 'system') {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    mqListener = () => applyColorMode();
+    mq.addEventListener('change', mqListener);
+  }
 }
