@@ -1,13 +1,21 @@
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+const anim = {
+  initial: { opacity: 0, y: 24 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: '-60px' } as const,
+  transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+};
 
 export function DemoCtaSection() {
   const navigate = useNavigate();
 
   return (
     <section className="py-20 px-6 border-t border-border/20">
-      <div className="max-w-3xl mx-auto text-center">
+      <motion.div {...anim} className="max-w-3xl mx-auto text-center">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 mb-6">
           <Sparkles className="h-4 w-4 text-primary" />
           <span className="text-sm text-primary font-medium">No setup needed</span>
@@ -24,7 +32,7 @@ export function DemoCtaSection() {
         <Button size="lg" onClick={() => navigate('/app')} className="gap-2 text-base px-8">
           Launch Ping <ArrowRight className="h-4 w-4" />
         </Button>
-      </div>
+      </motion.div>
     </section>
   );
 }
@@ -34,7 +42,7 @@ export function FinalCtaSection() {
 
   return (
     <section className="py-24 px-6 text-center border-t border-border/20">
-      <div className="max-w-2xl mx-auto">
+      <motion.div {...anim} className="max-w-2xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-bold mb-4">
           Ready to give your agent a face?
         </h2>
@@ -49,7 +57,7 @@ export function FinalCtaSection() {
             <BookOpen className="h-4 w-4" /> Documentation
           </Button>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
