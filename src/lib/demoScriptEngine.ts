@@ -33,6 +33,7 @@ let state: DemoState = {
 let activeTimers: number[] = [];
 let showcaseTimers: number[] = [];
 let showcaseRunning = false;
+let showcaseSpeed = 1; // multiplier: 0.5 = fast, 2 = slow
 let revealCleanups: (() => void)[] = [];
 
 function clearAll() {
@@ -408,6 +409,18 @@ const ACTION_MAP: Record<string, () => ResponseNode> = {
     handleDemoInput('/demo list');
     return { text: '', buttons: [], module: state.currentModule };
   },
+  'demo_speed_0.5': () => {
+    handleDemoInput('/demo speed 0.5');
+    return { text: '', buttons: [], module: state.currentModule };
+  },
+  'demo_speed_1': () => {
+    handleDemoInput('/demo speed 1');
+    return { text: '', buttons: [], module: state.currentModule };
+  },
+  'demo_speed_2': () => {
+    handleDemoInput('/demo speed 2');
+    return { text: '', buttons: [], module: state.currentModule };
+  },
 };
 
 function resolveAction(action: string): ResponseNode {
@@ -644,6 +657,35 @@ export function handleDemoInput(text: string) {
       return;
     }
 
+    // /demo speed <multiplier> — adjust showcase reel speed
+    const speedMatch = effectName.match(/^speed(?:\s+(.+))?$/);
+    if (speedMatch) {
+      const val = parseFloat(speedMatch[1]);
+      if (!speedMatch[1] || isNaN(val) || val <= 0 || val > 10) {
+        deliverResponse({
+          text: `⏱️ **Current speed:** ${showcaseSpeed}×\n\nUsage: \`/demo speed <multiplier>\` (0.1–10)\n• \`/demo speed 0.5\` → faster (1.5s between effects)\n• \`/demo speed 1\` → default (3s)\n• \`/demo speed 2\` → slower (6s)`,
+          buttons: [
+            { label: '⚡ 0.5×', action: 'demo_speed_0.5' },
+            { label: '🔄 1×', action: 'demo_speed_1' },
+            { label: '🐢 2×', action: 'demo_speed_2' },
+          ],
+          module: state.currentModule,
+        });
+        return;
+      }
+      showcaseSpeed = val;
+      deliverResponse({
+        text: `⏱️ **Showcase speed set to ${val}×** — effects will play every ${(3 * val).toFixed(1)}s.\n\nStart a reel with \`/demo all\` to see it in action.`,
+        buttons: [
+          { label: '▶️ Play all', action: 'demo_all' },
+          { label: '⚡ 0.5×', action: 'demo_speed_0.5' },
+          { label: '🔄 1×', action: 'demo_speed_1' },
+        ],
+        module: state.currentModule,
+      });
+      return;
+    }
+
     // /demo stop — cancel showcase reel
     if (effectName === 'stop') {
       if (showcaseRunning) {
@@ -677,7 +719,7 @@ export function handleDemoInput(text: string) {
       showcaseRunning = true;
 
       const effectNames = Object.keys(DEMO_EFFECTS);
-      const INTERVAL = 3000;
+      const INTERVAL = 3000 * showcaseSpeed;
       deliverResponse({
         text: `🎬 **Showcase reel starting!** Cycling through all ${effectNames.length} effects… Type \`/demo stop\` to cancel.`,
         buttons: [{ label: '⏹️ Stop', action: 'demo_stop' }],
