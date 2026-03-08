@@ -8,7 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import pingLogo from '@/assets/ping-logo-white.png';
-import FaceCanvas from '@/components/ping/FaceCanvas';
+import { FaceCanvas } from '@/components/ping/FaceCanvas';
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
