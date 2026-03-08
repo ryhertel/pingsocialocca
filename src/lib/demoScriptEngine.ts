@@ -33,6 +33,7 @@ let state: DemoState = {
 let activeTimers: number[] = [];
 let showcaseTimers: number[] = [];
 let showcaseRunning = false;
+let showcaseSpeed = 1; // multiplier: 0.5 = fast, 2 = slow
 let revealCleanups: (() => void)[] = [];
 
 function clearAll() {
