@@ -159,14 +159,21 @@ export default function Landing() {
           </p>
 
           <div className="grid gap-8 sm:grid-cols-3">
-            {howItWorks.map((s) => (
-              <div key={s.step} className="text-center">
+            {howItWorks.map((s, i) => (
+              <motion.div
+                key={s.step}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-60px' }}
+                transition={{ duration: 0.5, delay: i * 0.15, ease: [0.16, 1, 0.3, 1] }}
+                className="text-center"
+              >
                 <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-lg">
                   {s.step}
                 </div>
                 <h3 className="font-semibold text-lg mb-2">{s.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -184,9 +191,13 @@ export default function Landing() {
           </p>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((f) => (
-              <div
+            {features.map((f, i) => (
+              <motion.div
                 key={f.title}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-60px' }}
+                transition={{ duration: 0.5, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
                 className="group rounded-xl border border-border/30 bg-card/40 backdrop-blur-sm p-6 hover:border-primary/30 transition-colors"
               >
                 <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
@@ -194,7 +205,7 @@ export default function Landing() {
                 </div>
                 <h3 className="font-semibold text-lg mb-2">{f.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
