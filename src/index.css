@@ -1,3 +1,21 @@
+@property --glow-primary {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: hsl(160, 100%, 50%);
+}
+
+@property --glow-secondary {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: hsl(150, 80%, 60%);
+}
+
+@property --ping-accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: hsl(155, 90%, 45%);
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
