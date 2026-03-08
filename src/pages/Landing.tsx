@@ -8,6 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import pingLogo from '@/assets/ping-logo-white.png';
+import FaceCanvas from '@/components/ping/FaceCanvas';
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -131,9 +132,9 @@ export default function Landing() {
         </div>
 
         {/* Animated eyes preview */}
-        <div className="relative mt-16 w-full max-w-lg aspect-video rounded-2xl border border-border/30 bg-card/50 backdrop-blur-sm overflow-hidden flex items-center justify-center shadow-[0_0_80px_-20px_hsl(var(--glow-primary)/0.15)]">
-          <EyesPreview />
-          <div className="absolute bottom-3 left-0 right-0 flex justify-center">
+        <div className="relative mt-16 w-full max-w-lg aspect-video rounded-2xl border border-border/30 bg-card/50 backdrop-blur-sm overflow-hidden shadow-[0_0_80px_-20px_hsl(var(--glow-primary)/0.15)]">
+          <FaceCanvas />
+          <div className="absolute bottom-3 left-0 right-0 flex justify-center z-10">
             <Badge variant="secondary" className="text-[10px] bg-muted/60 backdrop-blur-sm">
               Live preview — this is what Ping looks like
             </Badge>
@@ -346,35 +347,3 @@ export default function Landing() {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Mini animated eyes for the hero card                               */
-/* ------------------------------------------------------------------ */
-function EyesPreview() {
-  return (
-    <svg viewBox="0 0 200 80" className="w-48 opacity-80">
-      <defs>
-        <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="hsl(var(--glow-primary))" stopOpacity="0.6" />
-          <stop offset="100%" stopColor="transparent" />
-        </radialGradient>
-      </defs>
-      {/* Left eye */}
-      <ellipse cx="65" cy="40" rx="22" ry="22" fill="none" stroke="hsl(var(--glow-primary))" strokeWidth="2" opacity="0.7">
-        <animate attributeName="ry" values="22;2;22" dur="4s" repeatCount="indefinite" begin="0s" keyTimes="0;0.05;0.1" keySplines="0.4 0 0.2 1;0.4 0 0.2 1" calcMode="spline" />
-      </ellipse>
-      <circle cx="65" cy="40" r="8" fill="hsl(var(--glow-primary))">
-        <animate attributeName="cx" values="65;68;62;65" dur="6s" repeatCount="indefinite" />
-      </circle>
-      <ellipse cx="65" cy="40" rx="30" ry="30" fill="url(#eyeGlow)" opacity="0.3" />
-
-      {/* Right eye */}
-      <ellipse cx="135" cy="40" rx="22" ry="22" fill="none" stroke="hsl(var(--glow-primary))" strokeWidth="2" opacity="0.7">
-        <animate attributeName="ry" values="22;2;22" dur="4s" repeatCount="indefinite" begin="0s" keyTimes="0;0.05;0.1" keySplines="0.4 0 0.2 1;0.4 0 0.2 1" calcMode="spline" />
-      </ellipse>
-      <circle cx="135" cy="40" r="8" fill="hsl(var(--glow-primary))">
-        <animate attributeName="cx" values="135;138;132;135" dur="6s" repeatCount="indefinite" />
-      </circle>
-      <ellipse cx="135" cy="40" rx="30" ry="30" fill="url(#eyeGlow)" opacity="0.3" />
-    </svg>
-  );
-}
