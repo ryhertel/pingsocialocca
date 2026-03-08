@@ -7,7 +7,7 @@ const features = [
   {
     icon: Eye,
     title: 'Always-On Presence',
-    desc: 'An expressive animated face that reacts to your AI agent's notifications in real time.',
+    desc: 'An expressive animated face that reacts to your AI agent\'s notifications in real time.',
   },
   {
     icon: Zap,
