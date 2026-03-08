@@ -134,6 +134,13 @@ export function LandingNav() {
           >
             Docs
           </button>
+          <button
+            onClick={() => setColorMode(isDark ? 'light' : 'dark')}
+            className="hidden sm:inline-flex p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Toggle theme"
+          >
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
           <Button size="sm" onClick={() => navigate('/app')} className="gap-1.5 hidden sm:flex">
             Launch App <ArrowRight className="h-3.5 w-3.5" />
           </Button>
