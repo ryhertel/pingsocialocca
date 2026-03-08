@@ -3,6 +3,8 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { startTextReveal } from './textReveal';
 import { playReceive, playNotify, playConfirm, playExcited, playThinking, playMotif, triggerEmotion } from './audio';
 import { routeInput } from './demoIntentRouter';
+import { routeEvent } from './ingest/reactionRouter';
+import { executeReaction } from './ingest/reactionExecutor';
 import type { DemoButton, DemoAction } from './types';
 
 interface DemoState {
