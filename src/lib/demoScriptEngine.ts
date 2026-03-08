@@ -532,6 +532,66 @@ export function stopScriptedDemo() {
 
 export function handleDemoInput(text: string) {
   const store = usePingStore.getState();
+  const trimmed = text.trim();
+
+  // /demo <effect> command — trigger reaction effects directly
+  const demoMatch = trimmed.match(/^\/demo\s+(.+)$/i);
+  if (demoMatch) {
+    const effectName = demoMatch[1].trim().toLowerCase();
+    const DEMO_EFFECTS: Record<string, { title: string; keywords: string }> = {
+      milestone:  { title: '🎯 Milestone reached!', keywords: 'milestone achieved goal' },
+      party:      { title: '🎉 Party time!', keywords: 'party celebrate woohoo' },
+      money:      { title: '💰 Ka-ching!', keywords: 'payment sale money' },
+      love:       { title: '❤️ Feeling the love!', keywords: 'thanks love awesome' },
+      alert:      { title: '🚨 Urgent alert!', keywords: 'urgent critical p0' },
+      deploy:     { title: '🚀 Shipped!', keywords: 'deploy shipped released' },
+      subscriber: { title: '👤 New subscriber!', keywords: 'subscriber signup new user' },
+      message:    { title: '💬 New message!', keywords: 'message comment reply' },
+      error:      { title: '❌ Error detected!', keywords: 'failed exception crash' },
+      fireworks:  { title: '🎆 Fireworks!', keywords: 'deploy shipped' },
+    };
+
+    const effect = DEMO_EFFECTS[effectName];
+    if (effect) {
+      const reaction = routeEvent({
+        id: crypto.randomUUID(),
+        source: 'demo',
+        eventType: 'info',
+        title: effect.title,
+        body: effect.keywords,
+        severity: 1,
+        timestamp: Date.now(),
+        receivedAt: Date.now(),
+      });
+      executeReaction(reaction);
+
+      const availableEffects = Object.keys(DEMO_EFFECTS).join(', ');
+      deliverResponse({
+        text: `Triggered **${effectName}** effect! ✨\n\nTry others: \`/demo ${Object.keys(DEMO_EFFECTS).filter(k => k !== effectName).slice(0, 3).join('`, `/demo ')}\``,
+        buttons: [
+          { label: '🎉 Party', action: 'demo_party' },
+          { label: '🎯 Milestone', action: 'demo_milestone' },
+          { label: '💰 Money', action: 'demo_money' },
+          { label: '🚨 Alert', action: 'demo_alert' },
+        ],
+        module: state.currentModule,
+      });
+      return;
+    } else {
+      const availableEffects = Object.keys(DEMO_EFFECTS).join(', ');
+      deliverResponse({
+        text: `Unknown effect **"${effectName}"**. Available: ${availableEffects}`,
+        buttons: [
+          { label: '🎉 Party', action: 'demo_party' },
+          { label: '🎯 Milestone', action: 'demo_milestone' },
+          { label: '❤️ Love', action: 'demo_love' },
+        ],
+        module: state.currentModule,
+      });
+      return;
+    }
+  }
+
   store.setPersistentState('thinking');
 
   const node = resolveInput(text);
