@@ -95,6 +95,11 @@ const Index = () => {
     return () => window.removeEventListener('ping:openWebhookPanel', handler);
   }, []);
 
+  useEffect(() => {
+    const handler = () => setShowTour(true);
+    window.addEventListener('ping:startTour', handler);
+    return () => window.removeEventListener('ping:startTour', handler);
+  }, []);
   const connectionMode = useSettingsStore((s) => s.connectionMode);
   const privacyLock = useSettingsStore((s) => s.privacyLock);
   const autoLockMinutes = useSettingsStore((s) => s.autoLockMinutes);
