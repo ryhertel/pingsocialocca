@@ -59,7 +59,7 @@ export function ControlBar({ onConnect, onOpenClaw, onSettings, onDiagnostics, o
   const isDemoMode = connectionMode === 'demo';
 
   return (
-    <div className="flex items-center gap-0.5">
+    <div className="flex items-center gap-0.5" data-tour="controls">
       <ControlButton
         icon={isDemoMode ? Pause : Play}
         label={isDemoMode ? 'Demo Active' : 'Start Demo'}

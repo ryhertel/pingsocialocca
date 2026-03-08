@@ -52,6 +52,7 @@ export function StatusChip() {
 
   return (
     <div
+      data-tour="status"
       className="relative px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide backdrop-blur-sm"
       style={{ backgroundColor: bg, color: fg }}
     >
