@@ -42,6 +42,7 @@ export function Composer() {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { vibrate } = useHaptics();
   const isLocked = useSettingsStore((s) => s.isLocked);
   const addMessage = usePingStore((s) => s.addMessage);
   const setPersistentState = usePingStore((s) => s.setPersistentState);
