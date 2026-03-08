@@ -31,6 +31,8 @@ let state: DemoState = {
 };
 
 let activeTimers: number[] = [];
+let showcaseTimers: number[] = [];
+let showcaseRunning = false;
 let revealCleanups: (() => void)[] = [];
 
 function clearAll() {
@@ -391,8 +393,11 @@ const ACTION_MAP: Record<string, () => ResponseNode> = {
   demo_subscriber: () => { triggerDemoEffect('subscriber'); return getDemoEffectResponse('subscriber'); },
   demo_error: () => { triggerDemoEffect('error'); return getDemoEffectResponse('error'); },
   demo_all: () => {
-    // Trigger the showcase reel via handleDemoInput
     handleDemoInput('/demo all');
+    return { text: '', buttons: [], module: state.currentModule };
+  },
+  demo_stop: () => {
+    handleDemoInput('/demo stop');
     return { text: '', buttons: [], module: state.currentModule };
   },
 };
@@ -598,17 +603,48 @@ export function handleDemoInput(text: string) {
   if (demoMatch) {
     const effectName = demoMatch[1].trim().toLowerCase();
 
+    // /demo stop — cancel showcase reel
+    if (effectName === 'stop') {
+      if (showcaseRunning) {
+        showcaseTimers.forEach((t) => clearTimeout(t));
+        showcaseTimers = [];
+        showcaseRunning = false;
+        deliverResponse({
+          text: `⏹️ **Showcase stopped.** Try any effect individually with \`/demo <name>\` or restart with \`/demo all\`.`,
+          buttons: [
+            { label: '🔁 Replay all', action: 'demo_all' },
+            { label: '🎉 Party', action: 'demo_party' },
+            { label: '🎯 Milestone', action: 'demo_milestone' },
+          ],
+          module: state.currentModule,
+        });
+      } else {
+        deliverResponse({
+          text: `No showcase is currently running. Start one with \`/demo all\`.`,
+          buttons: [{ label: '▶️ Start showcase', action: 'demo_all' }],
+          module: state.currentModule,
+        });
+      }
+      return;
+    }
+
     // /demo all — showcase reel cycling through every effect
     if (effectName === 'all') {
+      // Cancel any existing showcase first
+      showcaseTimers.forEach((t) => clearTimeout(t));
+      showcaseTimers = [];
+      showcaseRunning = true;
+
       const effectNames = Object.keys(DEMO_EFFECTS);
       const INTERVAL = 3000;
       deliverResponse({
-        text: `🎬 **Showcase reel starting!** Cycling through all ${effectNames.length} effects…`,
-        buttons: [],
+        text: `🎬 **Showcase reel starting!** Cycling through all ${effectNames.length} effects… Type \`/demo stop\` to cancel.`,
+        buttons: [{ label: '⏹️ Stop', action: 'demo_stop' }],
         module: state.currentModule,
       });
       effectNames.forEach((name, i) => {
         const t = window.setTimeout(() => {
+          if (!showcaseRunning) return;
           triggerDemoEffect(name);
           const store = usePingStore.getState();
           store.addMessage({
@@ -622,6 +658,7 @@ export function handleDemoInput(text: string) {
           // After last effect, show completion message
           if (i === effectNames.length - 1) {
             const t2 = window.setTimeout(() => {
+              showcaseRunning = false;
               deliverResponse({
                 text: `🎬 **Showcase complete!** That was all ${effectNames.length} effects. Try any individually with \`/demo <name>\`.`,
                 buttons: [
@@ -633,10 +670,10 @@ export function handleDemoInput(text: string) {
                 module: state.currentModule,
               });
             }, INTERVAL);
-            activeTimers.push(t2);
+            showcaseTimers.push(t2);
           }
         }, (i + 1) * INTERVAL);
-        activeTimers.push(t);
+        showcaseTimers.push(t);
       });
       return;
     }
