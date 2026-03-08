@@ -21,6 +21,7 @@ export default function Landing() {
       <IntegrationsSection />
       <SchemaSection />
       <DemoCtaSection />
+      <ShareSection />
       <FinalCtaSection />
       <LandingFooter />
     </div>
