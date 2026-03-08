@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import {
   ArrowRight, Eye, Zap, Shield, Plug, Bell, Sparkles,
   CreditCard, Github, MessageSquare, Gamepad2, SquareKanban, Bug, Triangle, Webhook,

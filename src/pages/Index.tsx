@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import { FaceCanvas } from '@/components/ping/FaceCanvas';
