@@ -69,6 +69,7 @@ const howItWorks = [
 
 export default function Landing() {
   const navigate = useNavigate();
+  useAnalytics();
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">

@@ -38,6 +38,7 @@ import pingLogo from '@/assets/ping-logo-white.png';
 
 const Index = () => {
   const navigate = useNavigate();
+  useAnalytics();
   const [showConnect, setShowConnect] = useState(false);
   const [showOpenClaw, setShowOpenClaw] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
