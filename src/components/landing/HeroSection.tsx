@@ -8,10 +8,52 @@ import { motion } from 'framer-motion';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { themePresets } from '@/lib/themes';
 import type { ThemePreset } from '@/lib/types';
+import { useState, useCallback } from 'react';
+
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  color: string;
+  dx: number;
+  dy: number;
+}
+
+let particleId = 0;
 
 export function HeroSection() {
   const navigate = useNavigate();
   const { theme, setTheme } = useSettingsStore();
+  const [particles, setParticles] = useState<Particle[]>([]);
+
+  const spawnParticles = useCallback((e: React.MouseEvent<HTMLButtonElement>, color: string) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const container = e.currentTarget.closest('[data-swatch-container]')?.getBoundingClientRect();
+    if (!container) return;
+
+    const cx = rect.left + rect.width / 2 - container.left;
+    const cy = rect.top + rect.height / 2 - container.top;
+    const count = 8 + Math.floor(Math.random() * 5);
+    const newParticles: Particle[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+      const dist = 18 + Math.random() * 22;
+      newParticles.push({
+        id: ++particleId,
+        x: cx,
+        y: cy,
+        color,
+        dx: Math.cos(angle) * dist,
+        dy: Math.sin(angle) * dist,
+      });
+    }
+
+    setParticles(prev => [...prev, ...newParticles]);
+    setTimeout(() => {
+      setParticles(prev => prev.filter(p => !newParticles.includes(p)));
+    }, 600);
+  }, []);
 
   return (
     <section className="relative pt-32 pb-20 sm:pb-28 px-6 flex flex-col items-center text-center">
@@ -67,7 +109,7 @@ export function HeroSection() {
       >
         <span className="text-xs text-muted-foreground tracking-wide uppercase">Try a color</span>
         <TooltipProvider delayDuration={200}>
-          <div className="flex gap-3">
+          <div className="relative flex gap-3" data-swatch-container>
             {(Object.entries(themePresets) as [ThemePreset, typeof themePresets[ThemePreset]][]).map(([key, preset], index) => (
               <Tooltip key={key}>
                 <TooltipTrigger asChild>
@@ -76,7 +118,10 @@ export function HeroSection() {
                     animate={{ opacity: theme === key ? 1 : 0.7, scale: theme === key ? 1.1 : 1 }}
                     transition={{ duration: 0.4, delay: 1.0 + index * 0.1 }}
                     whileHover={{ scale: 1.1, opacity: 1 }}
-                    onClick={() => setTheme(key)}
+                    onClick={(e) => {
+                      spawnParticles(e, `hsl(${preset.glowPrimary})`);
+                      setTheme(key);
+                    }}
                     aria-label={`${preset.name} theme`}
                     className={`w-7 h-7 rounded-full border-2 border-border/40 ${
                       theme === key
@@ -94,6 +139,24 @@ export function HeroSection() {
                   {preset.name}
                 </TooltipContent>
               </Tooltip>
+            ))}
+
+            {particles.map(p => (
+              <span
+                key={p.id}
+                className="absolute rounded-full pointer-events-none"
+                style={{
+                  left: p.x,
+                  top: p.y,
+                  width: 4,
+                  height: 4,
+                  backgroundColor: p.color,
+                  boxShadow: `0 0 6px 2px ${p.color}`,
+                  '--sx': `${p.dx}px`,
+                  '--sy': `${p.dy}px`,
+                  animation: 'sparkle-burst 0.6s ease-out forwards',
+                } as React.CSSProperties}
+              />
             ))}
           </div>
         </TooltipProvider>

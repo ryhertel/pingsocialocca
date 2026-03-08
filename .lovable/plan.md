@@ -1,33 +1,61 @@
 
 
-## Plan: Sparkle Burst on Theme Swatch Click
+# Fix Markdown Headings Not Rendering in Multi-Line Blocks
 
-Add a small particle burst effect when clicking a theme swatch. Particles will emit from the clicked swatch's position, colored to match the selected theme, and fade out quickly.
+## Problem
+The `ChatMarkdown` parser only detects headings when a block contains exactly one line (`lines.length === 1`). If a heading like `## Agent/automation vibe` is followed by body text with a single newline (no blank line separator), the entire block is treated as a plain paragraph -- so `##` renders as literal text.
 
-### Approach
+## Fix
+Change `parseBlock` in `ChatMarkdown.tsx` to process each line individually instead of only checking single-line blocks. When a line starts with `#`, render it as a heading element. Other lines continue through the existing list/paragraph logic.
 
-Create a lightweight sparkle system using `useState` + CSS animations (no canvas overhead). On click, spawn 8-12 tiny particles at the swatch position that fly outward and fade.
+## Technical Detail
 
-### File: `src/index.css`
-Add a `@keyframes sparkle-burst` animation that scales up, translates outward, and fades out over ~600ms.
+**File: `src/components/ping/ChatMarkdown.tsx`**
 
-```css
-@keyframes sparkle-burst {
-  0% { opacity: 1; transform: translate(0, 0) scale(1); }
-  100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(0); }
+Replace the current `parseBlock` function logic:
+
+1. Remove the `lines.length === 1` guard around heading detection
+2. Process lines one at a time: split the block into "runs" where heading lines become their own elements and consecutive non-heading lines get grouped into paragraphs/lists as before
+3. This handles both standalone headings and headings mixed into multi-line content
+
+The key change is roughly:
+
+```tsx
+function parseBlock(block: string, blockKey: number): React.ReactNode {
+  const lines = block.split('\n');
+  const headingRe = /^(#{1,6})\s+(.+)$/;
+
+  // If block has mixed heading + non-heading lines, split into sub-blocks
+  const elements: React.ReactNode[] = [];
+  let nonHeadingBuffer: string[] = [];
+  let subKey = 0;
+
+  const flushBuffer = () => {
+    if (nonHeadingBuffer.length > 0) {
+      elements.push(parseNonHeadingLines(nonHeadingBuffer, subKey++));
+      nonHeadingBuffer = [];
+    }
+  };
+
+  for (const line of lines) {
+    const hm = headingRe.exec(line.trim());
+    if (hm) {
+      flushBuffer();
+      const level = Math.min(hm[1].length, 6);
+      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+      elements.push(<Tag key={subKey++} className={`chat-md-h${level}`}>{parseLine(hm[2])}</Tag>);
+    } else {
+      nonHeadingBuffer.push(line);
+    }
+  }
+  flushBuffer();
+
+  if (elements.length === 1) return React.cloneElement(elements[0] as React.ReactElement, { key: blockKey });
+  return <React.Fragment key={blockKey}>{elements}</React.Fragment>;
 }
 ```
 
-### File: `src/components/landing/HeroSection.tsx`
-1. Add a `particles` state array: `{ id, x, y, color, dx, dy }[]`
-2. On swatch click, generate 8-12 particles with random directions (using `Math.cos/sin` with evenly spaced angles + jitter) positioned at the swatch center
-3. Render particles as tiny absolute-positioned `<span>`s with the sparkle-burst animation, using CSS custom properties `--sx` and `--sy` for direction
-4. Clean up particles after animation ends (600ms timeout)
-5. Wrap the swatch row in a `position: relative` container so particles are positioned correctly
+The existing code-block, list, and paragraph logic moves into a helper `parseNonHeadingLines()` function that handles the non-heading line groups.
 
-Each particle: 4px circle, theme-colored, with the burst keyframe. Total addition is ~40 lines.
-
-### Files
-1. `src/index.css` — add `@keyframes sparkle-burst`
-2. `src/components/landing/HeroSection.tsx` — particle state + spawn logic + render
+No other files need changes -- the heading CSS styles already exist in `index.css`.
 
