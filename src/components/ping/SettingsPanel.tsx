@@ -11,7 +11,7 @@ import { useIngestStore } from '@/stores/useIngestStore';
 import { usePingStore } from '@/stores/usePingStore';
 import { themePresets } from '@/lib/themes';
 import type { ThemePreset, ColorMode, AutoLockMinutes, ChatLayout } from '@/lib/types';
-import { MessageCircle, PanelRight, Trash2, Sun, Moon, Monitor, RotateCcw, Download, Upload, Copy } from 'lucide-react';
+import { MessageCircle, PanelRight, Trash2, Sun, Moon, Monitor, RotateCcw, Download, Upload, Copy, ClipboardPaste } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useRef } from 'react';
 
@@ -78,42 +78,59 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
     }
   };
 
+  const applyConfig = (raw: string): boolean => {
+    try {
+      const config = JSON.parse(raw);
+      if (config._format !== 'ping-config-v1') {
+        toast({ title: 'Invalid config', description: 'This doesn\'t appear to be a Ping config.', variant: 'destructive' });
+        return false;
+      }
+      const s = config.settings;
+      if (s) {
+        if (s.displayName) settings.setDisplayName(s.displayName);
+        if (s.theme) settings.setTheme(s.theme);
+        if (s.colorMode) settings.setColorMode(s.colorMode);
+        if (s.energyLevel != null) settings.setEnergyLevel(s.energyLevel);
+        if (s.muted != null) settings.setMuted(s.muted);
+        if (s.volume != null) settings.setVolume(s.volume);
+        if (s.idleChirps != null) settings.setIdleChirps(s.idleChirps);
+        if (s.dnd != null) settings.setDnd(s.dnd);
+        if (s.chatLayout) settings.setChatLayout(s.chatLayout);
+        if (s.privacyLock != null) settings.setPrivacyLock(s.privacyLock);
+        if (s.autoLockMinutes) settings.setAutoLockMinutes(s.autoLockMinutes);
+      }
+      if (config.channel?.channelKey) {
+        useIngestStore.getState().setChannelKey(config.channel.channelKey);
+      }
+      toast({ title: 'Config imported', description: 'Settings and channel setup applied.' });
+      return true;
+    } catch {
+      toast({ title: 'Import failed', description: 'Could not parse config.', variant: 'destructive' });
+      return false;
+    }
+  };
+
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const config = JSON.parse(reader.result as string);
-        if (config._format !== 'ping-config-v1') {
-          toast({ title: 'Invalid config file', description: 'This doesn\'t appear to be a Ping config file.', variant: 'destructive' });
-          return;
-        }
-        const s = config.settings;
-        if (s) {
-          if (s.displayName) settings.setDisplayName(s.displayName);
-          if (s.theme) settings.setTheme(s.theme);
-          if (s.colorMode) settings.setColorMode(s.colorMode);
-          if (s.energyLevel != null) settings.setEnergyLevel(s.energyLevel);
-          if (s.muted != null) settings.setMuted(s.muted);
-          if (s.volume != null) settings.setVolume(s.volume);
-          if (s.idleChirps != null) settings.setIdleChirps(s.idleChirps);
-          if (s.dnd != null) settings.setDnd(s.dnd);
-          if (s.chatLayout) settings.setChatLayout(s.chatLayout);
-          if (s.privacyLock != null) settings.setPrivacyLock(s.privacyLock);
-          if (s.autoLockMinutes) settings.setAutoLockMinutes(s.autoLockMinutes);
-        }
-        if (config.channel?.channelKey) {
-          useIngestStore.getState().setChannelKey(config.channel.channelKey);
-        }
-        toast({ title: 'Config imported', description: 'Settings and channel setup applied.' });
-      } catch {
-        toast({ title: 'Import failed', description: 'Could not parse config file.', variant: 'destructive' });
-      }
-    };
+    reader.onload = () => applyConfig(reader.result as string);
     reader.readAsText(file);
-    // Reset so the same file can be re-imported
     e.target.value = '';
+  };
+
+  const handlePasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        toast({ title: 'Clipboard empty', description: 'No config JSON found in clipboard.', variant: 'destructive' });
+        return;
+      }
+      applyConfig(text);
+    } catch {
+      toast({ title: 'Paste failed', description: 'Could not read clipboard. Check browser permissions.', variant: 'destructive' });
+    }
+  };
   };
 
   return (
@@ -330,15 +347,26 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
                 onChange={handleImport}
               />
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-muted-foreground hover:text-foreground border-border/30"
-              onClick={handleCopyToClipboard}
-            >
-              <Copy className="h-3.5 w-3.5 mr-2" />
-              Copy Config to Clipboard
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 text-muted-foreground hover:text-foreground border-border/30"
+                onClick={handleCopyToClipboard}
+              >
+                <Copy className="h-3.5 w-3.5 mr-2" />
+                Copy
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 text-muted-foreground hover:text-foreground border-border/30"
+                onClick={handlePasteFromClipboard}
+              >
+                <ClipboardPaste className="h-3.5 w-3.5 mr-2" />
+                Paste
+              </Button>
+            </div>
             <Button
               variant="outline"
               size="sm"
