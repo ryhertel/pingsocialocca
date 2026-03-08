@@ -31,6 +31,8 @@ let state: DemoState = {
 };
 
 let activeTimers: number[] = [];
+let showcaseTimers: number[] = [];
+let showcaseRunning = false;
 let revealCleanups: (() => void)[] = [];
 
 function clearAll() {
