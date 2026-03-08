@@ -1,61 +1,44 @@
 
 
-# Fix Markdown Headings Not Rendering in Multi-Line Blocks
+# Onboarding Tour
 
-## Problem
-The `ChatMarkdown` parser only detects headings when a block contains exactly one line (`lines.length === 1`). If a heading like `## Agent/automation vibe` is followed by body text with a single newline (no blank line separator), the entire block is treated as a plain paragraph -- so `##` renders as literal text.
+## Approach
+Build a lightweight, self-contained step-by-step tour system — no external library needed. A `TourOverlay` component highlights UI elements one at a time with a spotlight cutout and a tooltip, advancing through steps with Next/Back/Skip buttons.
 
-## Fix
-Change `parseBlock` in `ChatMarkdown.tsx` to process each line individually instead of only checking single-line blocks. When a line starts with `#`, render it as a heading element. Other lines continue through the existing list/paragraph logic.
+## Tour Steps (5 steps)
+1. **Ping's Face** — "This is Ping — it reacts to events and messages in real time."
+2. **Composer** — "Type here to chat with Ping or send commands."
+3. **Control Bar** — "Access settings, connections, webhooks, and more from here."
+4. **Status Chip** — "This shows Ping's current connection status."
+5. **Done** — "You're all set! Press ? anytime for keyboard shortcuts." (centered, no highlight)
 
-## Technical Detail
+## Implementation
 
-**File: `src/components/ping/ChatMarkdown.tsx`**
+### 1. `src/components/ping/OnboardingTour.tsx` — New component
+- Accepts `open` and `onComplete` props
+- Maintains a `step` index
+- Each step defines: `targetSelector` (CSS selector to highlight), `title`, `description`, `position` (tooltip placement)
+- Renders a full-screen overlay with a "spotlight" hole around the target element (using `getBoundingClientRect` + CSS clip-path or box-shadow trick)
+- Tooltip floats near the highlighted element
+- Buttons: Skip (closes tour), Back, Next / Finish
+- On finish or skip, sets `localStorage('ping:tourSeen', 'true')` and calls `onComplete`
 
-Replace the current `parseBlock` function logic:
+### 2. `src/pages/Index.tsx` — Wire the tour
+- Add `[showTour, setShowTour]` state
+- After the WelcomeDialog is dismissed (on `onOpenChange(false)`), if `!localStorage.getItem('ping:tourSeen')`, start the tour
+- Add `data-tour="face"`, `data-tour="composer"`, `data-tour="controls"`, `data-tour="status"` attributes to the relevant elements for targeting
 
-1. Remove the `lines.length === 1` guard around heading detection
-2. Process lines one at a time: split the block into "runs" where heading lines become their own elements and consecutive non-heading lines get grouped into paragraphs/lists as before
-3. This handles both standalone headings and headings mixed into multi-line content
+### 3. `src/components/ping/WelcomeDialog.tsx` — Trigger tour on dismiss
+- Pass an `onDismissed` callback or handle in Index.tsx via `onOpenChange`
 
-The key change is roughly:
+### 4. Add `data-tour` attributes
+- `FaceCanvas` wrapper div → `data-tour="face"`
+- `Composer` wrapper → `data-tour="composer"`  
+- ControlBar container → `data-tour="controls"`
+- StatusChip → `data-tour="status"`
 
-```tsx
-function parseBlock(block: string, blockKey: number): React.ReactNode {
-  const lines = block.split('\n');
-  const headingRe = /^(#{1,6})\s+(.+)$/;
+### 5. `src/components/ping/SettingsPanel.tsx` — "Restart Tour" button
+- Add a button that clears `ping:tourSeen` and triggers the tour
 
-  // If block has mixed heading + non-heading lines, split into sub-blocks
-  const elements: React.ReactNode[] = [];
-  let nonHeadingBuffer: string[] = [];
-  let subKey = 0;
-
-  const flushBuffer = () => {
-    if (nonHeadingBuffer.length > 0) {
-      elements.push(parseNonHeadingLines(nonHeadingBuffer, subKey++));
-      nonHeadingBuffer = [];
-    }
-  };
-
-  for (const line of lines) {
-    const hm = headingRe.exec(line.trim());
-    if (hm) {
-      flushBuffer();
-      const level = Math.min(hm[1].length, 6);
-      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
-      elements.push(<Tag key={subKey++} className={`chat-md-h${level}`}>{parseLine(hm[2])}</Tag>);
-    } else {
-      nonHeadingBuffer.push(line);
-    }
-  }
-  flushBuffer();
-
-  if (elements.length === 1) return React.cloneElement(elements[0] as React.ReactElement, { key: blockKey });
-  return <React.Fragment key={blockKey}>{elements}</React.Fragment>;
-}
-```
-
-The existing code-block, list, and paragraph logic moves into a helper `parseNonHeadingLines()` function that handles the non-heading line groups.
-
-No other files need changes -- the heading CSS styles already exist in `index.css`.
+## No database changes. No new dependencies.
 
