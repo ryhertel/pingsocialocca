@@ -142,6 +142,7 @@ export function LandingNav() {
                   <button
                     key={s.id}
                     onClick={() => {
+                      setSheetOpen(false);
                       handleNav(s.id, s.fallback);
                     }}
                     className={cn(
