@@ -1,61 +1,32 @@
 
 
-# Fix Markdown Headings Not Rendering in Multi-Line Blocks
+## Plan: Subtle Glow Pulse on Active Swatch
 
-## Problem
-The `ChatMarkdown` parser only detects headings when a block contains exactly one line (`lines.length === 1`). If a heading like `## Agent/automation vibe` is followed by body text with a single newline (no blank line separator), the entire block is treated as a plain paragraph -- so `##` renders as literal text.
+Replace the Tailwind `animate-[pulse_2s_ease-in-out_infinite]` (which pulses opacity) with a custom `box-shadow` glow pulse using the swatch's own color.
 
-## Fix
-Change `parseBlock` in `ChatMarkdown.tsx` to process each line individually instead of only checking single-line blocks. When a line starts with `#`, render it as a heading element. Other lines continue through the existing list/paragraph logic.
+### Change in `src/components/landing/HeroSection.tsx`
 
-## Technical Detail
+Replace the active swatch className from:
+```
+ring-2 ring-offset-2 ring-offset-background ring-primary scale-110 animate-[pulse_2s_ease-in-out_infinite]
+```
+To:
+```
+ring-2 ring-offset-2 ring-offset-background ring-primary scale-110
+```
 
-**File: `src/components/ping/ChatMarkdown.tsx`**
+And add an inline `animation` + `boxShadow` style on the active swatch using a CSS keyframe defined inline via the `style` prop, or better — add a small `@keyframes glow-pulse` in `src/index.css`:
 
-Replace the current `parseBlock` function logic:
-
-1. Remove the `lines.length === 1` guard around heading detection
-2. Process lines one at a time: split the block into "runs" where heading lines become their own elements and consecutive non-heading lines get grouped into paragraphs/lists as before
-3. This handles both standalone headings and headings mixed into multi-line content
-
-The key change is roughly:
-
-```tsx
-function parseBlock(block: string, blockKey: number): React.ReactNode {
-  const lines = block.split('\n');
-  const headingRe = /^(#{1,6})\s+(.+)$/;
-
-  // If block has mixed heading + non-heading lines, split into sub-blocks
-  const elements: React.ReactNode[] = [];
-  let nonHeadingBuffer: string[] = [];
-  let subKey = 0;
-
-  const flushBuffer = () => {
-    if (nonHeadingBuffer.length > 0) {
-      elements.push(parseNonHeadingLines(nonHeadingBuffer, subKey++));
-      nonHeadingBuffer = [];
-    }
-  };
-
-  for (const line of lines) {
-    const hm = headingRe.exec(line.trim());
-    if (hm) {
-      flushBuffer();
-      const level = Math.min(hm[1].length, 6);
-      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
-      elements.push(<Tag key={subKey++} className={`chat-md-h${level}`}>{parseLine(hm[2])}</Tag>);
-    } else {
-      nonHeadingBuffer.push(line);
-    }
-  }
-  flushBuffer();
-
-  if (elements.length === 1) return React.cloneElement(elements[0] as React.ReactElement, { key: blockKey });
-  return <React.Fragment key={blockKey}>{elements}</React.Fragment>;
+```css
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 6px 2px currentColor; }
+  50% { box-shadow: 0 0 16px 6px currentColor; }
 }
 ```
 
-The existing code-block, list, and paragraph logic moves into a helper `parseNonHeadingLines()` function that handles the non-heading line groups.
+Then apply `animate-[glow-pulse_2s_ease-in-out_infinite]` and set `color` to the preset's glow color so `currentColor` picks it up. This creates a soft expanding/contracting glow halo instead of the jarring opacity flash.
 
-No other files need changes -- the heading CSS styles already exist in `index.css`.
+### Files
+1. `src/index.css` — add `@keyframes glow-pulse`
+2. `src/components/landing/HeroSection.tsx` — swap animation class and add inline `color` style
 
