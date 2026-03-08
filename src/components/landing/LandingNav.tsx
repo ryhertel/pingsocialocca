@@ -52,6 +52,7 @@ export function LandingNav() {
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const [underline, setUnderline] = useState<{ left: number; width: number } | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const setButtonRef = useCallback((id: string, el: HTMLButtonElement | null) => {
     if (el) buttonRefs.current.set(id, el);
