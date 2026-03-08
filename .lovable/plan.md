@@ -1,61 +1,26 @@
 
 
-# Fix Markdown Headings Not Rendering in Multi-Line Blocks
+## Plan: Add Theme Color Picker Below Hero Preview
 
-## Problem
-The `ChatMarkdown` parser only detects headings when a block contains exactly one line (`lines.length === 1`). If a heading like `## Agent/automation vibe` is followed by body text with a single newline (no blank line separator), the entire block is treated as a plain paragraph -- so `##` renders as literal text.
+### What
+Add a row of colored circle buttons below the live FaceCanvas preview in the hero section. Clicking one changes the global theme (via `useSettingsStore.setTheme`), which the FaceCanvas already reads every animation frame — so the eye colors update instantly.
 
-## Fix
-Change `parseBlock` in `ChatMarkdown.tsx` to process each line individually instead of only checking single-line blocks. When a line starts with `#`, render it as a heading element. Other lines continue through the existing list/paragraph logic.
+### Implementation
 
-## Technical Detail
+**File: `src/components/landing/HeroSection.tsx`**
 
-**File: `src/components/ping/ChatMarkdown.tsx`**
+1. Import `useSettingsStore` and `themePresets` from existing files
+2. Below the preview `motion.div` (after the badge overlay), add a row of 4 circular buttons — one per theme preset (Mint, Sky, Berry, Honey)
+3. Each button is a small circle filled with `hsl(preset.glowPrimary)`, with a ring/border highlight on the currently active theme
+4. On click, call `setTheme(presetKey)` which updates the store → FaceCanvas picks it up on the next frame
+5. Wrap the row in a `motion.div` with a subtle fade-in animation matching the preview's entrance
+6. Add a small label like "Try a color" above or beside the swatches
 
-Replace the current `parseBlock` function logic:
+### Visual Design
+- 4 circles (~28px), centered, spaced with `gap-3`, placed directly below the preview card
+- Active swatch gets a `ring-2 ring-offset-2 ring-offset-background` highlight
+- Smooth `scale` hover effect via Tailwind `hover:scale-110 transition-transform`
 
-1. Remove the `lines.length === 1` guard around heading detection
-2. Process lines one at a time: split the block into "runs" where heading lines become their own elements and consecutive non-heading lines get grouped into paragraphs/lists as before
-3. This handles both standalone headings and headings mixed into multi-line content
-
-The key change is roughly:
-
-```tsx
-function parseBlock(block: string, blockKey: number): React.ReactNode {
-  const lines = block.split('\n');
-  const headingRe = /^(#{1,6})\s+(.+)$/;
-
-  // If block has mixed heading + non-heading lines, split into sub-blocks
-  const elements: React.ReactNode[] = [];
-  let nonHeadingBuffer: string[] = [];
-  let subKey = 0;
-
-  const flushBuffer = () => {
-    if (nonHeadingBuffer.length > 0) {
-      elements.push(parseNonHeadingLines(nonHeadingBuffer, subKey++));
-      nonHeadingBuffer = [];
-    }
-  };
-
-  for (const line of lines) {
-    const hm = headingRe.exec(line.trim());
-    if (hm) {
-      flushBuffer();
-      const level = Math.min(hm[1].length, 6);
-      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
-      elements.push(<Tag key={subKey++} className={`chat-md-h${level}`}>{parseLine(hm[2])}</Tag>);
-    } else {
-      nonHeadingBuffer.push(line);
-    }
-  }
-  flushBuffer();
-
-  if (elements.length === 1) return React.cloneElement(elements[0] as React.ReactElement, { key: blockKey });
-  return <React.Fragment key={blockKey}>{elements}</React.Fragment>;
-}
-```
-
-The existing code-block, list, and paragraph logic moves into a helper `parseNonHeadingLines()` function that handles the non-heading line groups.
-
-No other files need changes -- the heading CSS styles already exist in `index.css`.
+### No other files need changes
+FaceCanvas already reads the theme from the settings store on every frame, and the hero's glow background already uses `var(--glow-primary)` which `applyThemeToCSS` updates automatically. Everything will react.
 
