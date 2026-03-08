@@ -1,24 +1,61 @@
 
 
-## Plan: Scale Bounce on Face Container When Theme Changes
+# Fix Markdown Headings Not Rendering in Multi-Line Blocks
 
-Single-file change in `src/components/landing/HeroSection.tsx`.
+## Problem
+The `ChatMarkdown` parser only detects headings when a block contains exactly one line (`lines.length === 1`). If a heading like `## Agent/automation vibe` is followed by body text with a single newline (no blank line separator), the entire block is treated as a plain paragraph -- so `##` renders as literal text.
 
-### Approach
+## Fix
+Change `parseBlock` in `ChatMarkdown.tsx` to process each line individually instead of only checking single-line blocks. When a line starts with `#`, render it as a heading element. Other lines continue through the existing list/paragraph logic.
 
-Use framer-motion's `animate` prop with a reactive key tied to the current `theme` value. When the theme changes, trigger a subtle scale bounce on the face container (scale 1 → 1.03 → 1) using framer-motion's spring transition.
+## Technical Detail
 
-### Implementation
+**File: `src/components/ping/ChatMarkdown.tsx`**
 
-In `HeroSection.tsx`, convert the face container's `motion.div` to use a `key={theme}` approach won't work cleanly (remounts canvas). Instead, use `useEffect` + `useAnimation` from framer-motion:
+Replace the current `parseBlock` function logic:
 
-1. Import `useAnimation` from framer-motion
-2. Create `const faceControls = useAnimation()`
-3. Add a `useEffect` watching `theme` that triggers: `faceControls.start({ scale: [1, 1.04, 0.98, 1] }, { duration: 0.5, ease: 'easeInOut' })`
-4. Replace the face container's static `animate={{ opacity: 1, scale: 1 }}` with `animate={faceControls}` and trigger the initial entrance via `faceControls.start(...)` in a separate mount effect
+1. Remove the `lines.length === 1` guard around heading detection
+2. Process lines one at a time: split the block into "runs" where heading lines become their own elements and consecutive non-heading lines get grouped into paragraphs/lists as before
+3. This handles both standalone headings and headings mixed into multi-line content
 
-This gives a playful "pop" bounce synchronized with the sparkle particles and sound, without remounting the canvas.
+The key change is roughly:
 
-### File
-- `src/components/landing/HeroSection.tsx` — add `useAnimation` controller + bounce effect on theme change
+```tsx
+function parseBlock(block: string, blockKey: number): React.ReactNode {
+  const lines = block.split('\n');
+  const headingRe = /^(#{1,6})\s+(.+)$/;
+
+  // If block has mixed heading + non-heading lines, split into sub-blocks
+  const elements: React.ReactNode[] = [];
+  let nonHeadingBuffer: string[] = [];
+  let subKey = 0;
+
+  const flushBuffer = () => {
+    if (nonHeadingBuffer.length > 0) {
+      elements.push(parseNonHeadingLines(nonHeadingBuffer, subKey++));
+      nonHeadingBuffer = [];
+    }
+  };
+
+  for (const line of lines) {
+    const hm = headingRe.exec(line.trim());
+    if (hm) {
+      flushBuffer();
+      const level = Math.min(hm[1].length, 6);
+      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+      elements.push(<Tag key={subKey++} className={`chat-md-h${level}`}>{parseLine(hm[2])}</Tag>);
+    } else {
+      nonHeadingBuffer.push(line);
+    }
+  }
+  flushBuffer();
+
+  if (elements.length === 1) return React.cloneElement(elements[0] as React.ReactElement, { key: blockKey });
+  return <React.Fragment key={blockKey}>{elements}</React.Fragment>;
+}
+```
+
+The existing code-block, list, and paragraph logic moves into a helper `parseNonHeadingLines()` function that handles the non-heading line groups.
+
+No other files need changes -- the heading CSS styles already exist in `index.css`.
 

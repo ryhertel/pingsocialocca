@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { FaceCanvas } from '@/components/ping/FaceCanvas';
-import { motion } from 'framer-motion';
+import { motion, useAnimation } from 'framer-motion';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { themePresets } from '@/lib/themes';
 import type { ThemePreset } from '@/lib/types';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { playSwatchPop } from '@/lib/audio';
 import { useHaptics } from '@/hooks/useHaptics';
 
@@ -28,6 +28,17 @@ export function HeroSection() {
   const { theme, setTheme } = useSettingsStore();
   const [particles, setParticles] = useState<Particle[]>([]);
   const { vibrate } = useHaptics();
+  const faceControls = useAnimation();
+  const hasMounted = useRef(false);
+
+  useEffect(() => {
+    if (!hasMounted.current) {
+      faceControls.start({ opacity: 1, scale: 1, transition: { duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] } });
+      hasMounted.current = true;
+      return;
+    }
+    faceControls.start({ scale: [1, 1.04, 0.98, 1], transition: { duration: 0.5, ease: 'easeInOut' } });
+  }, [theme, faceControls]);
 
   const spawnParticles = useCallback((e: React.MouseEvent<HTMLButtonElement>, color: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -92,8 +103,7 @@ export function HeroSection() {
 
       <motion.div
         initial={{ opacity: 0, scale: 0.92 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        animate={faceControls}
         className="relative mt-16 w-full max-w-lg aspect-video rounded-2xl border border-border/30 bg-card/50 backdrop-blur-sm overflow-hidden shadow-[0_0_80px_-20px_hsl(var(--glow-primary)/0.15)] transition-[box-shadow,border-color] duration-400 ease-in-out"
       >
         <FaceCanvas />
