@@ -10,6 +10,7 @@ import { themePresets } from '@/lib/themes';
 import type { ThemePreset } from '@/lib/types';
 import { useState, useCallback } from 'react';
 import { playSwatchPop } from '@/lib/audio';
+import { useHaptics } from '@/hooks/useHaptics';
 
 interface Particle {
   id: number;
@@ -26,6 +27,7 @@ export function HeroSection() {
   const navigate = useNavigate();
   const { theme, setTheme } = useSettingsStore();
   const [particles, setParticles] = useState<Particle[]>([]);
+  const { vibrate } = useHaptics();
 
   const spawnParticles = useCallback((e: React.MouseEvent<HTMLButtonElement>, color: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -120,6 +122,7 @@ export function HeroSection() {
                     transition={{ duration: 0.4, delay: 1.0 + index * 0.1 }}
                     whileHover={{ scale: 1.1, opacity: 1 }}
                     onClick={(e) => {
+                      vibrate('tap');
                       spawnParticles(e, `hsl(${preset.glowPrimary})`);
                       playSwatchPop();
                       setTheme(key);
