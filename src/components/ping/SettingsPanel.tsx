@@ -11,7 +11,7 @@ import { useIngestStore } from '@/stores/useIngestStore';
 import { usePingStore } from '@/stores/usePingStore';
 import { themePresets } from '@/lib/themes';
 import type { ThemePreset, ColorMode, AutoLockMinutes, ChatLayout } from '@/lib/types';
-import { MessageCircle, PanelRight, Trash2, Sun, Moon, Monitor, RotateCcw, Download, Upload } from 'lucide-react';
+import { MessageCircle, PanelRight, Trash2, Sun, Moon, Monitor, RotateCcw, Download, Upload, Copy } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useRef } from 'react';
 
