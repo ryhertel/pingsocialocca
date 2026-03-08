@@ -25,7 +25,7 @@ export function SchemaSection() {
           </p>
         </motion.div>
 
-        <motion.div {...anim} transition={{ ...anim.transition, delay: 0.15 }}>
+        <motion.div {...anim} transition={{ ...anim.transition, delay: 0.15 } as const}>
           <div className="rounded-xl border border-border/30 bg-card/50 backdrop-blur-sm overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/20 bg-muted/20">
               <Terminal className="h-3.5 w-3.5 text-muted-foreground" />
