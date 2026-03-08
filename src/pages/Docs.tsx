@@ -211,7 +211,7 @@ export default function Docs() {
       {/* Top bar */}
       <header className="sticky top-0 z-20 border-b border-border/30 bg-background/80 backdrop-blur-md">
         <div className="max-w-3xl mx-auto flex items-center gap-3 px-4 py-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/app')} className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <img src={pingLogo} alt="Ping" className="h-6 opacity-80" />
