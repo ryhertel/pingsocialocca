@@ -66,21 +66,29 @@ export function HeroSection() {
         className="relative mt-6 flex flex-col items-center gap-3"
       >
         <span className="text-xs text-muted-foreground tracking-wide uppercase">Try a color</span>
-        <div className="flex gap-3">
-          {(Object.entries(themePresets) as [ThemePreset, typeof themePresets[ThemePreset]][]).map(([key, preset]) => (
-            <button
-              key={key}
-              onClick={() => setTheme(key)}
-              aria-label={`${preset.name} theme`}
-              className={`w-7 h-7 rounded-full border-2 border-border/40 transition-all duration-200 hover:scale-110 ${
-                theme === key
-                  ? 'ring-2 ring-offset-2 ring-offset-background ring-primary scale-110'
-                  : 'opacity-70 hover:opacity-100'
-              }`}
-              style={{ backgroundColor: `hsl(${preset.glowPrimary})` }}
-            />
-          ))}
-        </div>
+        <TooltipProvider delayDuration={200}>
+          <div className="flex gap-3">
+            {(Object.entries(themePresets) as [ThemePreset, typeof themePresets[ThemePreset]][]).map(([key, preset]) => (
+              <Tooltip key={key}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setTheme(key)}
+                    aria-label={`${preset.name} theme`}
+                    className={`w-7 h-7 rounded-full border-2 border-border/40 transition-all duration-200 hover:scale-110 ${
+                      theme === key
+                        ? 'ring-2 ring-offset-2 ring-offset-background ring-primary scale-110 animate-[pulse_2s_ease-in-out_infinite]'
+                        : 'opacity-70 hover:opacity-100'
+                    }`}
+                    style={{ backgroundColor: `hsl(${preset.glowPrimary})` }}
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  {preset.name}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        </TooltipProvider>
       </motion.div>
     </section>
   );
