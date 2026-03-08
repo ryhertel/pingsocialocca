@@ -14,6 +14,8 @@ import { DiagnosticsPanel } from '@/components/ping/DiagnosticsPanel';
 import { WelcomeDialog } from '@/components/ping/WelcomeDialog';
 import { WebhookPanel } from '@/components/ping/WebhookPanel';
 import { EventFeed } from '@/components/ping/EventFeed';
+import { KeyboardShortcutsHelp } from '@/components/ping/KeyboardShortcutsHelp';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { usePingStore } from '@/stores/usePingStore';
 import { useIngestStore } from '@/stores/useIngestStore';
@@ -42,6 +44,12 @@ const Index = () => {
   const [showLandscapeChat, setShowLandscapeChat] = useState(false);
   const [showWebhookPanel, setShowWebhookPanel] = useState(false);
   const [showEventFeed, setShowEventFeed] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+
+  useKeyboardShortcuts({
+    onSettings: () => setShowSettings(true),
+    onShortcutsHelp: () => setShowShortcuts(true),
+  });
 
   const isMobile = useIsMobile();
   const isLandscape = useLandscape();
@@ -245,6 +253,7 @@ const Index = () => {
       <WelcomeDialog open={showAbout} onOpenChange={setShowAbout} />
       <WebhookPanel open={showWebhookPanel} onOpenChange={setShowWebhookPanel} />
       <EventFeed open={showEventFeed} onOpenChange={setShowEventFeed} />
+      <KeyboardShortcutsHelp open={showShortcuts} onOpenChange={setShowShortcuts} />
     </div>
   );
 };
