@@ -7,11 +7,13 @@ import { Button } from '@/components/ui/button';
 import { OnboardingTour } from '@/components/ping/OnboardingTour';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettingsStore, ENERGY_PRESETS } from '@/stores/useSettingsStore';
+import { useIngestStore } from '@/stores/useIngestStore';
 import { usePingStore } from '@/stores/usePingStore';
 import { themePresets } from '@/lib/themes';
 import type { ThemePreset, ColorMode, AutoLockMinutes, ChatLayout } from '@/lib/types';
-import { MessageCircle, PanelRight, Trash2, Sun, Moon, Monitor, RotateCcw } from 'lucide-react';
+import { MessageCircle, PanelRight, Trash2, Sun, Moon, Monitor, RotateCcw, Download, Upload } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useRef } from 'react';
 
 interface SettingsPanelProps {
   open: boolean;
@@ -27,6 +29,78 @@ function getEnergyLabel(level: number): string {
 
 export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
   const settings = useSettingsStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = () => {
+    const settingsState = useSettingsStore.getState();
+    const ingestState = useIngestStore.getState();
+    const config = {
+      _format: 'ping-config-v1',
+      exportedAt: new Date().toISOString(),
+      settings: {
+        displayName: settingsState.displayName,
+        theme: settingsState.theme,
+        colorMode: settingsState.colorMode,
+        energyLevel: settingsState.energyLevel,
+        muted: settingsState.muted,
+        volume: settingsState.volume,
+        idleChirps: settingsState.idleChirps,
+        dnd: settingsState.dnd,
+        chatLayout: settingsState.chatLayout,
+        privacyLock: settingsState.privacyLock,
+        autoLockMinutes: settingsState.autoLockMinutes,
+      },
+      channel: {
+        channelKey: ingestState.channelKey,
+      },
+    };
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ping-config-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: 'Config exported', description: 'Share this file with teammates to replicate your setup.' });
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const config = JSON.parse(reader.result as string);
+        if (config._format !== 'ping-config-v1') {
+          toast({ title: 'Invalid config file', description: 'This doesn\'t appear to be a Ping config file.', variant: 'destructive' });
+          return;
+        }
+        const s = config.settings;
+        if (s) {
+          if (s.displayName) settings.setDisplayName(s.displayName);
+          if (s.theme) settings.setTheme(s.theme);
+          if (s.colorMode) settings.setColorMode(s.colorMode);
+          if (s.energyLevel != null) settings.setEnergyLevel(s.energyLevel);
+          if (s.muted != null) settings.setMuted(s.muted);
+          if (s.volume != null) settings.setVolume(s.volume);
+          if (s.idleChirps != null) settings.setIdleChirps(s.idleChirps);
+          if (s.dnd != null) settings.setDnd(s.dnd);
+          if (s.chatLayout) settings.setChatLayout(s.chatLayout);
+          if (s.privacyLock != null) settings.setPrivacyLock(s.privacyLock);
+          if (s.autoLockMinutes) settings.setAutoLockMinutes(s.autoLockMinutes);
+        }
+        if (config.channel?.channelKey) {
+          useIngestStore.getState().setChannelKey(config.channel.channelKey);
+        }
+        toast({ title: 'Config imported', description: 'Settings and channel setup applied.' });
+      } catch {
+        toast({ title: 'Import failed', description: 'Could not parse config file.', variant: 'destructive' });
+      }
+    };
+    reader.readAsText(file);
+    // Reset so the same file can be re-imported
+    e.target.value = '';
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -215,6 +289,33 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
 
           {/* Actions */}
           <div className="pt-2 border-t border-border/30 space-y-2">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 text-muted-foreground hover:text-foreground border-border/30"
+                onClick={handleExport}
+              >
+                <Download className="h-3.5 w-3.5 mr-2" />
+                Export
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 text-muted-foreground hover:text-foreground border-border/30"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-3.5 w-3.5 mr-2" />
+                Import
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json"
+                className="hidden"
+                onChange={handleImport}
+              />
+            </div>
             <Button
               variant="outline"
               size="sm"
