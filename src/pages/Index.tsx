@@ -203,7 +203,7 @@ const Index = () => {
       </header>
 
       {/* Main — face + chat */}
-      <main className="flex-1 min-h-0 relative flex">
+      <main id="main-content" className="flex-1 min-h-0 relative flex">
         {/* Face area */}
         <div className={`relative ${isDocked ? 'flex-1' : 'w-full'}`} data-tour="face">
           <FaceCanvas />
