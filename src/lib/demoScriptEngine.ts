@@ -3,6 +3,8 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import { startTextReveal } from './textReveal';
 import { playReceive, playNotify, playConfirm, playExcited, playThinking, playMotif, triggerEmotion } from './audio';
 import { routeInput } from './demoIntentRouter';
+import { routeEvent } from './ingest/reactionRouter';
+import { executeReaction } from './ingest/reactionExecutor';
 import type { DemoButton, DemoAction } from './types';
 
 interface DemoState {
@@ -290,6 +292,51 @@ function getSpectacleTriggeredResponse(name: string): ResponseNode {
   };
 }
 
+// ── Demo Effect Helpers ──
+
+const DEMO_EFFECTS: Record<string, { title: string; keywords: string }> = {
+  milestone:  { title: '🎯 Milestone reached!', keywords: 'milestone achieved goal' },
+  party:      { title: '🎉 Party time!', keywords: 'party celebrate woohoo' },
+  money:      { title: '💰 Ka-ching!', keywords: 'payment sale money' },
+  love:       { title: '❤️ Feeling the love!', keywords: 'thanks love awesome' },
+  alert:      { title: '🚨 Urgent alert!', keywords: 'urgent critical p0' },
+  deploy:     { title: '🚀 Shipped!', keywords: 'deploy shipped released' },
+  subscriber: { title: '👤 New subscriber!', keywords: 'subscriber signup new user' },
+  message:    { title: '💬 New message!', keywords: 'message comment reply' },
+  error:      { title: '❌ Error detected!', keywords: 'failed exception crash' },
+  fireworks:  { title: '🎆 Fireworks!', keywords: 'deploy shipped' },
+};
+
+function triggerDemoEffect(name: string) {
+  const effect = DEMO_EFFECTS[name];
+  if (!effect) return;
+  const reaction = routeEvent({
+    id: crypto.randomUUID(),
+    source: 'demo',
+    eventType: 'message',
+    title: effect.title,
+    body: effect.keywords,
+    severity: 1,
+    timestamp: Date.now(),
+    receivedAt: Date.now(),
+  });
+  executeReaction(reaction);
+}
+
+function getDemoEffectResponse(name: string): ResponseNode {
+  const others = Object.keys(DEMO_EFFECTS).filter(k => k !== name).slice(0, 3);
+  return {
+    text: `Triggered **${name}** effect! ✨\n\nTry others: \`/demo ${others.join('`, `/demo ')}\``,
+    buttons: [
+      { label: '🎉 Party', action: 'demo_party' },
+      { label: '🎯 Milestone', action: 'demo_milestone' },
+      { label: '💰 Money', action: 'demo_money' },
+      { label: '🚨 Alert', action: 'demo_alert' },
+    ],
+    module: state.currentModule,
+  };
+}
+
 // ── Action Router ──
 
 const ACTION_MAP: Record<string, () => ResponseNode> = {
@@ -334,6 +381,15 @@ const ACTION_MAP: Record<string, () => ResponseNode> = {
       module: 'integrations' as const,
     };
   },
+  // Demo effect trigger buttons
+  demo_milestone: () => { triggerDemoEffect('milestone'); return getDemoEffectResponse('milestone'); },
+  demo_party: () => { triggerDemoEffect('party'); return getDemoEffectResponse('party'); },
+  demo_money: () => { triggerDemoEffect('money'); return getDemoEffectResponse('money'); },
+  demo_love: () => { triggerDemoEffect('love'); return getDemoEffectResponse('love'); },
+  demo_alert: () => { triggerDemoEffect('alert'); return getDemoEffectResponse('alert'); },
+  demo_deploy: () => { triggerDemoEffect('deploy'); return getDemoEffectResponse('deploy'); },
+  demo_subscriber: () => { triggerDemoEffect('subscriber'); return getDemoEffectResponse('subscriber'); },
+  demo_error: () => { triggerDemoEffect('error'); return getDemoEffectResponse('error'); },
 };
 
 function resolveAction(action: string): ResponseNode {
@@ -530,6 +586,31 @@ export function stopScriptedDemo() {
 
 export function handleDemoInput(text: string) {
   const store = usePingStore.getState();
+  const trimmed = text.trim();
+
+  // /demo <effect> command — trigger reaction effects directly
+  const demoMatch = trimmed.match(/^\/demo\s+(.+)$/i);
+  if (demoMatch) {
+    const effectName = demoMatch[1].trim().toLowerCase();
+    if (DEMO_EFFECTS[effectName]) {
+      triggerDemoEffect(effectName);
+      deliverResponse(getDemoEffectResponse(effectName));
+      return;
+    } else {
+      const availableEffects = Object.keys(DEMO_EFFECTS).join(', ');
+      deliverResponse({
+        text: `Unknown effect **"${effectName}"**. Available: ${availableEffects}`,
+        buttons: [
+          { label: '🎉 Party', action: 'demo_party' },
+          { label: '🎯 Milestone', action: 'demo_milestone' },
+          { label: '❤️ Love', action: 'demo_love' },
+        ],
+        module: state.currentModule,
+      });
+      return;
+    }
+  }
+
   store.setPersistentState('thinking');
 
   const node = resolveInput(text);
