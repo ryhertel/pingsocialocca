@@ -1,10 +1,11 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight, Menu, X } from 'lucide-react';
+import { ArrowRight, Menu, Sun, Moon } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import pingLogo from '@/assets/ping-logo-white.png';
 import { cn } from '@/lib/utils';
+import { useSettingsStore } from '@/stores/useSettingsStore';
 
 const NAV_SECTIONS = [
   { id: 'how-it-works', label: 'How It Works', fallback: '/docs' },
