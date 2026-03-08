@@ -161,7 +161,7 @@ export function LandingNav() {
                 >
                   Docs
                 </button>
-                <Button onClick={() => navigate('/app')} className="gap-1.5 mt-4">
+                <Button onClick={() => { setSheetOpen(false); navigate('/app'); }} className="gap-1.5 mt-4">
                   Launch App <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </nav>
