@@ -646,6 +646,8 @@ export function FaceCanvas() {
   return (
     <canvas
       ref={canvasRef}
+      role="img"
+      aria-label="Ping animated eyes – visual status indicator for your AI agent"
       className="absolute inset-0 w-full h-full"
       style={{ touchAction: 'none' }}
     />
