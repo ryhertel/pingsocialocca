@@ -6,9 +6,11 @@ import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettingsStore, ENERGY_PRESETS } from '@/stores/useSettingsStore';
+import { usePingStore } from '@/stores/usePingStore';
 import { themePresets } from '@/lib/themes';
 import type { ThemePreset, AutoLockMinutes, ChatLayout } from '@/lib/types';
-import { MessageCircle, PanelRight } from 'lucide-react';
+import { MessageCircle, PanelRight, Trash2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface SettingsPanelProps {
   open: boolean;
@@ -183,6 +185,22 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
                 </Select>
               </div>
             )}
+          </div>
+
+          {/* Clear Chat History */}
+          <div className="pt-2 border-t border-border/30">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+              onClick={() => {
+                usePingStore.getState().clearMessages();
+                toast({ title: 'Chat history cleared' });
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-2" />
+              Clear Chat History
+            </Button>
           </div>
         </div>
       </SheetContent>
