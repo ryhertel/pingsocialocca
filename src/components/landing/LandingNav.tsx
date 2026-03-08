@@ -20,17 +20,29 @@ function scrollToSection(id: string) {
 
 function useActiveSection(sectionIds: readonly string[]) {
   const [active, setActive] = useState<string | null>(null);
+  const overrideRef = useRef<string | null>(null);
+  const overrideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const forceActive = useCallback((id: string) => {
+    overrideRef.current = id;
+    setActive(id);
+    if (overrideTimerRef.current) clearTimeout(overrideTimerRef.current);
+    overrideTimerRef.current = setTimeout(() => {
+      overrideRef.current = null;
+    }, 1200);
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
+        if (overrideRef.current) return;
         const visible = entries.filter((e) => e.isIntersecting);
         if (visible.length > 0) {
           visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
           setActive(visible[0].target.id);
         }
       },
-      { rootMargin: '-20% 0px -60% 0px', threshold: 0 },
+      { rootMargin: '-10% 0px -40% 0px', threshold: 0 },
     );
 
     sectionIds.forEach((id) => {
@@ -41,7 +53,7 @@ function useActiveSection(sectionIds: readonly string[]) {
     return () => observer.disconnect();
   }, [sectionIds]);
 
-  return active;
+  return { active, forceActive };
 }
 
 export function LandingNav() {
@@ -51,7 +63,7 @@ export function LandingNav() {
   const { colorMode, setColorMode } = useSettingsStore();
   const isDark = colorMode === 'dark' || (colorMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const sectionIds = useMemo(() => NAV_SECTIONS.map((s) => s.id), []);
-  const activeSection = useActiveSection(sectionIds);
+  const { active: activeSection, forceActive } = useActiveSection(sectionIds);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -87,6 +99,7 @@ export function LandingNav() {
 
   const handleNav = (sectionId: string, fallbackRoute: string) => {
     if (isLanding) {
+      forceActive(sectionId);
       scrollToSection(sectionId);
     } else {
       navigate(fallbackRoute);

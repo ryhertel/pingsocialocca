@@ -1,33 +1,61 @@
 
 
-## Bugs Found & Fix Plan
+# Fix Markdown Headings Not Rendering in Multi-Line Blocks
 
-### Bug 1: "Features" nav tab unresponsive / underline skips to Integrations
-The `IntersectionObserver` uses `rootMargin: '-20% 0px -60% 0px'` which creates a very narrow detection band (only 20% of viewport height). The Features section is relatively short, so when you scroll to it, the observer often picks up Integrations instead because it enters that narrow band first or simultaneously. Additionally, clicking "Features" scrolls to it, but the observer immediately overrides `activeSection` to `integrations`.
+## Problem
+The `ChatMarkdown` parser only detects headings when a block contains exactly one line (`lines.length === 1`). If a heading like `## Agent/automation vibe` is followed by body text with a single newline (no blank line separator), the entire block is treated as a plain paragraph -- so `##` renders as literal text.
 
-**Fix in `LandingNav.tsx`:**
-- Widen the observer rootMargin to `-10% 0px -40% 0px` so shorter sections are detected properly
-- When a nav button is clicked, temporarily force `activeSection` to that section (bypassing the observer for ~1 second) so the underline moves immediately and stays
+## Fix
+Change `parseBlock` in `ChatMarkdown.tsx` to process each line individually instead of only checking single-line blocks. When a line starts with `#`, render it as a heading element. Other lines continue through the existing list/paragraph logic.
 
-### Bug 2: Docs back button navigates to `/app` instead of `/`
-Line 214 in `Docs.tsx` has `navigate('/app')`. It should be `navigate('/')`.
+## Technical Detail
 
-**Fix in `src/pages/Docs.tsx`:**
-- Change `onClick={() => navigate('/app')}` to `onClick={() => navigate('/')}`
+**File: `src/components/ping/ChatMarkdown.tsx`**
 
-### Bug 3: Footer logo invisible in light mode
-The footer uses `ping-logo-white.png` which is white text on transparent — invisible on a light background.
+Replace the current `parseBlock` function logic:
 
-**Fix in `src/components/landing/LandingFooter.tsx`:**
-- Add a CSS class that inverts/darkens the logo in light mode: `dark:opacity-60 opacity-60 .light &` or use a `dark:invert-0 invert` filter approach
-- Specifically: add `className="h-5 opacity-60 dark:invert-0 invert"` — since the default is dark mode (no `.light` class = dark), we use the `.light` class presence to apply `invert`. The simplest approach: use Tailwind's `dark:` variant or check for `.light` class. Since this project uses `.light` on `<html>`, we can add a small conditional class or just use CSS filter: `filter: brightness(0)` in light mode via the `.light` selector.
+1. Remove the `lines.length === 1` guard around heading detection
+2. Process lines one at a time: split the block into "runs" where heading lines become their own elements and consecutive non-heading lines get grouped into paragraphs/lists as before
+3. This handles both standalone headings and headings mixed into multi-line content
 
-**Approach:** Add a utility class to the footer logo image that applies `filter: invert(1)` when `.light` class is active. In Tailwind terms, since this project doesn't use Tailwind's `dark:` mode (it uses a custom `.light` class), we'll handle it inline or via a small index.css rule. Simplest: add a class like `[.light_&]:invert` to the `<img>`.
+The key change is roughly:
 
-Also apply the same fix to the nav logo at the top for consistency.
+```tsx
+function parseBlock(block: string, blockKey: number): React.ReactNode {
+  const lines = block.split('\n');
+  const headingRe = /^(#{1,6})\s+(.+)$/;
 
-### Files Changed
-1. `src/components/landing/LandingNav.tsx` — Fix observer rootMargin, add click-to-force-active logic
-2. `src/pages/Docs.tsx` — Change back button from `/app` to `/`
-3. `src/components/landing/LandingFooter.tsx` — Add light-mode invert filter to logo
+  // If block has mixed heading + non-heading lines, split into sub-blocks
+  const elements: React.ReactNode[] = [];
+  let nonHeadingBuffer: string[] = [];
+  let subKey = 0;
+
+  const flushBuffer = () => {
+    if (nonHeadingBuffer.length > 0) {
+      elements.push(parseNonHeadingLines(nonHeadingBuffer, subKey++));
+      nonHeadingBuffer = [];
+    }
+  };
+
+  for (const line of lines) {
+    const hm = headingRe.exec(line.trim());
+    if (hm) {
+      flushBuffer();
+      const level = Math.min(hm[1].length, 6);
+      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+      elements.push(<Tag key={subKey++} className={`chat-md-h${level}`}>{parseLine(hm[2])}</Tag>);
+    } else {
+      nonHeadingBuffer.push(line);
+    }
+  }
+  flushBuffer();
+
+  if (elements.length === 1) return React.cloneElement(elements[0] as React.ReactElement, { key: blockKey });
+  return <React.Fragment key={blockKey}>{elements}</React.Fragment>;
+}
+```
+
+The existing code-block, list, and paragraph logic moves into a helper `parseNonHeadingLines()` function that handles the non-heading line groups.
+
+No other files need changes -- the heading CSS styles already exist in `index.css`.
 
