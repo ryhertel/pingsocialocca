@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 
 const integrations = [
-  { icon: Bot, name: 'OpenClaw', desc: 'Local AI agent bridge. Connect your own agent over WebSocket.' },
+  { icon: Bot, name: 'OpenClaw', desc: 'Local AI agent bridge. Connect your own agent over WebSocket.', featured: true },
   { icon: Webhook, name: 'Generic Webhook', desc: 'Any HTTP service, Zapier, Make, n8n, or curl' },
   { icon: CreditCard, name: 'Stripe', desc: 'Payments, subscriptions & revenue events' },
   { icon: Github, name: 'GitHub', desc: 'Pushes, deployments, issues & PRs' },
@@ -16,7 +16,7 @@ const integrations = [
   { icon: SquareKanban, name: 'Linear', desc: 'Issues, project updates & workflow' },
   { icon: Bug, name: 'Sentry', desc: 'Errors, crashes & production incidents' },
   { icon: Triangle, name: 'Vercel', desc: 'Deploys, build failures & CI/CD' },
-];
+] as const;
 
 export function IntegrationsSection() {
   const navigate = useNavigate();
