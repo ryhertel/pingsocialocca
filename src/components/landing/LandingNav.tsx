@@ -1,7 +1,8 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Menu, X } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import pingLogo from '@/assets/ping-logo-white.png';
 import { cn } from '@/lib/utils';
 
@@ -122,9 +123,48 @@ export function LandingNav() {
           >
             Docs
           </button>
-          <Button size="sm" onClick={() => navigate('/app')} className="gap-1.5">
+          <Button size="sm" onClick={() => navigate('/app')} className="gap-1.5 hidden sm:flex">
             Launch App <ArrowRight className="h-3.5 w-3.5" />
           </Button>
+
+          {/* Mobile hamburger */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <button className="sm:hidden p-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                <Menu className="h-5 w-5" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-64 pt-12">
+              <SheetTitle className="sr-only">Navigation</SheetTitle>
+              <nav className="flex flex-col gap-4">
+                {NAV_SECTIONS.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      handleNav(s.id, s.fallback);
+                    }}
+                    className={cn(
+                      'text-left text-base py-2 transition-colors',
+                      isLanding && activeSection === s.id
+                        ? 'text-foreground font-medium'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+                <button
+                  onClick={() => navigate('/docs')}
+                  className="text-left text-base py-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Docs
+                </button>
+                <Button onClick={() => navigate('/app')} className="gap-1.5 mt-4">
+                  Launch App <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </nav>
