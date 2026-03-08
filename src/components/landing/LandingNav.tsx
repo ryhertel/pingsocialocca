@@ -52,6 +52,7 @@ export function LandingNav() {
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const [underline, setUnderline] = useState<{ left: number; width: number } | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const setButtonRef = useCallback((id: string, el: HTMLButtonElement | null) => {
     if (el) buttonRefs.current.set(id, el);
@@ -128,7 +129,7 @@ export function LandingNav() {
           </Button>
 
           {/* Mobile hamburger */}
-          <Sheet>
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <button className="sm:hidden p-1.5 text-muted-foreground hover:text-foreground transition-colors">
                 <Menu className="h-5 w-5" />
@@ -141,6 +142,7 @@ export function LandingNav() {
                   <button
                     key={s.id}
                     onClick={() => {
+                      setSheetOpen(false);
                       handleNav(s.id, s.fallback);
                     }}
                     className={cn(
@@ -154,12 +156,12 @@ export function LandingNav() {
                   </button>
                 ))}
                 <button
-                  onClick={() => navigate('/docs')}
+                  onClick={() => { setSheetOpen(false); navigate('/docs'); }}
                   className="text-left text-base py-2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Docs
                 </button>
-                <Button onClick={() => navigate('/app')} className="gap-1.5 mt-4">
+                <Button onClick={() => { setSheetOpen(false); navigate('/app'); }} className="gap-1.5 mt-4">
                   Launch App <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </nav>
