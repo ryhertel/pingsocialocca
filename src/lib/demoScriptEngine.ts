@@ -409,6 +409,10 @@ const ACTION_MAP: Record<string, () => ResponseNode> = {
     handleDemoInput('/demo list');
     return { text: '', buttons: [], module: state.currentModule };
   },
+  demo_help: () => {
+    handleDemoInput('/demo help');
+    return { text: '', buttons: [], module: state.currentModule };
+  },
   'demo_speed_0.5': () => {
     handleDemoInput('/demo speed 0.5');
     return { text: '', buttons: [], module: state.currentModule };
