@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { useHaptics } from '@/hooks/useHaptics';
 import { Send, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,7 @@ export function Composer() {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { vibrate } = useHaptics();
   const isLocked = useSettingsStore((s) => s.isLocked);
   const addMessage = usePingStore((s) => s.addMessage);
   const setPersistentState = usePingStore((s) => s.setPersistentState);
@@ -104,6 +106,7 @@ export function Composer() {
 
     const settings = useSettingsStore.getState();
     playSend(settings.volume, settings.muted, settings.dnd);
+    vibrate('tap');
 
     if (connectionMode === 'demo') {
       handleDemoInput(trimmed);

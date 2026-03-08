@@ -2,6 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
+import { useHaptics } from '@/hooks/useHaptics';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { PullIndicator } from '@/components/ping/PullIndicator';
 import { FaceCanvas } from '@/components/ping/FaceCanvas';
 import { StatusChip } from '@/components/ping/StatusChip';
 import { ChatStack } from '@/components/ping/ChatStack';
@@ -158,11 +161,22 @@ const Index = () => {
     onConnectors: () => navigate('/connectors'),
     onDocs: () => navigate('/docs'),
   };
+  const { vibrate } = useHaptics();
+
+  const handleRefresh = useCallback(async () => {
+    vibrate('success');
+    window.location.reload();
+  }, [vibrate]);
+
+  const { containerRef: pullRef, pulling, pullDistance, refreshing } = usePullToRefresh({
+    onRefresh: handleRefresh,
+    disabled: !isMobile,
+  });
 
   const landscapeHideChat = isMobile && isLandscape;
 
   return (
-    <div className="h-[100svh] flex flex-col overflow-hidden bg-background select-none [&_.chat-selectable]:select-text">
+    <div ref={pullRef} className="h-[100svh] flex flex-col overflow-hidden bg-background select-none [&_.chat-selectable]:select-text">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:text-sm focus:font-medium">
         Skip to content
       </a>
@@ -206,6 +220,7 @@ const Index = () => {
 
       {/* Main — face + chat */}
       <main id="main-content" className="flex-1 min-h-0 relative flex">
+        <PullIndicator pulling={pulling} pullDistance={pullDistance} refreshing={refreshing} threshold={80} />
         {/* Face area */}
         <div className={`relative ${isDocked ? 'flex-1' : 'w-full'}`} data-tour="face">
           <FaceCanvas />
