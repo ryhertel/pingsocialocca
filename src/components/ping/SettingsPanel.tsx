@@ -131,7 +131,6 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
       toast({ title: 'Paste failed', description: 'Could not read clipboard. Check browser permissions.', variant: 'destructive' });
     }
   };
-  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
