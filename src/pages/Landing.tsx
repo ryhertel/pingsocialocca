@@ -240,7 +240,7 @@ export default function Landing() {
                   <p className="text-sm font-medium">{i.name}</p>
                   <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{i.desc}</p>
                 </div>
-              </button>
+              </motion.button>
             ))}
           </div>
 
