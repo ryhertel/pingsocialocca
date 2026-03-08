@@ -122,7 +122,7 @@ export function WebhookPanel({ open, onOpenChange }: WebhookPanelProps) {
     source: 'zapier',
     eventType: 'success',
     title: 'New sale completed',
-    body: 'Order #1234 — $49.99',
+    body: 'Order #1234, $49.99',
   }, null, 2);
 
   return (

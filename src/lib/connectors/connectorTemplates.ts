@@ -2,9 +2,30 @@ import type { ConnectorTemplate } from './types';
 
 export const connectorTemplates: ConnectorTemplate[] = [
   {
+    id: 'openclaw',
+    name: 'OpenClaw',
+    description: 'Connect a local AI agent to Ping over WebSocket. The primary way to give your agent a face.',
+    icon: 'Bot',
+    setupSteps: [
+      'Install OpenClaw: npx openclaw@latest',
+      'Start the bridge: npx openclaw start',
+      'In Ping, open Bridge and connect to ws://127.0.0.1:3939/ping',
+      'Your agent can now send emotions, expressions, and messages to Ping in real time.',
+    ],
+    testEvent: {
+      source: 'openclaw',
+      eventType: 'success',
+      title: 'Bridge connected',
+      body: 'OpenClaw agent is live and sending events to Ping.',
+    },
+    keywordsSupported: ['emotion', 'expression', 'speak', 'think', 'react', 'spectacle'],
+    notes: 'OpenClaw is the recommended way to connect AI agents. It uses a local WebSocket bridge, so your data never leaves your machine.',
+    securityCopy: 'All communication stays on your local network. No data is sent to external servers. The bridge runs on localhost only.',
+  },
+  {
     id: 'generic',
     name: 'Generic Webhook',
-    description: 'Send events from any HTTP-capable service — scripts, Zapier, Make, n8n, or curl.',
+    description: 'Send events from any HTTP-capable service: scripts, Zapier, Make, n8n, or curl.',
     icon: 'Webhook',
     setupSteps: [
       'Copy the Ingest URL below (includes your channel key).',
@@ -25,7 +46,7 @@ export const connectorTemplates: ConnectorTemplate[] = [
   {
     id: 'stripe',
     name: 'Stripe',
-    description: 'Get payment and subscription notifications — see Ping react to revenue events.',
+    description: 'Get payment and subscription notifications. See Ping react to revenue events.',
     icon: 'CreditCard',
     setupSteps: [
       'Option A (Recommended): Use Zapier or Make to forward Stripe events to Ping.',
@@ -38,7 +59,7 @@ export const connectorTemplates: ConnectorTemplate[] = [
       source: 'stripe',
       eventType: 'success',
       title: 'Payment succeeded',
-      body: 'Order #1234 — $49.99 from customer@email.com',
+      body: 'Order #1234, $49.99 from customer@email.com',
     },
     keywordsSupported: ['payment', 'subscription', 'invoice', '$', 'charge'],
     notes: 'Money keywords ($, payment, invoice) trigger the sparkle trail + cheer reaction. Subscription events trigger success reactions.',
@@ -47,7 +68,7 @@ export const connectorTemplates: ConnectorTemplate[] = [
   {
     id: 'github',
     name: 'GitHub',
-    description: 'React to pushes, deployments, and issues — see Ping celebrate your deploys.',
+    description: 'React to pushes, deployments, and issues. See Ping celebrate your deploys.',
     icon: 'Github',
     setupSteps: [
       'In your GitHub repo, go to Settings → Webhooks → Add webhook.',
@@ -61,7 +82,7 @@ export const connectorTemplates: ConnectorTemplate[] = [
       source: 'github',
       eventType: 'deploy',
       title: 'Deployed to production',
-      body: 'main branch shipped — build #42 succeeded',
+      body: 'main branch shipped, build #42 succeeded',
     },
     keywordsSupported: ['deploy', 'shipped', 'push', 'issue', 'pull request', 'build'],
     notes: 'Deploy keywords trigger fireworks + proud reaction. Issue events map to message/warning. Use Zapier/Make for the cleanest experience.',
@@ -70,7 +91,7 @@ export const connectorTemplates: ConnectorTemplate[] = [
   {
     id: 'slack',
     name: 'Slack',
-    description: 'Surface messages, mentions, and alerts — Ping reacts to your team\'s Slack activity.',
+    description: 'Surface messages, mentions, and alerts. Ping reacts to your team\'s Slack activity.',
     icon: 'MessageSquare',
     setupSteps: [
       'Use Zapier or Make to forward Slack events to Ping.',
@@ -82,16 +103,16 @@ export const connectorTemplates: ConnectorTemplate[] = [
       source: 'slack',
       eventType: 'message',
       title: 'New message in #general',
-      body: '@team heads up — deploy going out in 10 min',
+      body: '@team heads up, deploy going out in 10 min',
     },
     keywordsSupported: ['message', 'mention', 'thread', 'alert', 'channel'],
     notes: 'Message keywords trigger the default chat reaction. Use Zapier/Make to filter which channels or keywords forward to Ping.',
-    securityCopy: 'Use Zapier/Make as middleware — never expose your Slack Bot Token directly. Ping redacts URLs and tokens automatically.',
+    securityCopy: 'Use Zapier/Make as middleware. Never expose your Slack Bot Token directly. Ping redacts URLs and tokens automatically.',
   },
   {
     id: 'discord',
     name: 'Discord',
-    description: 'Get notified on server events — messages, member joins, and bot alerts.',
+    description: 'Get notified on server events: messages, member joins, and bot alerts.',
     icon: 'Gamepad2',
     setupSteps: [
       'Use Zapier, Make, or a Discord bot to forward events to Ping.',
@@ -107,12 +128,12 @@ export const connectorTemplates: ConnectorTemplate[] = [
     },
     keywordsSupported: ['message', 'join', 'leave', 'alert', 'bot', 'announcement'],
     notes: 'Join/leave events can trigger success/warning reactions. Announcement keywords trigger the notify sound.',
-    securityCopy: 'Use middleware to forward events — never expose Discord bot tokens to Ping. All text fields are redacted server-side.',
+    securityCopy: 'Use middleware to forward events. Never expose Discord bot tokens to Ping. All text fields are redacted server-side.',
   },
   {
     id: 'linear',
     name: 'Linear',
-    description: 'Track issues and project updates — see Ping react to your team\'s workflow.',
+    description: 'Track issues and project updates. See Ping react to your team\'s workflow.',
     icon: 'SquareKanban',
     setupSteps: [
       'In Linear, go to Settings → API → Webhooks → New webhook.',
@@ -124,7 +145,7 @@ export const connectorTemplates: ConnectorTemplate[] = [
       source: 'linear',
       eventType: 'message',
       title: 'Issue ENG-142 moved to In Progress',
-      body: 'Fix auth token refresh — assigned to @alice',
+      body: 'Fix auth token refresh, assigned to @alice',
     },
     keywordsSupported: ['issue', 'bug', 'feature', 'in progress', 'done', 'blocked', 'assigned'],
     notes: '"Done" keywords trigger success reactions. "Bug" and "blocked" trigger warning/incident reactions.',
@@ -133,7 +154,7 @@ export const connectorTemplates: ConnectorTemplate[] = [
   {
     id: 'sentry',
     name: 'Sentry',
-    description: 'Monitor errors and crashes — Ping reacts to production issues in real time.',
+    description: 'Monitor errors and crashes. Ping reacts to production issues in real time.',
     icon: 'Bug',
     setupSteps: [
       'In Sentry, go to Settings → Integrations → Webhooks (or use Zapier/Make).',
@@ -145,7 +166,7 @@ export const connectorTemplates: ConnectorTemplate[] = [
       source: 'sentry',
       eventType: 'error',
       title: 'TypeError in api/users.ts',
-      body: 'Cannot read properties of undefined (reading \'id\') — 42 events in the last hour',
+      body: 'Cannot read properties of undefined (reading \'id\'). 42 events in the last hour',
     },
     keywordsSupported: ['error', 'exception', 'crash', 'incident', 'resolved', 'regression'],
     notes: 'Error/incident keywords trigger the alarm reaction with the error sound. "Resolved" triggers a success celebration.',
@@ -154,7 +175,7 @@ export const connectorTemplates: ConnectorTemplate[] = [
   {
     id: 'vercel',
     name: 'Vercel',
-    description: 'Celebrate deploys and catch build failures — see Ping react to your CI/CD pipeline.',
+    description: 'Celebrate deploys and catch build failures. See Ping react to your CI/CD pipeline.',
     icon: 'Triangle',
     setupSteps: [
       'In Vercel, go to Project Settings → Git → Deploy Hooks, or use Integration Webhooks.',
@@ -166,7 +187,7 @@ export const connectorTemplates: ConnectorTemplate[] = [
       source: 'vercel',
       eventType: 'deploy',
       title: 'Deployed to production',
-      body: 'ping-app — commit abc1234 built in 38s',
+      body: 'ping-app, commit abc1234 built in 38s',
     },
     keywordsSupported: ['deploy', 'build', 'shipped', 'failed', 'preview', 'production'],
     notes: 'Deploy keywords trigger fireworks + proud reaction. Build failure keywords trigger the error alarm.',

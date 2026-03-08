@@ -27,7 +27,7 @@ export function WelcomeDialog({ open, onOpenChange }: WelcomeDialogProps) {
           <img src="/ping-square.png" alt="Ping" className="h-16 w-16 rounded-2xl" />
           <DialogTitle className="text-xl">Meet Ping</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground leading-relaxed">
-            Ping is your always-on presence companion — an expressive face that listens,
+            Ping is your always-on presence companion. An expressive face that listens,
             reacts, and keeps you company. Connect it to a local AI agent or try Demo Mode
             to see it come alive.
           </DialogDescription>

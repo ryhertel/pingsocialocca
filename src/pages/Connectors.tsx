@@ -9,7 +9,7 @@ import { ConnectorPanel } from '@/components/ping/ConnectorPanel';
 import { connectorTemplates } from '@/lib/connectors/connectorTemplates';
 import type { ConnectorTemplate } from '@/lib/connectors/types';
 import {
-  ArrowLeft, Webhook, CreditCard, Github, Send, Copy, Check, Eye, EyeOff,
+  ArrowLeft, Webhook, CreditCard, Github, Send, Copy, Check, Eye, EyeOff, Bot,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -17,6 +17,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Webhook,
   CreditCard,
   Github,
+  Bot,
 };
 
 function CopyButton({ text }: { text: string }) {

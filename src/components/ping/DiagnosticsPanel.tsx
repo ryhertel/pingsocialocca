@@ -84,7 +84,7 @@ export function DiagnosticsPanel({ open, onOpenChange }: DiagnosticsPanelProps) 
             <Row label="State" value={persistentState} />
             <Row
               label="Last Event"
-              value={lastEventTs ? new Date(lastEventTs).toLocaleTimeString() : '—'}
+              value={lastEventTs ? new Date(lastEventTs).toLocaleTimeString() : '-'}
             />
 
             {lastError && (
@@ -109,7 +109,7 @@ export function DiagnosticsPanel({ open, onOpenChange }: DiagnosticsPanelProps) 
                   <div className="space-y-1 pb-2 max-h-40 overflow-y-auto">
                     {unknownEvents.map((e, i) => (
                       <div key={i} className="text-[10px] font-mono text-muted-foreground/60">
-                        {new Date(e.ts).toLocaleTimeString()} — {e.type}
+                        {new Date(e.ts).toLocaleTimeString()} - {e.type}
                       </div>
                     ))}
                   </div>
@@ -195,8 +195,8 @@ export function DiagnosticsPanel({ open, onOpenChange }: DiagnosticsPanelProps) 
             <DialogTitle className="text-sm font-semibold">Data Handling</DialogTitle>
           </DialogHeader>
           <ul className="space-y-2 text-xs text-muted-foreground list-disc pl-4">
-            <li>OpenClaw data stays on your machine — never sent externally.</li>
-            <li>Webhook events come into Ping — they are not forwarded elsewhere.</li>
+            <li>OpenClaw data stays on your machine. Never sent externally.</li>
+            <li>Webhook events come into Ping. They are not forwarded elsewhere.</li>
             <li>Ping does not send OpenClaw session data to the webhook pipeline or any external service.</li>
           </ul>
         </DialogContent>
