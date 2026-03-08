@@ -174,7 +174,7 @@ const Index = () => {
             src={pingLogo}
             alt="Ping"
             className="h-8 cursor-pointer select-none opacity-90 hover:opacity-100 transition-opacity"
-            onClick={() => setShowAbout(true)}
+            onClick={() => navigate('/')}
           />
           <StatusChip />
           {isDemoMode && (

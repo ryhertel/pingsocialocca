@@ -134,14 +134,14 @@ export function OnboardingTour({ open, onComplete }: OnboardingTourProps) {
       tooltipStyle = {
         position: 'fixed',
         top: rect.bottom + padding + 12,
-        left: Math.max(16, Math.min(centerX, window.innerWidth - 16)),
+        left: Math.max(160, Math.min(centerX, window.innerWidth - 160)),
         transform: 'translateX(-50%)',
       };
     } else {
       tooltipStyle = {
         position: 'fixed',
         bottom: window.innerHeight - rect.top + padding + 12,
-        left: Math.max(16, Math.min(centerX, window.innerWidth - 16)),
+        left: Math.max(160, Math.min(centerX, window.innerWidth - 160)),
         transform: 'translateX(-50%)',
       };
     }
