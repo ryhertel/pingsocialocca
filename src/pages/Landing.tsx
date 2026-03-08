@@ -6,6 +6,7 @@ import { FeaturesSection } from '@/components/landing/FeaturesSection';
 import { IntegrationsSection } from '@/components/landing/IntegrationsSection';
 import { SchemaSection } from '@/components/landing/SchemaSection';
 import { DemoCtaSection, FinalCtaSection } from '@/components/landing/CtaSections';
+import { ShareSection } from '@/components/landing/ShareSection';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 
 export default function Landing() {
@@ -20,6 +21,7 @@ export default function Landing() {
       <IntegrationsSection />
       <SchemaSection />
       <DemoCtaSection />
+      <ShareSection />
       <FinalCtaSection />
       <LandingFooter />
     </div>
