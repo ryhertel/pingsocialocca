@@ -92,7 +92,7 @@ export default function Connectors() {
     <div className="min-h-[100svh] bg-background text-foreground">
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-4 border-b border-border/30">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="h-8 w-8">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/app')} className="h-8 w-8">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
