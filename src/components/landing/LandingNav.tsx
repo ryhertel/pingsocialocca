@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, Menu, X } from 'lucide-react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import pingLogo from '@/assets/ping-logo-white.png';
@@ -47,7 +47,8 @@ export function LandingNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const isLanding = location.pathname === '/';
-  const activeSection = useActiveSection(NAV_SECTIONS.map((s) => s.id));
+  const sectionIds = useMemo(() => NAV_SECTIONS.map((s) => s.id), []);
+  const activeSection = useActiveSection(sectionIds);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -59,7 +60,7 @@ export function LandingNav() {
     else buttonRefs.current.delete(id);
   }, []);
 
-  useEffect(() => {
+  const updateUnderline = useCallback(() => {
     if (!isLanding || !activeSection || !containerRef.current) {
       setUnderline(null);
       return;
@@ -74,6 +75,12 @@ export function LandingNav() {
       width: btnRect.width,
     });
   }, [activeSection, isLanding]);
+
+  useEffect(() => {
+    updateUnderline();
+    window.addEventListener('resize', updateUnderline);
+    return () => window.removeEventListener('resize', updateUnderline);
+  }, [updateUnderline]);
 
   const handleNav = (sectionId: string, fallbackRoute: string) => {
     if (isLanding) {
