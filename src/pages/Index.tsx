@@ -12,6 +12,7 @@ import { OpenClawSetupModal } from '@/components/ping/OpenClawSetupModal';
 import { SettingsPanel } from '@/components/ping/SettingsPanel';
 import { DiagnosticsPanel } from '@/components/ping/DiagnosticsPanel';
 import { WelcomeDialog } from '@/components/ping/WelcomeDialog';
+import { OnboardingTour } from '@/components/ping/OnboardingTour';
 import { WebhookPanel } from '@/components/ping/WebhookPanel';
 import { EventFeed } from '@/components/ping/EventFeed';
 import { KeyboardShortcutsHelp } from '@/components/ping/KeyboardShortcutsHelp';
@@ -45,6 +46,7 @@ const Index = () => {
   const [showWebhookPanel, setShowWebhookPanel] = useState(false);
   const [showEventFeed, setShowEventFeed] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showTour, setShowTour] = useState(false);
 
   useKeyboardShortcuts({
     onSettings: () => setShowSettings(true),
@@ -93,6 +95,11 @@ const Index = () => {
     return () => window.removeEventListener('ping:openWebhookPanel', handler);
   }, []);
 
+  useEffect(() => {
+    const handler = () => setShowTour(true);
+    window.addEventListener('ping:startTour', handler);
+    return () => window.removeEventListener('ping:startTour', handler);
+  }, []);
   const connectionMode = useSettingsStore((s) => s.connectionMode);
   const privacyLock = useSettingsStore((s) => s.privacyLock);
   const autoLockMinutes = useSettingsStore((s) => s.autoLockMinutes);
@@ -195,7 +202,7 @@ const Index = () => {
       {/* Main — face + chat */}
       <main className="flex-1 min-h-0 relative flex">
         {/* Face area */}
-        <div className={`relative ${isDocked ? 'flex-1' : 'w-full'}`}>
+        <div className={`relative ${isDocked ? 'flex-1' : 'w-full'}`} data-tour="face">
           <FaceCanvas />
           {!isDocked && !landscapeHideChat && <ChatStack />}
 
@@ -250,10 +257,19 @@ const Index = () => {
       <OpenClawSetupModal open={showOpenClaw} onOpenChange={setShowOpenClaw} />
       <SettingsPanel open={showSettings} onOpenChange={setShowSettings} />
       <DiagnosticsPanel open={showDiagnostics} onOpenChange={setShowDiagnostics} />
-      <WelcomeDialog open={showAbout} onOpenChange={setShowAbout} />
+      <WelcomeDialog
+        open={showAbout}
+        onOpenChange={(v) => {
+          setShowAbout(v);
+          if (!v && !localStorage.getItem('ping:tourSeen')) {
+            setTimeout(() => setShowTour(true), 400);
+          }
+        }}
+      />
       <WebhookPanel open={showWebhookPanel} onOpenChange={setShowWebhookPanel} />
       <EventFeed open={showEventFeed} onOpenChange={setShowEventFeed} />
       <KeyboardShortcutsHelp open={showShortcuts} onOpenChange={setShowShortcuts} />
+      <OnboardingTour open={showTour} onComplete={() => setShowTour(false)} />
     </div>
   );
 };

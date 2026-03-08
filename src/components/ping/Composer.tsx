@@ -138,6 +138,7 @@ export function Composer() {
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
+      data-tour="composer"
     >
       {/* Drag overlay */}
       {isDragOver && (
