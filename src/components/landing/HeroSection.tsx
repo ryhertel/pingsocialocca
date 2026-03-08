@@ -57,6 +57,30 @@ export function HeroSection() {
           </Badge>
         </div>
       </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.8 }}
+        className="relative mt-6 flex flex-col items-center gap-3"
+      >
+        <span className="text-xs text-muted-foreground tracking-wide uppercase">Try a color</span>
+        <div className="flex gap-3">
+          {(Object.entries(themePresets) as [ThemePreset, typeof themePresets[ThemePreset]][]).map(([key, preset]) => (
+            <button
+              key={key}
+              onClick={() => setTheme(key)}
+              aria-label={`${preset.name} theme`}
+              className={`w-7 h-7 rounded-full border-2 border-border/40 transition-all duration-200 hover:scale-110 ${
+                theme === key
+                  ? 'ring-2 ring-offset-2 ring-offset-background ring-primary scale-110'
+                  : 'opacity-70 hover:opacity-100'
+              }`}
+              style={{ backgroundColor: `hsl(${preset.glowPrimary})` }}
+            />
+          ))}
+        </div>
+      </motion.div>
     </section>
   );
 }
