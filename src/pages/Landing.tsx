@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import {
   ArrowRight, Eye, Zap, Shield, Plug, Bell, Sparkles,
   CreditCard, Github, MessageSquare, Gamepad2, SquareKanban, Bug, Triangle, Webhook,
@@ -68,6 +69,7 @@ const howItWorks = [
 
 export default function Landing() {
   const navigate = useNavigate();
+  useAnalytics();
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">

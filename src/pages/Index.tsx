@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import { FaceCanvas } from '@/components/ping/FaceCanvas';
@@ -37,6 +38,7 @@ import pingLogo from '@/assets/ping-logo-white.png';
 
 const Index = () => {
   const navigate = useNavigate();
+  useAnalytics();
   const [showConnect, setShowConnect] = useState(false);
   const [showOpenClaw, setShowOpenClaw] = useState(false);
   const [showSettings, setShowSettings] = useState(false);

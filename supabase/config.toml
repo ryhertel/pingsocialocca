@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.events-stream]
 verify_jwt = false
+
+[functions.analytics]
+verify_jwt = false
