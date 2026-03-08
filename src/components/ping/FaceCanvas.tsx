@@ -104,7 +104,7 @@ export function FaceCanvas() {
 
     // Floating notification icons
     interface FloatingIcon {
-      type: 'dollar' | 'heart' | 'chat' | 'rocket';
+      type: 'dollar' | 'heart' | 'chat' | 'rocket' | 'star' | 'alert' | 'party';
       x: number; y: number; startY: number;
       born: number; lifetime: number;
     }
@@ -587,12 +587,18 @@ export function FaceCanvas() {
           heart: 'hsl(340, 90%, 65%)',
           chat: 'hsl(190, 90%, 65%)',
           rocket: 'hsl(30, 95%, 60%)',
+          star: 'hsl(50, 100%, 65%)',
+          alert: 'hsl(0, 90%, 60%)',
+          party: 'hsl(280, 85%, 65%)',
         };
         const glowColors: Record<string, string> = {
           dollar: 'hsla(45, 100%, 60%, 0.6)',
           heart: 'hsla(340, 90%, 65%, 0.6)',
           chat: 'hsla(190, 90%, 65%, 0.6)',
           rocket: 'hsla(30, 95%, 60%, 0.6)',
+          star: 'hsla(50, 100%, 65%, 0.6)',
+          alert: 'hsla(0, 90%, 60%, 0.6)',
+          party: 'hsla(280, 85%, 65%, 0.6)',
         };
         ctx.fillStyle = iconColors[icon.type] || 'white';
         ctx.shadowBlur = 20;
@@ -601,7 +607,7 @@ export function FaceCanvas() {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        const symbols: Record<string, string> = { dollar: '$', heart: '♥', chat: '💬', rocket: '🚀' };
+        const symbols: Record<string, string> = { dollar: '$', heart: '♥', chat: '💬', rocket: '🚀', star: '⭐', alert: '⚠', party: '🎉' };
         ctx.fillText(symbols[icon.type] || '•', 0, 0);
 
         ctx.restore();

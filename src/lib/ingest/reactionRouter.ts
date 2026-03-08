@@ -13,6 +13,10 @@ const SUBSCRIBER_WORDS = ['subscriber', 'signup', 'sign up', 'registered', 'new 
 const MESSAGE_WORDS = ['message', 'comment', 'reply', 'mention', 'dm', 'chat', 'inbox'];
 const DEPLOY_WORDS = ['deploy', 'shipped', 'released', 'build succeeded', 'pipeline green'];
 const ERROR_WORDS = ['failed', 'exception', 'panic', 'downtime', 'incident', 'crash', '500'];
+const MILESTONE_WORDS = ['milestone', '100', '1000', '10k', 'goal', 'achieved', 'record', '🎯', 'achievement'];
+const LOVE_WORDS = ['thank', 'thanks', 'love', 'appreciate', '❤️', '🙏', 'awesome', 'great job', 'well done'];
+const URGENT_WORDS = ['urgent', 'critical', 'alert', 'emergency', 'pager', 'on-call', 'p0', 'sev1', 'sev0'];
+const PARTY_WORDS = ['party', 'celebrate', 'congrats', 'birthday', 'launch', 'anniversary', '🎉', '🥳', 'woohoo'];
 
 function textContains(haystack: string, needles: string[]): boolean {
   const lower = haystack.toLowerCase();
@@ -57,6 +61,18 @@ export function routeEvent(event: NormalizedEvent): ReactionOutput {
   }
   if (textContains(text, MESSAGE_WORDS)) {
     return { eyeState: 'idle', emotionType: 'surprise', soundFn: 'playReceive', overlayType: 'sparkleTrail', notificationIcon: 'chat' };
+  }
+  if (textContains(text, MILESTONE_WORDS)) {
+    return { eyeState: 'idle', emotionType: 'proud', soundFn: 'playFanfare', overlayType: 'starBurst', notificationIcon: 'star' };
+  }
+  if (textContains(text, LOVE_WORDS)) {
+    return { eyeState: 'idle', emotionType: 'happy', soundFn: 'playHeartbeat', overlayType: 'heartFloat', notificationIcon: 'heart' };
+  }
+  if (textContains(text, URGENT_WORDS)) {
+    return { eyeState: 'error', soundFn: 'playSiren', overlayType: 'shockwave', notificationIcon: 'alert' };
+  }
+  if (textContains(text, PARTY_WORDS)) {
+    return { eyeState: 'idle', emotionType: 'cheer', soundFn: 'playPartyHorn', overlayType: 'balloonRise', notificationIcon: 'party' };
   }
 
   // Fall back to base eventType mapping
