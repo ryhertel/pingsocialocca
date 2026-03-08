@@ -16,7 +16,7 @@ export function HeroSection() {
   return (
     <section className="relative pt-32 pb-20 sm:pb-28 px-6 flex flex-col items-center text-center">
       <div
-        className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full opacity-20 blur-[120px] pointer-events-none"
+        className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full opacity-20 blur-[120px] pointer-events-none transition-[background] duration-400 ease-in-out"
         style={{ background: 'radial-gradient(circle, hsl(var(--glow-primary)), transparent 70%)' }}
       />
 
