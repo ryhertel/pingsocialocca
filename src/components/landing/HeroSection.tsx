@@ -49,7 +49,7 @@ export function HeroSection() {
         initial={{ opacity: 0, scale: 0.92 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        className="relative mt-16 w-full max-w-lg aspect-video rounded-2xl border border-border/30 bg-card/50 backdrop-blur-sm overflow-hidden shadow-[0_0_80px_-20px_hsl(var(--glow-primary)/0.15)]"
+        className="relative mt-16 w-full max-w-lg aspect-video rounded-2xl border border-border/30 bg-card/50 backdrop-blur-sm overflow-hidden shadow-[0_0_80px_-20px_hsl(var(--glow-primary)/0.15)] transition-[box-shadow,border-color] duration-400 ease-in-out"
       >
         <FaceCanvas />
         <div className="absolute bottom-3 left-0 right-0 flex justify-center z-10">

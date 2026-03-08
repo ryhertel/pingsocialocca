@@ -79,6 +79,10 @@
     --sidebar-border: 218 30% 15%;
     --sidebar-ring: 160 100% 50%;
   }
+
+  :root {
+    transition: --glow-primary 0.4s ease, --glow-secondary 0.4s ease, --ping-accent 0.4s ease;
+  }
 }
 
 /* Light mode overrides */
