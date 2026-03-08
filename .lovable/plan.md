@@ -1,100 +1,61 @@
 
 
-# Ping Pre-Launch Plan — 8 Tasks in Order
+# Fix Markdown Headings Not Rendering in Multi-Line Blocks
 
-This is a large body of work. I'll implement each task sequentially across multiple messages. Here's the full plan:
+## Problem
+The `ChatMarkdown` parser only detects headings when a block contains exactly one line (`lines.length === 1`). If a heading like `## Agent/automation vibe` is followed by body text with a single newline (no blank line separator), the entire block is treated as a plain paragraph -- so `##` renders as literal text.
 
----
+## Fix
+Change `parseBlock` in `ChatMarkdown.tsx` to process each line individually instead of only checking single-line blocks. When a line starts with `#`, render it as a heading element. Other lines continue through the existing list/paragraph logic.
 
-## 1. Landing Page at `/`
+## Technical Detail
 
-**What:** Create a marketing landing page at `/` and move the current app to `/app`.
+**File: `src/components/ping/ChatMarkdown.tsx`**
 
-- New `src/pages/Landing.tsx` — hero section with animated Ping eyes preview, value props, "Launch App" CTA button, brief feature highlights, and a footer.
-- Style with the existing dark theme (Ping's `--ping-bg` palette).
-- Update `App.tsx` routing: `/` → Landing, `/app` → current Index.
-- Update internal navigation links (e.g., logo click, 404 "return home").
+Replace the current `parseBlock` function logic:
 
----
+1. Remove the `lines.length === 1` guard around heading detection
+2. Process lines one at a time: split the block into "runs" where heading lines become their own elements and consecutive non-heading lines get grouped into paragraphs/lists as before
+3. This handles both standalone headings and headings mixed into multi-line content
 
-## 2. Error Boundary
+The key change is roughly:
 
-**What:** Add a React error boundary so crashes show a branded fallback instead of a white screen.
+```tsx
+function parseBlock(block: string, blockKey: number): React.ReactNode {
+  const lines = block.split('\n');
+  const headingRe = /^(#{1,6})\s+(.+)$/;
 
-- New `src/components/ErrorBoundary.tsx` — class component catching render errors.
-- Fallback UI: Ping logo, "Something went wrong" message, Reload button, dark-themed.
-- Wrap `<App />` in `main.tsx` with the boundary.
+  // If block has mixed heading + non-heading lines, split into sub-blocks
+  const elements: React.ReactNode[] = [];
+  let nonHeadingBuffer: string[] = [];
+  let subKey = 0;
 
----
+  const flushBuffer = () => {
+    if (nonHeadingBuffer.length > 0) {
+      elements.push(parseNonHeadingLines(nonHeadingBuffer, subKey++));
+      nonHeadingBuffer = [];
+    }
+  };
 
-## 3. Loading / Splash Screen
+  for (const line of lines) {
+    const hm = headingRe.exec(line.trim());
+    if (hm) {
+      flushBuffer();
+      const level = Math.min(hm[1].length, 6);
+      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+      elements.push(<Tag key={subKey++} className={`chat-md-h${level}`}>{parseLine(hm[2])}</Tag>);
+    } else {
+      nonHeadingBuffer.push(line);
+    }
+  }
+  flushBuffer();
 
-**What:** Show a branded splash while JS hydrates.
+  if (elements.length === 1) return React.cloneElement(elements[0] as React.ReactElement, { key: blockKey });
+  return <React.Fragment key={blockKey}>{elements}</React.Fragment>;
+}
+```
 
-- Add inline CSS + HTML splash in `index.html` inside `#root` (pre-React).
-- Ping logo centered, subtle pulse animation, dark background matching `--ping-bg`.
-- React will replace it on mount automatically.
+The existing code-block, list, and paragraph logic moves into a helper `parseNonHeadingLines()` function that handles the non-heading line groups.
 
----
-
-## 4. Accessibility Audit Fixes
-
-**What:** Improve a11y across canvas, controls, and 404.
-
-- `FaceCanvas.tsx`: Add `role="img"` and `aria-label` to the canvas element.
-- `ControlBar.tsx`: Ensure all icon buttons have `aria-label` attributes.
-- `NotFound.tsx`: Restyle to match Ping's dark theme with proper heading hierarchy.
-- Add a visually-hidden skip-to-content link in `Index.tsx`.
-
----
-
-## 5. Analytics / Usage Tracking
-
-**What:** Lightweight, privacy-friendly analytics.
-
-- Create `src/lib/analytics.ts` with a simple event tracking abstraction.
-- Track key events: page views (route changes), CTA clicks, demo command usage, feature panel opens.
-- Use a custom event approach that logs to the database (`ping_analytics` table) via an edge function, keeping it self-hosted.
-- DB migration: create `ping_analytics` table (event_name, properties jsonb, created_at, session_id).
-- Edge function `supabase/functions/analytics/index.ts` to receive events.
-
----
-
-## 6. Rate Limit Feedback in UI
-
-**What:** Surface throttling state to the user.
-
-- Update `src/stores/useIngestStore.ts` to track a `rateLimited` boolean.
-- When the ingest endpoint returns 429, set the flag and show a toast via Sonner.
-- Add a subtle warning badge/chip near the StatusChip when rate-limited.
-- Auto-clear after a cooldown period.
-
----
-
-## 7. Mobile Polish
-
-**What:** Improve mobile experience.
-
-- `NotFound.tsx`: Match Ping's dark theme, add Ping logo, playful copy.
-- Add pull-to-refresh support on the main view (listen for overscroll gesture, trigger event refresh).
-- Add a `useHaptics.ts` hook that calls `navigator.vibrate()` on supported devices for key interactions (send message, notification received).
-- Ensure landscape drawer and mobile menu have proper safe-area padding.
-
----
-
-## 8. SEO / Structured Data
-
-**What:** Improve discoverability.
-
-- Add JSON-LD `SoftwareApplication` structured data in `index.html`.
-- Add `<link rel="canonical">` to `index.html`.
-- Create `public/sitemap.xml` with `/`, `/app`, `/docs`, `/connectors`.
-- Update `robots.txt` with sitemap reference.
-- Add structured data to the new Landing page via a `<script type="application/ld+json">` tag.
-
----
-
-## Implementation Order
-
-I'll tackle these one message at a time, starting with **Task 1 (Landing Page)**. Each task is self-contained and testable before moving to the next.
+No other files need changes -- the heading CSS styles already exist in `index.css`.
 
