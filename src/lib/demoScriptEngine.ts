@@ -390,6 +390,11 @@ const ACTION_MAP: Record<string, () => ResponseNode> = {
   demo_deploy: () => { triggerDemoEffect('deploy'); return getDemoEffectResponse('deploy'); },
   demo_subscriber: () => { triggerDemoEffect('subscriber'); return getDemoEffectResponse('subscriber'); },
   demo_error: () => { triggerDemoEffect('error'); return getDemoEffectResponse('error'); },
+  demo_all: () => {
+    // Trigger the showcase reel via handleDemoInput
+    handleDemoInput('/demo all');
+    return { text: '', buttons: [], module: state.currentModule };
+  },
 };
 
 function resolveAction(action: string): ResponseNode {
