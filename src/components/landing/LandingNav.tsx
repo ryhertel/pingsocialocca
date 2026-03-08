@@ -1,17 +1,53 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import pingLogo from '@/assets/ping-logo-white.png';
+import { cn } from '@/lib/utils';
+
+const NAV_SECTIONS = [
+  { id: 'how-it-works', label: 'How It Works', fallback: '/docs' },
+  { id: 'features', label: 'Features', fallback: '/docs' },
+  { id: 'integrations', label: 'Integrations', fallback: '/connectors' },
+] as const;
 
 function scrollToSection(id: string) {
   const el = document.getElementById(id);
   if (el) el.scrollIntoView({ behavior: 'smooth' });
 }
 
+function useActiveSection(sectionIds: readonly string[]) {
+  const [active, setActive] = useState<string | null>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting);
+        if (visible.length > 0) {
+          // pick the one closest to the top
+          visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+          setActive(visible[0].target.id);
+        }
+      },
+      { rootMargin: '-20% 0px -60% 0px', threshold: 0 },
+    );
+
+    sectionIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [sectionIds]);
+
+  return active;
+}
+
 export function LandingNav() {
   const navigate = useNavigate();
   const location = useLocation();
   const isLanding = location.pathname === '/';
+  const activeSection = useActiveSection(NAV_SECTIONS.map((s) => s.id));
 
   const handleNav = (sectionId: string, fallbackRoute: string) => {
     if (isLanding) {
@@ -28,24 +64,20 @@ export function LandingNav() {
           <img src={pingLogo} alt="Ping" className="h-7 opacity-90" />
         </button>
         <div className="flex items-center gap-2 sm:gap-4">
-          <button
-            onClick={() => handleNav('how-it-works', '/docs')}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline"
-          >
-            How It Works
-          </button>
-          <button
-            onClick={() => handleNav('features', '/docs')}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline"
-          >
-            Features
-          </button>
-          <button
-            onClick={() => handleNav('integrations', '/connectors')}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline"
-          >
-            Integrations
-          </button>
+          {NAV_SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => handleNav(s.id, s.fallback)}
+              className={cn(
+                'text-sm transition-colors hidden sm:inline',
+                isLanding && activeSection === s.id
+                  ? 'text-foreground font-medium'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {s.label}
+            </button>
+          ))}
           <button
             onClick={() => navigate('/docs')}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline"
