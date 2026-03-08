@@ -393,8 +393,11 @@ const ACTION_MAP: Record<string, () => ResponseNode> = {
   demo_subscriber: () => { triggerDemoEffect('subscriber'); return getDemoEffectResponse('subscriber'); },
   demo_error: () => { triggerDemoEffect('error'); return getDemoEffectResponse('error'); },
   demo_all: () => {
-    // Trigger the showcase reel via handleDemoInput
     handleDemoInput('/demo all');
+    return { text: '', buttons: [], module: state.currentModule };
+  },
+  demo_stop: () => {
+    handleDemoInput('/demo stop');
     return { text: '', buttons: [], module: state.currentModule };
   },
 };
