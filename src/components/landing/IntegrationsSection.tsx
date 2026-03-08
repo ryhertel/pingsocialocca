@@ -22,7 +22,7 @@ export function IntegrationsSection() {
   const navigate = useNavigate();
 
   return (
-    <section className="py-20 px-6 border-t border-border/20">
+    <section id="integrations" className="py-20 px-6 border-t border-border/20 scroll-mt-20">
       <div className="max-w-5xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-bold text-center mb-4">
           Connects to the tools you already use

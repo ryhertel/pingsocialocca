@@ -8,7 +8,7 @@ const howItWorks = [
 
 export function HowItWorksSection() {
   return (
-    <section className="py-20 px-6 border-t border-border/20">
+    <section id="how-it-works" className="py-20 px-6 border-t border-border/20 scroll-mt-20">
       <div className="max-w-4xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-bold text-center mb-4">
           Three steps to a reactive presence

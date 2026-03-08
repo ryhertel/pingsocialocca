@@ -6,7 +6,7 @@ export function SchemaSection() {
   const navigate = useNavigate();
 
   return (
-    <section className="py-20 px-6 border-t border-border/20">
+    <section id="schema" className="py-20 px-6 border-t border-border/20 scroll-mt-20">
       <div className="max-w-3xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-bold text-center mb-4">
           Dead-simple event schema
