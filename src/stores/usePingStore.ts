@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { PersistentState, TransientReaction, ChatMessage, BridgeStatus, DiagnosticsEntry } from '@/lib/types';
 
 let notifyCoalesceTimerId: number | null = null;
@@ -28,69 +29,104 @@ interface PingState {
   clearMessages: () => void;
 }
 
-export const usePingStore = create<PingState>()((set, get) => ({
-  persistentState: 'disconnected',
-  transientReaction: null,
-  messages: [],
-  bridgeStatus: { connected: false },
-  diagnosticsLog: [],
-  notifyBadgeCount: 0,
-  isComposerFocused: false,
-  lastError: null,
-  lastEventTs: null,
+export const usePingStore = create<PingState>()(
+  persist(
+    (set, get) => ({
+      persistentState: 'disconnected',
+      transientReaction: null,
+      messages: [],
+      bridgeStatus: { connected: false },
+      diagnosticsLog: [],
+      notifyBadgeCount: 0,
+      isComposerFocused: false,
+      lastError: null,
+      lastEventTs: null,
 
-  setPersistentState: (persistentState) => set({ persistentState }),
+      setPersistentState: (persistentState) => set({ persistentState }),
 
-  triggerReaction: (reaction) => {
-    if (reaction === 'notify') {
-      const current = get().notifyBadgeCount;
-      // Only fire animation for the first notify in the coalesce window
-      if (current === 0) {
-        set({ transientReaction: 'notify' });
-        if (reactionTimerId) clearTimeout(reactionTimerId);
-        reactionTimerId = window.setTimeout(() => {
-          set({ transientReaction: null });
-        }, 500);
-      }
-      set({ notifyBadgeCount: current + 1 });
-      // Reset coalesce window (6–10s)
-      if (notifyCoalesceTimerId) clearTimeout(notifyCoalesceTimerId);
-      notifyCoalesceTimerId = window.setTimeout(() => {
-        set({ notifyBadgeCount: 0 });
-        notifyCoalesceTimerId = null;
-      }, 8000);
-    } else if (reaction === 'success') {
-      set({ transientReaction: 'success' });
-      if (reactionTimerId) clearTimeout(reactionTimerId);
-      reactionTimerId = window.setTimeout(() => {
-        set({ transientReaction: null });
-      }, 1000);
-    }
-  },
+      triggerReaction: (reaction) => {
+        if (reaction === 'notify') {
+          const current = get().notifyBadgeCount;
+          if (current === 0) {
+            set({ transientReaction: 'notify' });
+            if (reactionTimerId) clearTimeout(reactionTimerId);
+            reactionTimerId = window.setTimeout(() => {
+              set({ transientReaction: null });
+            }, 500);
+          }
+          set({ notifyBadgeCount: current + 1 });
+          if (notifyCoalesceTimerId) clearTimeout(notifyCoalesceTimerId);
+          notifyCoalesceTimerId = window.setTimeout(() => {
+            set({ notifyBadgeCount: 0 });
+            notifyCoalesceTimerId = null;
+          }, 8000);
+        } else if (reaction === 'success') {
+          set({ transientReaction: 'success' });
+          if (reactionTimerId) clearTimeout(reactionTimerId);
+          reactionTimerId = window.setTimeout(() => {
+            set({ transientReaction: null });
+          }, 1000);
+        }
+      },
 
-  addMessage: (msg) =>
-    set((s) => ({ messages: [...s.messages.slice(-49), msg] })),
+      addMessage: (msg) =>
+        set((s) => ({ messages: [...s.messages.slice(-49), msg] })),
 
-  updateMessageReveal: (id, revealedText) =>
-    set((s) => ({
-      messages: s.messages.map((m) => (m.id === id ? { ...m, revealedText } : m)),
-    })),
+      updateMessageReveal: (id, revealedText) =>
+        set((s) => ({
+          messages: s.messages.map((m) => (m.id === id ? { ...m, revealedText } : m)),
+        })),
 
-  finishReveal: (id) =>
-    set((s) => ({
-      messages: s.messages.map((m) =>
-        m.id === id ? { ...m, isRevealing: false, revealedText: m.text } : m,
-      ),
-    })),
+      finishReveal: (id) =>
+        set((s) => ({
+          messages: s.messages.map((m) =>
+            m.id === id ? { ...m, isRevealing: false, revealedText: m.text } : m,
+          ),
+        })),
 
-  setBridgeStatus: (status) =>
-    set((s) => ({ bridgeStatus: { ...s.bridgeStatus, ...status } })),
+      setBridgeStatus: (status) =>
+        set((s) => ({ bridgeStatus: { ...s.bridgeStatus, ...status } })),
 
-  addDiagnosticsEntry: (entry) =>
-    set((s) => ({ diagnosticsLog: [...s.diagnosticsLog.slice(-99), entry] })),
+      addDiagnosticsEntry: (entry) =>
+        set((s) => ({ diagnosticsLog: [...s.diagnosticsLog.slice(-99), entry] })),
 
-  setIsComposerFocused: (isComposerFocused) => set({ isComposerFocused }),
-  setLastError: (lastError) => set({ lastError }),
-  updateLastEventTs: () => set({ lastEventTs: Date.now() }),
-  clearMessages: () => set({ messages: [] }),
-}));
+      setIsComposerFocused: (isComposerFocused) => set({ isComposerFocused }),
+      setLastError: (lastError) => set({ lastError }),
+      updateLastEventTs: () => set({ lastEventTs: Date.now() }),
+      clearMessages: () => set({ messages: [] }),
+    }),
+    {
+      name: 'ping-chat-messages',
+      partialize: (state) => ({ messages: state.messages }),
+      storage: {
+        getItem: (name) => {
+          const str = localStorage.getItem(name);
+          if (!str) return null;
+          const parsed = JSON.parse(str);
+          // On hydration: stop revealing animations & strip blob URLs
+          if (parsed?.state?.messages) {
+            parsed.state.messages = parsed.state.messages.map((m: ChatMessage) => ({
+              ...m,
+              isRevealing: false,
+              revealedText: m.text,
+              attachments: m.attachments?.map(({ dataBase64, blobUrl, ...rest }) => rest),
+            }));
+          }
+          return parsed;
+        },
+        setItem: (name, value) => {
+          // Strip heavy attachment data before persisting
+          const clone = JSON.parse(JSON.stringify(value));
+          if (clone?.state?.messages) {
+            clone.state.messages = clone.state.messages.map((m: ChatMessage) => ({
+              ...m,
+              attachments: m.attachments?.map(({ dataBase64, blobUrl, ...rest }: any) => rest),
+            }));
+          }
+          localStorage.setItem(name, JSON.stringify(clone));
+        },
+        removeItem: (name) => localStorage.removeItem(name),
+      },
+    },
+  ),
+);
