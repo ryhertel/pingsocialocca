@@ -68,18 +68,26 @@ export function HeroSection() {
         <span className="text-xs text-muted-foreground tracking-wide uppercase">Try a color</span>
         <TooltipProvider delayDuration={200}>
           <div className="flex gap-3">
-            {(Object.entries(themePresets) as [ThemePreset, typeof themePresets[ThemePreset]][]).map(([key, preset]) => (
+            {(Object.entries(themePresets) as [ThemePreset, typeof themePresets[ThemePreset]][]).map(([key, preset], index) => (
               <Tooltip key={key}>
                 <TooltipTrigger asChild>
-                  <button
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: theme === key ? 1 : 0.7, scale: theme === key ? 1.1 : 1 }}
+                    transition={{ duration: 0.4, delay: 1.0 + index * 0.1 }}
+                    whileHover={{ scale: 1.1, opacity: 1 }}
                     onClick={() => setTheme(key)}
                     aria-label={`${preset.name} theme`}
-                    className={`w-7 h-7 rounded-full border-2 border-border/40 transition-all duration-200 hover:scale-110 ${
+                    className={`w-7 h-7 rounded-full border-2 border-border/40 ${
                       theme === key
-                        ? 'ring-2 ring-offset-2 ring-offset-background ring-primary scale-110 animate-[glow-pulse_2s_ease-in-out_infinite]'
-                        : 'opacity-70 hover:opacity-100'
+                        ? 'ring-2 ring-offset-2 ring-offset-background ring-primary'
+                        : ''
                     }`}
-                    style={{ backgroundColor: `hsl(${preset.glowPrimary})`, color: `hsl(${preset.glowPrimary})` }}
+                    style={{
+                      backgroundColor: `hsl(${preset.glowPrimary})`,
+                      color: `hsl(${preset.glowPrimary})`,
+                      animation: theme === key ? 'glow-pulse 2s ease-in-out infinite' : undefined,
+                    }}
                   />
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="text-xs">
