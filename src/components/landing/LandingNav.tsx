@@ -94,7 +94,11 @@ export function LandingNav() {
               'absolute bottom-0 h-0.5 rounded-full bg-primary transition-all duration-300 ease-out',
               underline ? 'opacity-100' : 'opacity-0',
             )}
-            style={underline ? { left: underline.left, width: underline.width } : { left: 0, width: 0 }}
+            style={underline ? {
+              left: underline.left,
+              width: underline.width,
+              boxShadow: '0 0 8px 2px hsl(var(--primary) / 0.5), 0 0 16px 4px hsl(var(--primary) / 0.25)',
+            } : { left: 0, width: 0 }}
           />
 
           {NAV_SECTIONS.map((s) => (
