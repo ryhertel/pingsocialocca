@@ -334,6 +334,15 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
               variant="outline"
               size="sm"
               className="w-full text-muted-foreground hover:text-foreground border-border/30"
+              onClick={handleCopyToClipboard}
+            >
+              <Copy className="h-3.5 w-3.5 mr-2" />
+              Copy Config to Clipboard
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-muted-foreground hover:text-foreground border-border/30"
               onClick={() => {
                 localStorage.removeItem('ping:tourSeen');
                 onOpenChange(false);
