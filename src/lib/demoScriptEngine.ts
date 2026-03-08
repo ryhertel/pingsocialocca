@@ -400,6 +400,14 @@ const ACTION_MAP: Record<string, () => ResponseNode> = {
     handleDemoInput('/demo stop');
     return { text: '', buttons: [], module: state.currentModule };
   },
+  demo_random: () => {
+    handleDemoInput('/demo random');
+    return { text: '', buttons: [], module: state.currentModule };
+  },
+  demo_list: () => {
+    handleDemoInput('/demo list');
+    return { text: '', buttons: [], module: state.currentModule };
+  },
 };
 
 function resolveAction(action: string): ResponseNode {
@@ -613,6 +621,23 @@ export function handleDemoInput(text: string) {
           { label: '▶️ Play all', action: 'demo_all' },
           { label: '🎉 Party', action: 'demo_party' },
           { label: '🎯 Milestone', action: 'demo_milestone' },
+        ],
+        module: state.currentModule,
+      });
+      return;
+    }
+
+    // /demo random — trigger a random effect
+    if (effectName === 'random') {
+      const names = Object.keys(DEMO_EFFECTS);
+      const pick = names[Math.floor(Math.random() * names.length)];
+      triggerDemoEffect(pick);
+      deliverResponse({
+        text: `🎲 **Random pick:** ${DEMO_EFFECTS[pick].title}\n\nRoll again with \`/demo random\` or try \`/demo list\` to see all effects.`,
+        buttons: [
+          { label: '🎲 Random again', action: 'demo_random' },
+          { label: '▶️ Play all', action: 'demo_all' },
+          { label: '📋 List', action: 'demo_list' },
         ],
         module: state.currentModule,
       });
