@@ -2,6 +2,27 @@ import type { ConnectorTemplate } from './types';
 
 export const connectorTemplates: ConnectorTemplate[] = [
   {
+    id: 'openclaw',
+    name: 'OpenClaw',
+    description: 'Connect a local AI agent to Ping over WebSocket. The primary way to give your agent a face.',
+    icon: 'Bot',
+    setupSteps: [
+      'Install OpenClaw: npx openclaw@latest',
+      'Start the bridge: npx openclaw start',
+      'In Ping, open Bridge and connect to ws://127.0.0.1:3939/ping',
+      'Your agent can now send emotions, expressions, and messages to Ping in real time.',
+    ],
+    testEvent: {
+      source: 'openclaw',
+      eventType: 'success',
+      title: 'Bridge connected',
+      body: 'OpenClaw agent is live and sending events to Ping.',
+    },
+    keywordsSupported: ['emotion', 'expression', 'speak', 'think', 'react', 'spectacle'],
+    notes: 'OpenClaw is the recommended way to connect AI agents. It uses a local WebSocket bridge, so your data never leaves your machine.',
+    securityCopy: 'All communication stays on your local network. No data is sent to external servers. The bridge runs on localhost only.',
+  },
+  {
     id: 'generic',
     name: 'Generic Webhook',
     description: 'Send events from any HTTP-capable service — scripts, Zapier, Make, n8n, or curl.',

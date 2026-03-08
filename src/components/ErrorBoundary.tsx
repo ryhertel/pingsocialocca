@@ -23,7 +23,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <img src={pingLogo} alt="Ping" className="h-10 opacity-70" />
         <h1 className="text-2xl font-bold">Something went wrong</h1>
         <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
-          Ping hit an unexpected error. Try reloading — if the problem persists,
+          Ping hit an unexpected error. Try reloading. If the problem persists,
           clear your browser cache.
         </p>
         {this.state.error && (

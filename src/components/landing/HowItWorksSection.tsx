@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 const howItWorks = [
-  { step: '1', title: 'Launch Ping', desc: 'Open the app — no account needed. Start with Demo Mode to explore.' },
+  { step: '1', title: 'Launch Ping', desc: 'Open the app, no account needed. Start with Demo Mode to explore.' },
   { step: '2', title: 'Connect a Source', desc: 'Point any webhook, bot, or agent at Ping\'s ingest endpoint with a simple POST.' },
   { step: '3', title: 'Watch It React', desc: 'Ping reads your events and responds with expressions, sounds, and spectacles in real time.' },
 ];

@@ -27,7 +27,7 @@ export function HeroSection() {
 
       <p className="relative mt-6 text-lg sm:text-xl text-muted-foreground max-w-xl leading-relaxed">
         Ping is a friendly, eyes-only presence UI. Connect it to any AI agent,
-        webhook, or automation — and watch it react to status, messages, and
+        webhook, or automation and watch it react to status, messages, and
         alerts in real time.
       </p>
 
@@ -49,7 +49,7 @@ export function HeroSection() {
         <FaceCanvas />
         <div className="absolute bottom-3 left-0 right-0 flex justify-center z-10">
           <Badge variant="secondary" className="text-[10px] bg-muted/60 backdrop-blur-sm">
-            Live preview — this is what Ping looks like
+            Live preview. This is what Ping looks like
           </Badge>
         </div>
       </motion.div>

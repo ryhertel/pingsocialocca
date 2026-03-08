@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 
 const features = [
   { icon: Eye, title: 'Always-On Presence', desc: 'An expressive animated face that reacts to your AI agent\'s notifications in real time.' },
-  { icon: Zap, title: 'Instant Reactions', desc: 'See status changes, errors, and messages the moment they happen — no refresh needed.' },
+  { icon: Zap, title: 'Instant Reactions', desc: 'See status changes, errors, and messages the moment they happen. no refresh needed.' },
   { icon: Plug, title: 'Connect Anything', desc: 'Webhooks, WebSocket bridge, or REST API. Plug in any AI agent or automation tool.' },
   { icon: Shield, title: 'Privacy-First', desc: 'Privacy lock, local-only mode, and automatic redaction. Your data stays yours.' },
   { icon: Bell, title: 'Smart Notifications', desc: 'Severity-based routing, sound controls, and do-not-disturb — all configurable.' },

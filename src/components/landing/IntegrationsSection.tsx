@@ -1,12 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import {
   Webhook, CreditCard, Github, MessageSquare, Gamepad2,
-  SquareKanban, Bug, Triangle, Plug, BookOpen,
+  SquareKanban, Bug, Triangle, Plug, BookOpen, Bot,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 
 const integrations = [
+  { icon: Bot, name: 'OpenClaw', desc: 'Local AI agent bridge. Connect your own agent over WebSocket.' },
   { icon: Webhook, name: 'Generic Webhook', desc: 'Any HTTP service, Zapier, Make, n8n, or curl' },
   { icon: CreditCard, name: 'Stripe', desc: 'Payments, subscriptions & revenue events' },
   { icon: Github, name: 'GitHub', desc: 'Pushes, deployments, issues & PRs' },
@@ -27,8 +28,8 @@ export function IntegrationsSection() {
           Connects to the tools you already use
         </h2>
         <p className="text-center text-muted-foreground mb-14 max-w-lg mx-auto">
-          8 pre-built connectors with setup guides, cURL builders, and test
-          events — or use the generic webhook for anything else.
+          9 pre-built connectors with setup guides, cURL builders, and test
+          events. Or use the generic webhook for anything else.
         </p>
 
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
