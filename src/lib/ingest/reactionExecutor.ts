@@ -13,6 +13,7 @@ import { useSettingsStore } from '@/stores/useSettingsStore';
 import {
   playConfirm, playError, playReceive, playNotify,
   playThinking, playExcited, playKaChing, playLevelUp,
+  playFanfare, playHeartbeat, playSiren, playPartyHorn,
   triggerEmotion,
 } from '@/lib/audio';
 
@@ -28,6 +29,10 @@ const SOUND_FN_MAP: Record<string, (vol: number, muted: boolean, dnd: boolean) =
   playExcited,
   playKaChing,
   playLevelUp,
+  playFanfare,
+  playHeartbeat,
+  playSiren,
+  playPartyHorn,
 };
 
 export function executeReaction(reaction: ReactionOutput): void {

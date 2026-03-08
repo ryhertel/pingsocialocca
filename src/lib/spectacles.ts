@@ -6,7 +6,7 @@
  * All rendering is canvas-native — no DOM elements.
  */
 
-import { playExcited, playConfirm, playNotify, playKaChing, playLevelUp } from './audio';
+import { playExcited, playConfirm, playNotify, playKaChing, playLevelUp, playFanfare, playHeartbeat, playSiren, playPartyHorn } from './audio';
 
 // ── Types ──
 
@@ -74,7 +74,7 @@ export function createSpectacleState(): SpectacleState {
 // ── Force-start (for demo commands) ──
 
 export function forceStartSpectacle(ss: SpectacleState, routineName: string) {
-  const validRoutines = ['fireworks', 'eyeRoll', 'sparkleTrail', 'gravityDrop', 'dizzySpin', 'pulseWave', 'coinRain', 'confettiBurst'];
+  const validRoutines = ['fireworks', 'eyeRoll', 'sparkleTrail', 'gravityDrop', 'dizzySpin', 'pulseWave', 'coinRain', 'confettiBurst', 'starBurst', 'heartFloat', 'shockwave', 'balloonRise'];
   if (!validRoutines.includes(routineName)) return;
   ss.routine = routineName;
   ss.timer = 0;
@@ -89,9 +89,9 @@ export function forceStartSpectacle(ss: SpectacleState, routineName: string) {
 
 function getAvailableRoutines(energy: number): string[] {
   if (energy <= 0.2) return [];
-  if (energy <= 0.5) return ['sparkleTrail', 'gravityDrop'];
-  if (energy <= 0.8) return ['sparkleTrail', 'gravityDrop', 'eyeRoll', 'dizzySpin', 'pulseWave'];
-  return ['sparkleTrail', 'gravityDrop', 'eyeRoll', 'dizzySpin', 'pulseWave', 'fireworks'];
+  if (energy <= 0.5) return ['sparkleTrail', 'gravityDrop', 'heartFloat'];
+  if (energy <= 0.8) return ['sparkleTrail', 'gravityDrop', 'eyeRoll', 'dizzySpin', 'pulseWave', 'heartFloat', 'balloonRise'];
+  return ['sparkleTrail', 'gravityDrop', 'eyeRoll', 'dizzySpin', 'pulseWave', 'fireworks', 'starBurst', 'heartFloat', 'shockwave', 'balloonRise'];
 }
 
 // ── Scheduler ──
@@ -167,6 +167,18 @@ export function updateSpectacle(
         break;
       case 'confettiBurst':
         runConfettiBurst(ss, dt, cx, cy, eyeW, baseH, targets, energy, volume, muted, dnd);
+        break;
+      case 'starBurst':
+        runStarBurst(ss, dt, cx, cy, eyeW, baseH, targets, energy, volume, muted, dnd);
+        break;
+      case 'heartFloat':
+        runHeartFloat(ss, dt, cx, cy, eyeW, baseH, targets, energy, volume, muted, dnd);
+        break;
+      case 'shockwave':
+        runShockwave(ss, cx, cy, hue, targets, energy, volume, muted, dnd);
+        break;
+      case 'balloonRise':
+        runBalloonRise(ss, dt, cx, cy, eyeW, baseH, targets, energy, volume, muted, dnd);
         break;
     }
     return targets;
@@ -463,6 +475,171 @@ function runConfettiBurst(
   }
 
   if (ss.timer > 4000 && ss.particles.length === 0) {
+    ss.routine = null;
+  }
+}
+
+// ── Star Burst: Golden stars explode outward then orbit ──
+
+function runStarBurst(
+  ss: SpectacleState, dt: number,
+  cx: number, cy: number, eyeW: number, _baseH: number,
+  t: SpectacleTargets, energy: number,
+  vol: number, muted: boolean, dnd: boolean,
+) {
+  // Spawn star particles at start
+  if (ss.timer < dt + 1) {
+    const count = energy > 0.8 ? 40 : 28;
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count + rand(-0.15, 0.15);
+      const speed = rand(0.1, 0.3);
+      ss.particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 0.04,
+        life: rand(2500, 4000), maxLife: 4000,
+        size: rand(4, 8),
+        hue: rand(40, 55), // golden
+        type: 'spark',
+      });
+    }
+  }
+
+  // Eye reaction: huge bounce + max glow
+  t.targetWiden = Math.max(t.targetWiden, 1.6 * energy);
+  t.targetGlow = Math.max(t.targetGlow, 4.0);
+  t.targetBounceY = -45 * energy;
+
+  if (!ss.soundPlayed) {
+    ss.soundPlayed = true;
+    playFanfare(vol, muted, dnd);
+  }
+
+  if (ss.timer > 4000 && ss.particles.length === 0) {
+    ss.routine = null;
+  }
+}
+
+// ── Heart Float: Pink/red hearts float upward with gentle sway ──
+
+function runHeartFloat(
+  ss: SpectacleState, _dt: number,
+  cx: number, cy: number, eyeW: number, baseH: number,
+  t: SpectacleTargets, energy: number,
+  vol: number, muted: boolean, dnd: boolean,
+) {
+  // Spawn hearts over 600ms
+  if (ss.timer < 600 && Math.random() < 0.5) {
+    const count = energy > 0.8 ? 4 : 2;
+    for (let i = 0; i < count; i++) {
+      ss.particles.push({
+        x: cx + rand(-eyeW * 2, eyeW * 2),
+        y: cy + baseH * 0.5 + rand(-10, 20),
+        vx: rand(-0.015, 0.015),
+        vy: rand(-0.08, -0.04), // float upward
+        life: rand(2500, 3500), maxLife: 3500,
+        size: rand(5, 9),
+        hue: rand(330, 350), // pink/red
+        type: 'dust',
+      });
+    }
+  }
+
+  // Slow wide + warm glow
+  t.targetWiden = Math.max(t.targetWiden, 0.8 * energy);
+  t.targetGlow = Math.max(t.targetGlow, 2.5);
+  t.targetBounceY = Math.sin(ss.timer * 0.003) * 10 * energy;
+
+  if (!ss.soundPlayed) {
+    ss.soundPlayed = true;
+    playHeartbeat(vol, muted, dnd);
+  }
+
+  if (ss.timer > 3500 && ss.particles.filter(p => p.type === 'dust').length === 0) {
+    ss.routine = null;
+  }
+}
+
+// ── Shockwave: Large ring + red flash particles at screen edges ──
+
+function runShockwave(
+  ss: SpectacleState, cx: number, cy: number,
+  _hue: number, t: SpectacleTargets, energy: number,
+  vol: number, muted: boolean, dnd: boolean,
+) {
+  // Spawn one large ring + edge sparks at start
+  if (ss.timer < 20) {
+    ss.particles.push({
+      x: cx, y: cy, vx: 0, vy: 0,
+      life: 2500, maxLife: 2500,
+      size: 6, hue: 0, type: 'ring', radius: 10,
+    });
+    // Red edge sparks
+    for (let i = 0; i < 16; i++) {
+      const angle = (Math.PI * 2 * i) / 16;
+      ss.particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(angle) * 0.25,
+        vy: Math.sin(angle) * 0.25,
+        life: rand(1500, 2500), maxLife: 2500,
+        size: rand(3, 6), hue: rand(0, 15), type: 'spark',
+      });
+    }
+  }
+
+  // Rapid shake + error tint via glow
+  t.targetGlow = Math.max(t.targetGlow, 3.0);
+  const shakeFreq = Math.sin(ss.timer * 0.05) * 0.6 * energy;
+  t.targetGX = shakeFreq;
+
+  if (!ss.soundPlayed) {
+    ss.soundPlayed = true;
+    playSiren(vol, muted, dnd);
+  }
+
+  if (ss.timer > 3000 && ss.particles.length === 0) {
+    ss.routine = null;
+  }
+}
+
+// ── Balloon Rise: Colorful balloons float up and pop into sparks ──
+
+function runBalloonRise(
+  ss: SpectacleState, dt: number,
+  cx: number, cy: number, eyeW: number, baseH: number,
+  t: SpectacleTargets, energy: number,
+  vol: number, muted: boolean, dnd: boolean,
+) {
+  // Spawn balloons over 500ms
+  if (ss.timer < 500 && Math.random() < 0.6) {
+    const count = energy > 0.8 ? 4 : 3;
+    for (let i = 0; i < count; i++) {
+      ss.particles.push({
+        x: cx + rand(-eyeW * 3, eyeW * 3),
+        y: cy + baseH + rand(0, 30),
+        vx: rand(-0.02, 0.02),
+        vy: rand(-0.1, -0.06), // float up
+        life: rand(3000, 4000), maxLife: 4000,
+        size: rand(6, 10),
+        hue: rand(0, 360), // rainbow
+        type: 'dust',
+      });
+    }
+  }
+
+  // Dizzy spin + max widen
+  t.targetWiden = Math.max(t.targetWiden, 1.3 * energy);
+  t.targetGlow = Math.max(t.targetGlow, 2.8);
+  const spinProgress = Math.min(ss.timer / 1200, 1);
+  t.targetGX = Math.cos(spinProgress * Math.PI * 4) * 0.8 * energy;
+  t.targetGY = Math.sin(spinProgress * Math.PI * 4) * 0.5 * energy;
+
+  if (!ss.soundPlayed) {
+    ss.soundPlayed = true;
+    playPartyHorn(vol, muted, dnd);
+  }
+
+  if (ss.timer > 4500 && ss.particles.length === 0) {
     ss.routine = null;
   }
 }

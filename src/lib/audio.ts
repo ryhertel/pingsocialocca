@@ -578,6 +578,141 @@ export function playIdleChirp(volume: number, muted: boolean, dnd: boolean) {
   carrier.stop(t + 0.15);
 }
 
+// ── Fanfare: Triumphant brass-style ascending chord ──
+export function playFanfare(volume: number, muted: boolean, dnd: boolean) {
+  if (!canBeep(muted, dnd)) return;
+  lastBeepTime = Date.now();
+  const ctx = getCtx();
+  const p = pv();
+  const notes = [440, 554, 660, 880]; // A4→C#5→E5→A5 triumphant
+  const spacing = 0.09;
+
+  notes.forEach((freq, i) => {
+    const st = ctx.currentTime + i * spacing;
+    // Brass-like sawtooth with warmth
+    detunedPair(ctx, 'sawtooth', freq * p, st, st + 0.3, volume * 0.08, {
+      reverb: 0.45,
+      warmth: true,
+      envelope: (g, t0) => {
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(volume * 0.08, t0 + 0.01);
+        g.gain.setValueAtTime(volume * 0.08, t0 + 0.15);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.3);
+      },
+    });
+    // Sine body
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq * p;
+    const g = buildChain(ctx, osc, 0, { reverb: 0.4 });
+    g.gain.setValueAtTime(0, st);
+    g.gain.linearRampToValueAtTime(volume * 0.14, st + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.001, st + 0.25);
+    osc.start(st);
+    osc.stop(st + 0.35);
+
+    if (i === notes.length - 1) {
+      playSubBass(ctx, volume * 0.2, st);
+      playNoiseBurst(ctx, volume * 0.1, 0.02, st);
+    }
+  });
+}
+
+// ── Heartbeat: Warm double-thump pulse ──
+export function playHeartbeat(volume: number, muted: boolean, dnd: boolean) {
+  if (!canBeep(muted, dnd)) return;
+  lastBeepTime = Date.now();
+  const ctx = getCtx();
+  const t = ctx.currentTime;
+
+  // Two thumps
+  for (const offset of [0, 0.18]) {
+    const st = t + offset;
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(80, st);
+    osc.frequency.exponentialRampToValueAtTime(50, st + 0.12);
+    const g = buildChain(ctx, osc, 0, { reverb: 0.2, warmth: true });
+    g.gain.setValueAtTime(0, st);
+    g.gain.linearRampToValueAtTime(volume * 0.25, st + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, st + 0.15);
+    osc.start(st);
+    osc.stop(st + 0.2);
+    // Warm overtone
+    const ov = ctx.createOscillator();
+    ov.type = 'triangle';
+    ov.frequency.value = 220;
+    const gv = buildChain(ctx, ov, 0, { reverb: 0.3 });
+    gv.gain.setValueAtTime(0, st);
+    gv.gain.linearRampToValueAtTime(volume * 0.06, st + 0.005);
+    gv.gain.exponentialRampToValueAtTime(0.001, st + 0.1);
+    ov.start(st);
+    ov.stop(st + 0.12);
+  }
+}
+
+// ── Siren: Two-tone alternating alert ──
+export function playSiren(volume: number, muted: boolean, dnd: boolean) {
+  if (!canBeep(muted, dnd)) return;
+  lastBeepTime = Date.now();
+  const ctx = getCtx();
+  const t = ctx.currentTime;
+  const p = pv();
+
+  // Alternating two-tone
+  const osc = ctx.createOscillator();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(600 * p, t);
+  osc.frequency.linearRampToValueAtTime(800 * p, t + 0.1);
+  osc.frequency.linearRampToValueAtTime(600 * p, t + 0.2);
+  osc.frequency.linearRampToValueAtTime(800 * p, t + 0.3);
+  const g = buildChain(ctx, osc, 0, { reverb: 0.15, warmth: true });
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(volume * 0.12, t + 0.005);
+  g.gain.setValueAtTime(volume * 0.12, t + 0.28);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+  osc.start(t);
+  osc.stop(t + 0.38);
+
+  playNoiseBurst(ctx, volume * 0.2, 0.02, t);
+}
+
+// ── Party Horn: Ascending toot with noise burst ──
+export function playPartyHorn(volume: number, muted: boolean, dnd: boolean) {
+  if (!canBeep(muted, dnd)) return;
+  lastBeepTime = Date.now();
+  const ctx = getCtx();
+  const p = pv();
+  const t = ctx.currentTime;
+
+  // Ascending toot
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(300 * p, t);
+  osc.frequency.exponentialRampToValueAtTime(900 * p, t + 0.15);
+  const g = buildChain(ctx, osc, 0, { reverb: 0.35, warmth: true });
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(volume * 0.14, t + 0.01);
+  g.gain.setValueAtTime(volume * 0.14, t + 0.12);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+  osc.start(t);
+  osc.stop(t + 0.3);
+
+  // Noise burst for "thhh" texture
+  playNoiseBurst(ctx, volume * 0.25, 0.06, t + 0.08);
+
+  // Bright shimmer at peak
+  const shim = ctx.createOscillator();
+  shim.type = 'triangle';
+  shim.frequency.value = 1200 * p;
+  const gs = buildChain(ctx, shim, 0, { reverb: 0.4 });
+  gs.gain.setValueAtTime(0, t + 0.12);
+  gs.gain.linearRampToValueAtTime(volume * 0.06, t + 0.13);
+  gs.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+  shim.start(t + 0.12);
+  shim.stop(t + 0.25);
+}
+
 // ── Utility: trigger emotion on eyes ──
 export function triggerEmotion(emotion: string, duration = 2000) {
   window.dispatchEvent(new CustomEvent('ping:emotion', { detail: { emotion, duration } }));
