@@ -624,6 +624,27 @@ export function handleDemoInput(text: string) {
   if (demoMatch) {
     const effectName = demoMatch[1].trim().toLowerCase();
 
+    // /demo help — show all subcommands
+    if (effectName === 'help') {
+      deliverResponse({
+        text: `📖 **Demo Commands:**\n\n` +
+          `• \`/demo list\` — Show all available effect names\n` +
+          `• \`/demo <name>\` — Trigger a specific effect (e.g. \`/demo party\`)\n` +
+          `• \`/demo all\` — Play the full showcase reel\n` +
+          `• \`/demo stop\` — Stop a running showcase reel\n` +
+          `• \`/demo random\` — Trigger a random effect\n` +
+          `• \`/demo speed <n>\` — Set reel speed multiplier (0.1–10, default 1)\n` +
+          `• \`/demo help\` — Show this help message`,
+        buttons: [
+          { label: '📋 List effects', action: 'demo_list' },
+          { label: '▶️ Play all', action: 'demo_all' },
+          { label: '🎲 Random', action: 'demo_random' },
+        ],
+        module: state.currentModule,
+      });
+      return;
+    }
+
     // /demo list — show all available effects
     if (effectName === 'list') {
       const names = Object.keys(DEMO_EFFECTS);
