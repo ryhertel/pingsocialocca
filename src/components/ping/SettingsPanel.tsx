@@ -11,7 +11,7 @@ import { useIngestStore } from '@/stores/useIngestStore';
 import { usePingStore } from '@/stores/usePingStore';
 import { themePresets } from '@/lib/themes';
 import type { ThemePreset, ColorMode, AutoLockMinutes, ChatLayout } from '@/lib/types';
-import { MessageCircle, PanelRight, Trash2, Sun, Moon, Monitor, RotateCcw, Download, Upload } from 'lucide-react';
+import { MessageCircle, PanelRight, Trash2, Sun, Moon, Monitor, RotateCcw, Download, Upload, Copy } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useRef } from 'react';
 
@@ -31,10 +31,10 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
   const settings = useSettingsStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExport = () => {
+  const buildConfig = () => {
     const settingsState = useSettingsStore.getState();
     const ingestState = useIngestStore.getState();
-    const config = {
+    return {
       _format: 'ping-config-v1',
       exportedAt: new Date().toISOString(),
       settings: {
@@ -54,6 +54,10 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
         channelKey: ingestState.channelKey,
       },
     };
+  };
+
+  const handleExport = () => {
+    const config = buildConfig();
     const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -62,6 +66,16 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
     a.click();
     URL.revokeObjectURL(url);
     toast({ title: 'Config exported', description: 'Share this file with teammates to replicate your setup.' });
+  };
+
+  const handleCopyToClipboard = async () => {
+    const config = buildConfig();
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+      toast({ title: 'Copied to clipboard', description: 'Paste this config JSON to share with teammates.' });
+    } catch {
+      toast({ title: 'Copy failed', description: 'Could not access clipboard.', variant: 'destructive' });
+    }
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -316,6 +330,15 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
                 onChange={handleImport}
               />
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-muted-foreground hover:text-foreground border-border/30"
+              onClick={handleCopyToClipboard}
+            >
+              <Copy className="h-3.5 w-3.5 mr-2" />
+              Copy Config to Clipboard
+            </Button>
             <Button
               variant="outline"
               size="sm"
