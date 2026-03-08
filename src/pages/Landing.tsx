@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import pingLogo from '@/assets/ping-logo-white.png';
 import { FaceCanvas } from '@/components/ping/FaceCanvas';
+import { motion } from 'framer-motion';
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
@@ -132,14 +133,19 @@ export default function Landing() {
         </div>
 
         {/* Animated eyes preview */}
-        <div className="relative mt-16 w-full max-w-lg aspect-video rounded-2xl border border-border/30 bg-card/50 backdrop-blur-sm overflow-hidden shadow-[0_0_80px_-20px_hsl(var(--glow-primary)/0.15)]">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.92 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="relative mt-16 w-full max-w-lg aspect-video rounded-2xl border border-border/30 bg-card/50 backdrop-blur-sm overflow-hidden shadow-[0_0_80px_-20px_hsl(var(--glow-primary)/0.15)]"
+        >
           <FaceCanvas />
           <div className="absolute bottom-3 left-0 right-0 flex justify-center z-10">
             <Badge variant="secondary" className="text-[10px] bg-muted/60 backdrop-blur-sm">
               Live preview — this is what Ping looks like
             </Badge>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* ── How it works ── */}
