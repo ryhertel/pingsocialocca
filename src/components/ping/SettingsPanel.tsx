@@ -4,12 +4,13 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
+import { OnboardingTour } from '@/components/ping/OnboardingTour';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettingsStore, ENERGY_PRESETS } from '@/stores/useSettingsStore';
 import { usePingStore } from '@/stores/usePingStore';
 import { themePresets } from '@/lib/themes';
 import type { ThemePreset, ColorMode, AutoLockMinutes, ChatLayout } from '@/lib/types';
-import { MessageCircle, PanelRight, Trash2, Sun, Moon, Monitor } from 'lucide-react';
+import { MessageCircle, PanelRight, Trash2, Sun, Moon, Monitor, RotateCcw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface SettingsPanelProps {
@@ -212,8 +213,21 @@ export function SettingsPanel({ open, onOpenChange }: SettingsPanelProps) {
             )}
           </div>
 
-          {/* Clear Chat History */}
-          <div className="pt-2 border-t border-border/30">
+          {/* Actions */}
+          <div className="pt-2 border-t border-border/30 space-y-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-muted-foreground hover:text-foreground border-border/30"
+              onClick={() => {
+                localStorage.removeItem('ping:tourSeen');
+                onOpenChange(false);
+                setTimeout(() => window.dispatchEvent(new Event('ping:startTour')), 300);
+              }}
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-2" />
+              Restart Tour
+            </Button>
             <Button
               variant="outline"
               size="sm"
