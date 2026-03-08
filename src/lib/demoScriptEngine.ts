@@ -645,6 +645,35 @@ export function handleDemoInput(text: string) {
       return;
     }
 
+    // /demo speed <multiplier> — adjust showcase reel speed
+    const speedMatch = effectName.match(/^speed(?:\s+(.+))?$/);
+    if (speedMatch) {
+      const val = parseFloat(speedMatch[1]);
+      if (!speedMatch[1] || isNaN(val) || val <= 0 || val > 10) {
+        deliverResponse({
+          text: `⏱️ **Current speed:** ${showcaseSpeed}×\n\nUsage: \`/demo speed <multiplier>\` (0.1–10)\n• \`/demo speed 0.5\` → faster (1.5s between effects)\n• \`/demo speed 1\` → default (3s)\n• \`/demo speed 2\` → slower (6s)`,
+          buttons: [
+            { label: '⚡ 0.5×', action: 'demo_speed_0.5' },
+            { label: '🔄 1×', action: 'demo_speed_1' },
+            { label: '🐢 2×', action: 'demo_speed_2' },
+          ],
+          module: state.currentModule,
+        });
+        return;
+      }
+      showcaseSpeed = val;
+      deliverResponse({
+        text: `⏱️ **Showcase speed set to ${val}×** — effects will play every ${(3 * val).toFixed(1)}s.\n\nStart a reel with \`/demo all\` to see it in action.`,
+        buttons: [
+          { label: '▶️ Play all', action: 'demo_all' },
+          { label: '⚡ 0.5×', action: 'demo_speed_0.5' },
+          { label: '🔄 1×', action: 'demo_speed_1' },
+        ],
+        module: state.currentModule,
+      });
+      return;
+    }
+
     // /demo stop — cancel showcase reel
     if (effectName === 'stop') {
       if (showcaseRunning) {
