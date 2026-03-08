@@ -129,7 +129,7 @@ export function LandingNav() {
           </Button>
 
           {/* Mobile hamburger */}
-          <Sheet>
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <button className="sm:hidden p-1.5 text-muted-foreground hover:text-foreground transition-colors">
                 <Menu className="h-5 w-5" />
