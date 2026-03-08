@@ -592,6 +592,50 @@ export function handleDemoInput(text: string) {
   const demoMatch = trimmed.match(/^\/demo\s+(.+)$/i);
   if (demoMatch) {
     const effectName = demoMatch[1].trim().toLowerCase();
+
+    // /demo all — showcase reel cycling through every effect
+    if (effectName === 'all') {
+      const effectNames = Object.keys(DEMO_EFFECTS);
+      const INTERVAL = 3000;
+      deliverResponse({
+        text: `🎬 **Showcase reel starting!** Cycling through all ${effectNames.length} effects…`,
+        buttons: [],
+        module: state.currentModule,
+      });
+      effectNames.forEach((name, i) => {
+        const t = window.setTimeout(() => {
+          triggerDemoEffect(name);
+          const store = usePingStore.getState();
+          store.addMessage({
+            id: crypto.randomUUID(),
+            role: 'assistant' as const,
+            text: `${DEMO_EFFECTS[name].title}  (**${i + 1}/${effectNames.length}**)`,
+            revealedText: `${DEMO_EFFECTS[name].title}  (**${i + 1}/${effectNames.length}**)`,
+            isRevealing: false,
+            ts: Date.now(),
+          });
+          // After last effect, show completion message
+          if (i === effectNames.length - 1) {
+            const t2 = window.setTimeout(() => {
+              deliverResponse({
+                text: `🎬 **Showcase complete!** That was all ${effectNames.length} effects. Try any individually with \`/demo <name>\`.`,
+                buttons: [
+                  { label: '🔁 Replay all', action: 'demo_all' },
+                  { label: '🎉 Party', action: 'demo_party' },
+                  { label: '🎯 Milestone', action: 'demo_milestone' },
+                  { label: '💰 Money', action: 'demo_money' },
+                ],
+                module: state.currentModule,
+              });
+            }, INTERVAL);
+            activeTimers.push(t2);
+          }
+        }, (i + 1) * INTERVAL);
+        activeTimers.push(t);
+      });
+      return;
+    }
+
     if (DEMO_EFFECTS[effectName]) {
       triggerDemoEffect(effectName);
       deliverResponse(getDemoEffectResponse(effectName));
@@ -599,7 +643,7 @@ export function handleDemoInput(text: string) {
     } else {
       const availableEffects = Object.keys(DEMO_EFFECTS).join(', ');
       deliverResponse({
-        text: `Unknown effect **"${effectName}"**. Available: ${availableEffects}`,
+        text: `Unknown effect **"${effectName}"**. Available: ${availableEffects}, all`,
         buttons: [
           { label: '🎉 Party', action: 'demo_party' },
           { label: '🎯 Milestone', action: 'demo_milestone' },
