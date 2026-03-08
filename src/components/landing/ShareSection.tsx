@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Share2 } from 'lucide-react';
+import { Share2, Copy, Check } from 'lucide-react';
 
 const SHARE_URL = 'https://pingsocialocca.lovable.app';
 const SHARE_TEXT = 'Check out Ping — give your AI agents a face! 🤖✨';
@@ -50,22 +51,29 @@ const container = {
 
 const item = {
   hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' as const } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const } },
 };
 
 export function ShareSection() {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(SHARE_URL);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <section className="py-20 px-6 border-t border-border/20">
       <div className="max-w-3xl mx-auto">
         <div className="relative rounded-2xl border border-border/30 bg-card/60 backdrop-blur-sm overflow-hidden p-10 sm:p-14 text-center">
-          {/* Radial glow */}
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(var(--glow-primary)/0.15)_0%,transparent_70%)]" />
 
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.4 }}
-            transition={{ duration: 0.5 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] as const }}
             className="relative z-10"
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 mb-6">
@@ -85,7 +93,7 @@ export function ShareSection() {
             variants={container}
             initial="hidden"
             whileInView="show"
-            viewport={{ once: true, amount: 0.3 }}
+            viewport={{ once: true, margin: '-60px' }}
             className="relative z-10 flex flex-wrap justify-center gap-4"
           >
             {platforms.map((p) => (
@@ -103,6 +111,17 @@ export function ShareSection() {
                 <span className="text-sm font-medium">{p.name}</span>
               </motion.a>
             ))}
+
+            <motion.button
+              variants={item}
+              onClick={handleCopy}
+              className="group flex items-center gap-3 rounded-xl border border-dashed border-border/50 bg-background/30 backdrop-blur-sm px-6 py-4 text-foreground transition-all duration-200 hover:scale-105 hover:border-primary/40 hover:shadow-[0_0_24px_hsl(var(--glow-primary)/0.2)]"
+            >
+              <span className="text-muted-foreground transition-colors group-hover:text-primary">
+                {copied ? <Check className="h-6 w-6" /> : <Copy className="h-6 w-6" />}
+              </span>
+              <span className="text-sm font-medium">{copied ? 'Copied!' : 'Copy Link'}</span>
+            </motion.button>
           </motion.div>
         </div>
       </div>

@@ -1,34 +1,61 @@
 
 
-## Plan: Copy Link Button + Scroll Animations
+# Fix Markdown Headings Not Rendering in Multi-Line Blocks
 
-### 1. Add "Copy Link" button to ShareSection
+## Problem
+The `ChatMarkdown` parser only detects headings when a block contains exactly one line (`lines.length === 1`). If a heading like `## Agent/automation vibe` is followed by body text with a single newline (no blank line separator), the entire block is treated as a plain paragraph -- so `##` renders as literal text.
 
-**File:** `src/components/landing/ShareSection.tsx`
+## Fix
+Change `parseBlock` in `ChatMarkdown.tsx` to process each line individually instead of only checking single-line blocks. When a line starts with `#`, render it as a heading element. Other lines continue through the existing list/paragraph logic.
 
-- Import `useState` from React, `Copy` and `Check` icons from lucide-react
-- Add a "Copy Link" button alongside the social platform buttons in the same flex container
-- On click, use `navigator.clipboard.writeText(SHARE_URL)` and show a temporary "Copied!" state (swap icon from `Copy` to `Check` for ~2 seconds using local state)
-- Style it consistently with the existing social buttons but with a slightly distinct look (e.g. dashed border) to differentiate it as a utility action
+## Technical Detail
 
-### 2. Add scroll-triggered entrance animations to all landing sections
+**File: `src/components/ping/ChatMarkdown.tsx`**
 
-Sections that **already have** framer-motion `whileInView` animations (no changes needed):
-- `FeaturesSection` - each feature card animates in
-- `IntegrationsSection` - each integration card animates in
-- `HowItWorksSection` - each step animates in
-- `ShareSection` - heading and buttons animate in
+Replace the current `parseBlock` function logic:
 
-Sections that **need** scroll animations added:
+1. Remove the `lines.length === 1` guard around heading detection
+2. Process lines one at a time: split the block into "runs" where heading lines become their own elements and consecutive non-heading lines get grouped into paragraphs/lists as before
+3. This handles both standalone headings and headings mixed into multi-line content
 
-**`src/components/landing/SchemaSection.tsx`**
-- Import `motion` from framer-motion
-- Wrap the heading/subheading block in a `motion.div` with `whileInView` fade-up
-- Wrap the code block in a `motion.div` with a slight delay
+The key change is roughly:
 
-**`src/components/landing/CtaSections.tsx`**
-- Import `motion` from framer-motion
-- In both `DemoCtaSection` and `FinalCtaSection`, wrap the content in `motion.div` with `initial={{ opacity: 0, y: 24 }}`, `whileInView={{ opacity: 1, y: 0 }}`, `viewport={{ once: true }}`
+```tsx
+function parseBlock(block: string, blockKey: number): React.ReactNode {
+  const lines = block.split('\n');
+  const headingRe = /^(#{1,6})\s+(.+)$/;
 
-All animations will use consistent parameters: `duration: 0.5`, `ease: [0.16, 1, 0.3, 1]`, `viewport: { once: true, margin: '-60px' }` to match existing patterns in FeaturesSection/HowItWorksSection.
+  // If block has mixed heading + non-heading lines, split into sub-blocks
+  const elements: React.ReactNode[] = [];
+  let nonHeadingBuffer: string[] = [];
+  let subKey = 0;
+
+  const flushBuffer = () => {
+    if (nonHeadingBuffer.length > 0) {
+      elements.push(parseNonHeadingLines(nonHeadingBuffer, subKey++));
+      nonHeadingBuffer = [];
+    }
+  };
+
+  for (const line of lines) {
+    const hm = headingRe.exec(line.trim());
+    if (hm) {
+      flushBuffer();
+      const level = Math.min(hm[1].length, 6);
+      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+      elements.push(<Tag key={subKey++} className={`chat-md-h${level}`}>{parseLine(hm[2])}</Tag>);
+    } else {
+      nonHeadingBuffer.push(line);
+    }
+  }
+  flushBuffer();
+
+  if (elements.length === 1) return React.cloneElement(elements[0] as React.ReactElement, { key: blockKey });
+  return <React.Fragment key={blockKey}>{elements}</React.Fragment>;
+}
+```
+
+The existing code-block, list, and paragraph logic moves into a helper `parseNonHeadingLines()` function that handles the non-heading line groups.
+
+No other files need changes -- the heading CSS styles already exist in `index.css`.
 
