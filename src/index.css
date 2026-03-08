@@ -168,3 +168,8 @@
 .chat-markdown h4 { font-size: 1.0em; font-weight: 600; }
 .chat-markdown h5,
 .chat-markdown h6 { font-size: 0.95em; font-weight: 600; }
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 6px 2px currentColor; }
+  50% { box-shadow: 0 0 16px 6px currentColor; }
+}
