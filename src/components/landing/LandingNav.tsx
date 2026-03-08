@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import pingLogo from '@/assets/ping-logo-white.png';
 import { cn } from '@/lib/utils';
@@ -24,7 +24,6 @@ function useActiveSection(sectionIds: readonly string[]) {
       (entries) => {
         const visible = entries.filter((e) => e.isIntersecting);
         if (visible.length > 0) {
-          // pick the one closest to the top
           visible.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
           setActive(visible[0].target.id);
         }
@@ -49,6 +48,31 @@ export function LandingNav() {
   const isLanding = location.pathname === '/';
   const activeSection = useActiveSection(NAV_SECTIONS.map((s) => s.id));
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const [underline, setUnderline] = useState<{ left: number; width: number } | null>(null);
+
+  const setButtonRef = useCallback((id: string, el: HTMLButtonElement | null) => {
+    if (el) buttonRefs.current.set(id, el);
+    else buttonRefs.current.delete(id);
+  }, []);
+
+  useEffect(() => {
+    if (!isLanding || !activeSection || !containerRef.current) {
+      setUnderline(null);
+      return;
+    }
+    const btn = buttonRefs.current.get(activeSection);
+    if (!btn) { setUnderline(null); return; }
+
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    setUnderline({
+      left: btnRect.left - containerRect.left,
+      width: btnRect.width,
+    });
+  }, [activeSection, isLanding]);
+
   const handleNav = (sectionId: string, fallbackRoute: string) => {
     if (isLanding) {
       scrollToSection(sectionId);
@@ -63,15 +87,25 @@ export function LandingNav() {
         <button onClick={() => isLanding ? window.scrollTo({ top: 0, behavior: 'smooth' }) : navigate('/')}>
           <img src={pingLogo} alt="Ping" className="h-7 opacity-90" />
         </button>
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div ref={containerRef} className="relative flex items-center gap-2 sm:gap-4">
+          {/* Sliding underline */}
+          <span
+            className={cn(
+              'absolute bottom-0 h-0.5 rounded-full bg-primary transition-all duration-300 ease-out',
+              underline ? 'opacity-100' : 'opacity-0',
+            )}
+            style={underline ? { left: underline.left, width: underline.width } : { left: 0, width: 0 }}
+          />
+
           {NAV_SECTIONS.map((s) => (
             <button
               key={s.id}
+              ref={(el) => setButtonRef(s.id, el)}
               onClick={() => handleNav(s.id, s.fallback)}
               className={cn(
-                'text-sm transition-colors hidden sm:inline',
+                'text-sm pb-1 transition-colors hidden sm:inline',
                 isLanding && activeSection === s.id
-                  ? 'text-foreground font-medium'
+                  ? 'text-foreground'
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >
@@ -80,7 +114,7 @@ export function LandingNav() {
           ))}
           <button
             onClick={() => navigate('/docs')}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:inline"
+            className="text-sm pb-1 text-muted-foreground hover:text-foreground transition-colors hidden sm:inline"
           >
             Docs
           </button>
