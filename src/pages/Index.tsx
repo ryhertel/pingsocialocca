@@ -161,6 +161,9 @@ const Index = () => {
 
   return (
     <div className="h-[100svh] flex flex-col overflow-hidden bg-background select-none [&_.chat-selectable]:select-text">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:text-sm focus:font-medium">
+        Skip to content
+      </a>
       {/* Header */}
       <header
         className="flex-none flex items-center justify-between px-4 py-2 z-10"
@@ -200,7 +203,7 @@ const Index = () => {
       </header>
 
       {/* Main — face + chat */}
-      <main className="flex-1 min-h-0 relative flex">
+      <main id="main-content" className="flex-1 min-h-0 relative flex">
         {/* Face area */}
         <div className={`relative ${isDocked ? 'flex-1' : 'w-full'}`} data-tour="face">
           <FaceCanvas />

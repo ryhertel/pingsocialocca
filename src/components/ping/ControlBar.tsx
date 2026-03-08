@@ -41,6 +41,7 @@ function ControlButton({
         <Button
           variant="ghost"
           size="icon"
+          aria-label={label}
           onClick={onClick}
           className={`h-8 w-8 text-muted-foreground hover:text-foreground transition-colors ${active ? 'text-primary' : ''}`}
         >
@@ -137,6 +138,7 @@ export function MobileMenu({ onConnect, onOpenClaw, onSettings, onDiagnostics, o
       <Button
         variant="ghost"
         size="icon"
+        aria-label="Open menu"
         onClick={() => setOpen(true)}
         className="h-8 w-8 text-muted-foreground hover:text-foreground"
       >
