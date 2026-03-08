@@ -156,7 +156,7 @@ export function LandingNav() {
                   </button>
                 ))}
                 <button
-                  onClick={() => navigate('/docs')}
+                  onClick={() => { setSheetOpen(false); navigate('/docs'); }}
                   className="text-left text-base py-2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Docs
