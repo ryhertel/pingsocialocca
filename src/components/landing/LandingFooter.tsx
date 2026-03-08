@@ -8,7 +8,7 @@ export function LandingFooter() {
     <footer className="border-t border-border/30 py-10 px-6">
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
-          <img src={pingLogo} alt="Ping" className="h-5 opacity-60" />
+          <img src={pingLogo} alt="Ping" className="h-5 opacity-60 [.light_&]:invert" />
           <span>&copy; {new Date().getFullYear()} Ping</span>
         </div>
         <div className="flex gap-6">
