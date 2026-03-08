@@ -220,6 +220,7 @@ const Index = () => {
 
       {/* Main — face + chat */}
       <main id="main-content" className="flex-1 min-h-0 relative flex">
+        <PullIndicator pulling={pulling} pullDistance={pullDistance} refreshing={refreshing} threshold={80} />
         {/* Face area */}
         <div className={`relative ${isDocked ? 'flex-1' : 'w-full'}`} data-tour="face">
           <FaceCanvas />
