@@ -1,73 +1,67 @@
-# Welcome to your Lovable project
+<div align="center">
 
-## Project info
+# Ping
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**Open-source presence UI for AI agents**
 
-## How can I edit this code?
+[![GitHub stars](https://img.shields.io/github/stars/ryhertel/pingsocialocca?style=social)](https://github.com/ryhertel/pingsocialocca)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-There are several ways of editing your application.
+[Live Demo](https://pingsocialocca.lovable.app) · [Report Bug](https://github.com/ryhertel/pingsocialocca/issues) · [Request Feature](https://github.com/ryhertel/pingsocialocca/issues)
 
-**Use Lovable**
+</div>
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## What is Ping?
 
-**Use your preferred IDE**
+Ping is an always-on presence layer for AI agents — a lightweight UI that lets your agent show it's alive, listening, and thinking. Drop it into any product to give your AI a face, a heartbeat, and a real-time event feed.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Features
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- 🟢 **Live presence indicator** — animated face canvas that responds to agent state
+- 📡 **Real-time event feed** — stream events from any source via webhook
+- 💬 **Docked chat** — conversational interface with markdown support
+- 🔌 **Connector system** — plug in Slack, Discord, GitHub, and more
+- 🎨 **Themeable** — multiple built-in themes with full customisation
+- 📱 **Mobile-first** — responsive PWA with haptics and pull-to-refresh
+- ⌨️ **Keyboard shortcuts** — power-user friendly
 
-Follow these steps:
+## Tech Stack
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- [React](https://react.dev) + [TypeScript](https://www.typescriptlang.org/)
+- [Vite](https://vitejs.dev)
+- [Tailwind CSS](https://tailwindcss.com) + [shadcn/ui](https://ui.shadcn.com)
+- [Framer Motion](https://www.framer.com/motion/)
+- [Zustand](https://zustand-demo.pmnd.rs/)
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Getting Started
 
-# Step 3: Install the necessary dependencies.
-npm i
+```bash
+# Clone the repo
+git clone https://github.com/ryhertel/pingsocialocca.git
+cd pingsocialocca
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Install dependencies
+npm install
+
+# Start the dev server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will be available at `http://localhost:8080`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Contributing
 
-**Use GitHub Codespaces**
+Contributions are welcome! Please open an issue or submit a pull request.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## License
 
-## What technologies are used for this project?
+This project is licensed under the [MIT License](LICENSE).
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+<div align="center">
+  Made by <a href="https://socialocca.io">socialocca.io</a>
+</div>
