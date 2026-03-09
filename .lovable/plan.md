@@ -1,61 +1,15 @@
 
+## Plan: Add GitHub link to footer brand section
 
-# Fix Markdown Headings Not Rendering in Multi-Line Blocks
+**File:** `src/components/landing/LandingFooter.tsx`
 
-## Problem
-The `ChatMarkdown` parser only detects headings when a block contains exactly one line (`lines.length === 1`). If a heading like `## Agent/automation vibe` is followed by body text with a single newline (no blank line separator), the entire block is treated as a plain paragraph -- so `##` renders as literal text.
+Add a GitHub icon link directly below the "Made with ♥ by socialocca.io" line in the brand column. Import the `Github` icon from `lucide-react` and add an `<a>` tag pointing to the Ping GitHub repo.
 
-## Fix
-Change `parseBlock` in `ChatMarkdown.tsx` to process each line individually instead of only checking single-line blocks. When a line starts with `#`, render it as a heading element. Other lines continue through the existing list/paragraph logic.
+**What changes:**
+- Import `Github` from `lucide-react` (alongside existing `ExternalLink`)
+- After the socialocca link in the brand `<div>`, add a new `<a>` with the GitHub icon + "GitHub" label, linking to the repo URL
+- Style consistently with the existing socialocca link
 
-## Technical Detail
+I'll need to know the GitHub repo URL — I'll use a placeholder `https://github.com/socialocca/ping` that can be updated once confirmed. If the user has a specific URL they want, they can tell me — otherwise I'll use that pattern.
 
-**File: `src/components/ping/ChatMarkdown.tsx`**
-
-Replace the current `parseBlock` function logic:
-
-1. Remove the `lines.length === 1` guard around heading detection
-2. Process lines one at a time: split the block into "runs" where heading lines become their own elements and consecutive non-heading lines get grouped into paragraphs/lists as before
-3. This handles both standalone headings and headings mixed into multi-line content
-
-The key change is roughly:
-
-```tsx
-function parseBlock(block: string, blockKey: number): React.ReactNode {
-  const lines = block.split('\n');
-  const headingRe = /^(#{1,6})\s+(.+)$/;
-
-  // If block has mixed heading + non-heading lines, split into sub-blocks
-  const elements: React.ReactNode[] = [];
-  let nonHeadingBuffer: string[] = [];
-  let subKey = 0;
-
-  const flushBuffer = () => {
-    if (nonHeadingBuffer.length > 0) {
-      elements.push(parseNonHeadingLines(nonHeadingBuffer, subKey++));
-      nonHeadingBuffer = [];
-    }
-  };
-
-  for (const line of lines) {
-    const hm = headingRe.exec(line.trim());
-    if (hm) {
-      flushBuffer();
-      const level = Math.min(hm[1].length, 6);
-      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
-      elements.push(<Tag key={subKey++} className={`chat-md-h${level}`}>{parseLine(hm[2])}</Tag>);
-    } else {
-      nonHeadingBuffer.push(line);
-    }
-  }
-  flushBuffer();
-
-  if (elements.length === 1) return React.cloneElement(elements[0] as React.ReactElement, { key: blockKey });
-  return <React.Fragment key={blockKey}>{elements}</React.Fragment>;
-}
-```
-
-The existing code-block, list, and paragraph logic moves into a helper `parseNonHeadingLines()` function that handles the non-heading line groups.
-
-No other files need changes -- the heading CSS styles already exist in `index.css`.
-
+**Single edit to `src/components/landing/LandingFooter.tsx`:** lines 2 and 48–56 (import + brand section).
