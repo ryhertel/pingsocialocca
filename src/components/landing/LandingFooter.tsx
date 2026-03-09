@@ -55,7 +55,7 @@ export function LandingFooter() {
               <ExternalLink className="h-3 w-3" />
             </a>
             <a
-              href="https://github.com/socialocca/ping"
+              href="https://github.com/ryhertel/pingsocialocca"
               target="_blank"
               rel="noopener noreferrer"
               className="mt-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -63,7 +63,7 @@ export function LandingFooter() {
               <Github className="h-3.5 w-3.5" />
               Star us on GitHub
               <img 
-                src="https://img.shields.io/github/stars/socialocca/ping?style=social" 
+                src="https://img.shields.io/github/stars/ryhertel/pingsocialocca?style=social" 
                 alt="GitHub stars" 
                 className="h-5"
               />
