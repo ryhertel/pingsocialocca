@@ -1,61 +1,36 @@
 
 
-# Fix Markdown Headings Not Rendering in Multi-Line Blocks
+## Plan: Add GitHub Star Count Badge
 
-## Problem
-The `ChatMarkdown` parser only detects headings when a block contains exactly one line (`lines.length === 1`). If a heading like `## Agent/automation vibe` is followed by body text with a single newline (no blank line separator), the entire block is treated as a plain paragraph -- so `##` renders as literal text.
+**File:** `src/components/landing/LandingFooter.tsx`
 
-## Fix
-Change `parseBlock` in `ChatMarkdown.tsx` to process each line individually instead of only checking single-line blocks. When a line starts with `#`, render it as a heading element. Other lines continue through the existing list/paragraph logic.
+Add a shields.io star count badge next to the "Star us on GitHub" link in the footer brand section.
 
-## Technical Detail
+**Implementation:**
+1. Add an `<img>` tag after the GitHub link text displaying the shields.io badge
+2. Use the URL: `https://img.shields.io/github/stars/socialocca/ping?style=social`
+3. Style the badge to align with the existing link (small, subtle)
 
-**File: `src/components/ping/ChatMarkdown.tsx`**
-
-Replace the current `parseBlock` function logic:
-
-1. Remove the `lines.length === 1` guard around heading detection
-2. Process lines one at a time: split the block into "runs" where heading lines become their own elements and consecutive non-heading lines get grouped into paragraphs/lists as before
-3. This handles both standalone headings and headings mixed into multi-line content
-
-The key change is roughly:
-
+**Code change (lines 57-65):**
 ```tsx
-function parseBlock(block: string, blockKey: number): React.ReactNode {
-  const lines = block.split('\n');
-  const headingRe = /^(#{1,6})\s+(.+)$/;
-
-  // If block has mixed heading + non-heading lines, split into sub-blocks
-  const elements: React.ReactNode[] = [];
-  let nonHeadingBuffer: string[] = [];
-  let subKey = 0;
-
-  const flushBuffer = () => {
-    if (nonHeadingBuffer.length > 0) {
-      elements.push(parseNonHeadingLines(nonHeadingBuffer, subKey++));
-      nonHeadingBuffer = [];
-    }
-  };
-
-  for (const line of lines) {
-    const hm = headingRe.exec(line.trim());
-    if (hm) {
-      flushBuffer();
-      const level = Math.min(hm[1].length, 6);
-      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
-      elements.push(<Tag key={subKey++} className={`chat-md-h${level}`}>{parseLine(hm[2])}</Tag>);
-    } else {
-      nonHeadingBuffer.push(line);
-    }
-  }
-  flushBuffer();
-
-  if (elements.length === 1) return React.cloneElement(elements[0] as React.ReactElement, { key: blockKey });
-  return <React.Fragment key={blockKey}>{elements}</React.Fragment>;
-}
+<a
+  href="https://github.com/socialocca/ping"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="mt-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+>
+  <Github className="h-3.5 w-3.5" />
+  Star us on GitHub
+  <img 
+    src="https://img.shields.io/github/stars/socialocca/ping?style=social" 
+    alt="GitHub stars" 
+    className="h-5"
+  />
+</a>
 ```
 
-The existing code-block, list, and paragraph logic moves into a helper `parseNonHeadingLines()` function that handles the non-heading line groups.
-
-No other files need changes -- the heading CSS styles already exist in `index.css`.
+**Notes:**
+- shields.io badges auto-update and are cached, so no API key needed
+- The `style=social` variant shows star icon + count in a clean format
+- If the repo doesn't exist yet, the badge will show "0" or a placeholder
 
