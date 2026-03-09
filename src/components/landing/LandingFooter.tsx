@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Github } from 'lucide-react';
 import pingLogo from '@/assets/ping-logo-white.png';
 import { connectorTemplates } from '@/lib/connectors/connectorTemplates';
 
@@ -53,6 +53,15 @@ export function LandingFooter() {
             >
               Made with <span className="text-red-400">♥</span> by socialocca.io
               <ExternalLink className="h-3 w-3" />
+            </a>
+            <a
+              href="https://github.com/socialocca/ping"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Github className="h-3.5 w-3.5" />
+              GitHub
             </a>
           </div>
 
