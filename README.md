@@ -4,6 +4,7 @@
 
 **Open-source presence UI for AI agents**
 
+[![CI](https://github.com/ryhertel/pingsocialocca/actions/workflows/ci.yml/badge.svg)](https://github.com/ryhertel/pingsocialocca/actions/workflows/ci.yml)
 [![GitHub stars](https://img.shields.io/github/stars/ryhertel/pingsocialocca?style=social)](https://github.com/ryhertel/pingsocialocca)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
