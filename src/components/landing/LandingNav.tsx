@@ -154,6 +154,18 @@ export function LandingNav() {
           >
             {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
+          <a
+            href="https://github.com/socialocca/ping"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:inline-flex items-center"
+          >
+            <img 
+              src="https://img.shields.io/github/stars/socialocca/ping?style=social" 
+              alt="GitHub stars" 
+              className="h-5"
+            />
+          </a>
           <Button size="sm" onClick={() => navigate('/app')} className="gap-1.5 hidden sm:flex">
             Launch App <ArrowRight className="h-3.5 w-3.5" />
           </Button>
@@ -198,6 +210,19 @@ export function LandingNav() {
                   {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                   {isDark ? 'Light Mode' : 'Dark Mode'}
                 </button>
+                <a
+                  href="https://github.com/socialocca/ping"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-base py-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Star on GitHub
+                  <img 
+                    src="https://img.shields.io/github/stars/socialocca/ping?style=social" 
+                    alt="GitHub stars" 
+                    className="h-5"
+                  />
+                </a>
                 <Button onClick={() => { setSheetOpen(false); navigate('/app'); }} className="gap-1.5 mt-4">
                   Launch App <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
