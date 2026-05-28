@@ -3,8 +3,10 @@
  *
  * - issueReadToken: POST to issue_read_token, returns token or null
  * - fetchEventsSecure: GET events_read with headers
- * - openSecureStream: EventSource to events_stream with query params;
- *   falls back to polling on error. Never includes token in error strings.
+ * - openSecureStream: fetch-based SSE reader to events_stream with headers;
+ *   tokens are sent in request headers (never in the URL) to keep them out
+ *   of server logs, browser history, and referrer leaks.
+ *   Falls back to polling if streaming is unavailable.
  */
 
 import type { NormalizedEvent } from '@/lib/ingest/types';
@@ -85,7 +87,7 @@ export function openSecureStream(
   }
 
   let cleaned = false;
-  let eventSource: EventSource | null = null;
+  let abortController: AbortController | null = null;
   let pollTimer: ReturnType<typeof setInterval> | null = null;
   let lastSeen: number | undefined;
 
@@ -93,9 +95,9 @@ export function openSecureStream(
     if (cleaned) return;
     cleaned = true;
     onStatus(false);
-    if (eventSource) {
-      eventSource.close();
-      eventSource = null;
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
     }
     if (pollTimer) {
       clearInterval(pollTimer);
@@ -127,41 +129,77 @@ export function openSecureStream(
     }, 3000);
   };
 
-  // Try SSE first
-  try {
-    const sseUrl = `${base}/events-stream?key=${channelKey}&token=${readToken}`;
-    eventSource = new EventSource(sseUrl);
+  // fetch-based SSE reader — token travels in a header, never the URL.
+  // This keeps it out of server access logs, browser history, and referrer headers.
+  const startFetchSSE = async () => {
+    abortController = new AbortController();
+    const sseUrl = `${base}/events-stream`;
 
-    eventSource.onopen = () => {
+    try {
+      const res = await fetch(sseUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'text/event-stream',
+          'x-ping-channel-key': channelKey,
+          'x-ping-read-token': readToken,
+        },
+        signal: abortController.signal,
+      });
+
+      if (!res.ok || !res.body) {
+        // Server doesn't support streaming — fall back to polling
+        startPolling();
+        return;
+      }
+
       if (!cleaned) onStatus(true);
-    };
 
-    eventSource.addEventListener('ping', (e) => {
-      if (cleaned) return;
-      try {
-        const evt = JSON.parse((e as MessageEvent).data) as NormalizedEvent;
-        onEvent(evt);
-        if (lastSeen === undefined || evt.receivedAt > lastSeen) {
-          lastSeen = evt.receivedAt;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+
+      const processLine = (line: string) => {
+        // SSE data lines look like: "data: {...}"
+        if (!line.startsWith('data:')) return;
+        const json = line.slice(5).trim();
+        if (!json || json === '[DONE]') return;
+        try {
+          const evt = JSON.parse(json) as NormalizedEvent;
+          onEvent(evt);
+          if (lastSeen === undefined || evt.receivedAt > lastSeen) {
+            lastSeen = evt.receivedAt;
+          }
+        } catch {
+          // Ignore malformed events
         }
-      } catch {
-        // Ignore malformed events
-      }
-    });
+      };
 
-    eventSource.onerror = () => {
-      if (cleaned) return;
-      // Close SSE and fall back to polling
-      if (eventSource) {
-        eventSource.close();
-        eventSource = null;
+      // Stream loop
+      while (!cleaned) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+
+        // SSE messages are separated by double newlines
+        const parts = buf.split(/\n\n/);
+        buf = parts.pop() ?? '';
+        for (const block of parts) {
+          for (const line of block.split('\n')) {
+            processLine(line.trim());
+          }
+        }
       }
+
+      // Stream ended gracefully — fall back to polling to stay live
+      if (!cleaned) startPolling();
+    } catch (err) {
+      if (cleaned) return; // Expected on cleanup abort
+      // Stream failed — fall back to polling
       startPolling();
-    };
-  } catch {
-    // EventSource failed to construct, fall back to polling
-    startPolling();
-  }
+    }
+  };
+
+  startFetchSSE();
 
   return cleanup;
 }
