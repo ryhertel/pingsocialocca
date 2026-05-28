@@ -27,6 +27,7 @@ function CopyButton({ text }: { text: string }) {
       variant="ghost"
       size="icon"
       onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+      aria-label="Copy channel key"
       className="h-7 w-7 shrink-0"
     >
       {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
@@ -93,7 +94,7 @@ export default function Connectors() {
     <div className="min-h-[100svh] bg-background text-foreground">
       {/* Header */}
       <header className="flex items-center gap-3 px-4 py-4 border-b border-border/30">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/app')} className="h-8 w-8">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/app')} aria-label="Back to app" className="h-8 w-8">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
@@ -114,7 +115,7 @@ export default function Connectors() {
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground font-medium">Channel Key</p>
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={() => setShowKey(!showKey)} className="h-7 w-7">
+              <Button variant="ghost" size="icon" onClick={() => setShowKey(!showKey)} aria-label={showKey ? 'Hide channel key' : 'Show channel key'} className="h-7 w-7">
                 {showKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               </Button>
               <CopyButton text={channelKey} />
