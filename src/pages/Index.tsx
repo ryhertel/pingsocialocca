@@ -180,6 +180,7 @@ const Index = () => {
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:text-sm focus:font-medium">
         Skip to content
       </a>
+      <h1 className="sr-only">Ping — AI Agent Presence</h1>
       {/* Header */}
       <header
         className="flex-none flex items-center justify-between px-4 py-2 z-10"
@@ -188,7 +189,7 @@ const Index = () => {
         <div className="flex items-center gap-3">
           <img
             src={pingLogo}
-            alt="Ping"
+            alt="Ping — AI Agent Presence Logo"
             className="h-8 cursor-pointer select-none opacity-90 hover:opacity-100 transition-opacity"
             onClick={() => navigate('/')}
           />
@@ -232,6 +233,7 @@ const Index = () => {
               variant="ghost"
               size="icon"
               onClick={() => setShowLandscapeChat(true)}
+              aria-label="Open chat"
               className="absolute bottom-2 right-2 z-10 h-9 w-9 rounded-full bg-muted/60 backdrop-blur-sm text-foreground hover:bg-muted/80"
             >
               <MessageCircle className="h-4 w-4" />
