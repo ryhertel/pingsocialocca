@@ -10,8 +10,31 @@ let reconnectTimer: number | null = null;
 let revealCleanups: (() => void)[] = [];
 let idleTimer: number | null = null;
 
+/**
+ * Validate that a bridge URL is a safe ws:// or wss:// connection.
+ * Returns an error string if invalid, null if safe.
+ */
+export function validateBridgeUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'ws:' && parsed.protocol !== 'wss:') {
+      return 'Bridge URL must use ws:// or wss:// protocol.';
+    }
+    return null;
+  } catch {
+    return 'Bridge URL is not a valid URL.';
+  }
+}
+
 export function connectBridge(url: string) {
   disconnectBridge();
+
+  const urlError = validateBridgeUrl(url);
+  if (urlError) {
+    usePingStore.getState().setPersistentState('error');
+    usePingStore.getState().setLastError(urlError);
+    return;
+  }
 
   try {
     ws = new WebSocket(url);
@@ -114,12 +137,13 @@ function handleEvent(data: Record<string, unknown>) {
       store.setPersistentState(data.state as 'idle' | 'thinking' | 'speaking' | 'error');
       break;
 
-    case 'error':
+    case 'error': {
       store.setPersistentState('error');
       store.setLastError(data.message as string);
       const s = useSettingsStore.getState();
       playError(s.volume, s.muted, s.dnd);
       break;
+    }
 
     default:
       // Unknown event — log to diagnostics, don't crash

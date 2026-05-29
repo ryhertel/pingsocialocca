@@ -538,7 +538,7 @@ function deliverResponse(node: ResponseNode) {
   // Maybe append CTA every 2-3 turns
   state.turnsSinceCtaSurface++;
   state.stepsCompleted++;
-  let buttons = [...node.buttons];
+  const buttons = [...node.buttons];
   if (state.turnsSinceCtaSurface >= 3) {
     state.turnsSinceCtaSurface = 0;
     const hasConnect = buttons.some(

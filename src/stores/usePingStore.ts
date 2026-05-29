@@ -120,7 +120,7 @@ export const usePingStore = create<PingState>()(
           if (clone?.state?.messages) {
             clone.state.messages = clone.state.messages.map((m: ChatMessage) => ({
               ...m,
-              attachments: m.attachments?.map(({ dataBase64, blobUrl, ...rest }: any) => rest),
+              attachments: m.attachments?.map(({ dataBase64: _d, blobUrl: _b, ...rest }) => rest),
             }));
           }
           localStorage.setItem(name, JSON.stringify(clone));

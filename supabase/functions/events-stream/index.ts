@@ -1,11 +1,14 @@
 /**
  * events_stream — SSE stream of new events for an authorized channel.
  *
- * Auth via query params (EventSource can't send headers):
- *   GET /functions/v1/events_stream?key=<channelKey>&token=<readToken>
+ * Auth via request headers (tokens never appear in the URL):
+ *   GET /functions/v1/events-stream
+ *   x-ping-channel-key: <channelKey>
+ *   x-ping-read-token:  <readToken>
  *
  * Fix 1: Constant-time compare (no branching, 32-byte SHA-256 enforced at parse time)
  * Fix 2: Poll uses received_at > lastSeen, ordered by received_at ASC
+ * Fix 3: Token in header, not query param — keeps it out of server logs & browser history
  *
  * Sends: event: ping\ndata: <json>\n\n
  * Keepalive: : keepalive\n\n every 15s
@@ -54,9 +57,10 @@ Deno.serve(async (req) => {
     });
   }
 
-  const url = new URL(req.url);
-  const channelKey = (url.searchParams.get('key') ?? '').toLowerCase();
-  const readToken = (url.searchParams.get('token') ?? '').toLowerCase();
+  // Read credentials from headers — never from the URL.
+  // This keeps them out of server access logs, browser history, and referrer headers.
+  const channelKey = (req.headers.get('x-ping-channel-key') ?? '').toLowerCase();
+  const readToken = (req.headers.get('x-ping-read-token') ?? '').toLowerCase();
 
   if (!CHANNEL_KEY_REGEX.test(channelKey)) {
     return new Response(JSON.stringify({ ok: false, error: 'Invalid channel key' }), {

@@ -20,12 +20,12 @@ const secretStore = {
     try { return sessionStorage.getItem(STORAGE_KEY); } catch { return null; }
   },
   set(v: string) {
-    try { sessionStorage.setItem(STORAGE_KEY, v); } catch {}
+    try { sessionStorage.setItem(STORAGE_KEY, v); } catch { /* storage unavailable */ }
   },
   remove() {
-    try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* storage unavailable */ }
     // Clean up any legacy localStorage value from older versions.
-    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* storage unavailable */ }
   },
   // Migrate any pre-existing localStorage value into sessionStorage once,
   // then remove it from localStorage.
@@ -33,11 +33,11 @@ const secretStore = {
     try {
       const legacy = localStorage.getItem(STORAGE_KEY);
       if (legacy) {
-        try { sessionStorage.setItem(STORAGE_KEY, legacy); } catch {}
-        try { localStorage.removeItem(STORAGE_KEY); } catch {}
+        try { sessionStorage.setItem(STORAGE_KEY, legacy); } catch { /* storage unavailable */ }
+        try { localStorage.removeItem(STORAGE_KEY); } catch { /* storage unavailable */ }
         return legacy;
       }
-    } catch {}
+    } catch { /* storage unavailable */ }
     return null;
   },
 };
@@ -159,7 +159,7 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
   setChannelKey: (key) => {
     const normalized = key.toLowerCase();
     set({ channelKey: normalized });
-    try { localStorage.setItem(CHANNEL_KEY_STORAGE, normalized); } catch {}
+    try { localStorage.setItem(CHANNEL_KEY_STORAGE, normalized); } catch { /* storage unavailable */ }
   },
 
   regenerateChannelKey: () => {
