@@ -12,7 +12,7 @@ interface AnalyticsEvent {
   screen_h?: number;
 }
 
-let queue: AnalyticsEvent[] = [];
+const queue: AnalyticsEvent[] = [];
 let timer: ReturnType<typeof setInterval> | null = null;
 
 function flush() {
