@@ -18,6 +18,36 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Origin allowlist — prevents arbitrary actors from polluting analytics.
+  const ALLOWED_ORIGINS = [
+    "https://pingreact.com",
+    "https://www.pingreact.com",
+    "https://ping.socialocca.io",
+    "https://pingsocialocca.lovable.app",
+  ];
+  const ALLOWED_SUFFIXES = [".lovable.app", ".lovableproject.com"];
+  const origin = req.headers.get("origin") || "";
+  const referer = req.headers.get("referer") || "";
+  const source = origin || referer;
+  let allowed = false;
+  try {
+    if (source) {
+      const u = new URL(source);
+      const host = `${u.protocol}//${u.host}`;
+      if (ALLOWED_ORIGINS.includes(host)) allowed = true;
+      else if (u.protocol === "https:" && ALLOWED_SUFFIXES.some((s) => u.hostname.endsWith(s))) allowed = true;
+    }
+  } catch {
+    // invalid URL, leave allowed = false
+  }
+  if (!allowed) {
+    return new Response(JSON.stringify({ ok: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  const ALLOWED_EVENTS = new Set(["page_view", "click", "session_start", "session_end"]);
+
   try {
     const body = await req.json();
     const events: Array<{
@@ -37,14 +67,22 @@ Deno.serve(async (req) => {
 
     const ua = req.headers.get("user-agent") || null;
 
-    const rows = events.map((e) => ({
-      event_name: String(e.event_name || "unknown").slice(0, 64),
+    const rows = events
+      .filter((e) => ALLOWED_EVENTS.has(String(e.event_name)))
+      .map((e) => ({
+      event_name: String(e.event_name).slice(0, 64),
       page: e.page ? String(e.page).slice(0, 512) : null,
       referrer: e.referrer ? String(e.referrer).slice(0, 512) : null,
       screen_w: e.screen_w ? Math.min(Math.max(0, Number(e.screen_w)), 9999) : null,
       screen_h: e.screen_h ? Math.min(Math.max(0, Number(e.screen_h)), 9999) : null,
       user_agent: ua ? ua.slice(0, 512) : null,
     }));
+
+    if (rows.length === 0) {
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
