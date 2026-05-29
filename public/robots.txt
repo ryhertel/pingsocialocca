@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://pingsocialocca.lovable.app/sitemap.xml
+Sitemap: https://pingreact.com/sitemap.xml

@@ -229,7 +229,7 @@ export function WebhookPanel({ open, onOpenChange }: WebhookPanelProps) {
 
           {/* Remember toggle */}
           <div className="flex items-center justify-between">
-            <Label className="text-xs text-muted-foreground">Remember secret on this device</Label>
+            <Label className="text-xs text-muted-foreground">Remember secret for this tab</Label>
             <Switch checked={rememberSecret} onCheckedChange={setRememberSecret} />
           </div>
 

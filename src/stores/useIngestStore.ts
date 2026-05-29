@@ -12,6 +12,36 @@ const MAX_EVENTS = 200;
 const STORAGE_KEY = 'ping-ingest-secret';
 const CHANNEL_KEY_STORAGE = 'ping-channel-key';
 
+// Secret is stored in sessionStorage (scoped to the browser tab) rather than
+// localStorage, so it is cleared on tab/window close and is not accessible
+// to other tabs. Reduces XSS exfiltration risk for a sensitive write token.
+const secretStore = {
+  get(): string | null {
+    try { return sessionStorage.getItem(STORAGE_KEY); } catch { return null; }
+  },
+  set(v: string) {
+    try { sessionStorage.setItem(STORAGE_KEY, v); } catch {}
+  },
+  remove() {
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+    // Clean up any legacy localStorage value from older versions.
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  },
+  // Migrate any pre-existing localStorage value into sessionStorage once,
+  // then remove it from localStorage.
+  migrate(): string | null {
+    try {
+      const legacy = localStorage.getItem(STORAGE_KEY);
+      if (legacy) {
+        try { sessionStorage.setItem(STORAGE_KEY, legacy); } catch {}
+        try { localStorage.removeItem(STORAGE_KEY); } catch {}
+        return legacy;
+      }
+    } catch {}
+    return null;
+  },
+};
+
 function generateChannelKey(): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
@@ -60,15 +90,11 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
   events: [],
   lastEventAt: null,
   ingestSecret: (() => {
-    try {
-      return localStorage.getItem(STORAGE_KEY) ?? '';
-    } catch {
-      return '';
-    }
+    return secretStore.get() ?? secretStore.migrate() ?? '';
   })(),
   rememberSecret: (() => {
     try {
-      return localStorage.getItem(STORAGE_KEY) !== null;
+      return secretStore.get() !== null;
     } catch {
       return false;
     }
@@ -96,7 +122,7 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
   setSecret: (secret) => {
     set({ ingestSecret: secret, connected: secret.length > 0 });
     if (get().rememberSecret) {
-      try { localStorage.setItem(STORAGE_KEY, secret); } catch { /* storage unavailable */ }
+      secretStore.set(secret);
     }
   },
 
@@ -105,16 +131,16 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
     if (value) {
       const secret = get().ingestSecret;
       if (secret) {
-        try { localStorage.setItem(STORAGE_KEY, secret); } catch { /* storage unavailable */ }
+        secretStore.set(secret);
       }
     } else {
-      try { localStorage.removeItem(STORAGE_KEY); } catch { /* storage unavailable */ }
+      secretStore.remove();
     }
   },
 
   clearSecret: () => {
     set({ ingestSecret: '', connected: false });
-    try { localStorage.removeItem(STORAGE_KEY); } catch { /* storage unavailable */ }
+    secretStore.remove();
   },
 
   regenerateSecret: () => {
@@ -127,7 +153,7 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
 
   disconnect: () => {
     set({ ingestSecret: '', connected: false, events: [], lastEventAt: null });
-    try { localStorage.removeItem(STORAGE_KEY); } catch { /* storage unavailable */ }
+    secretStore.remove();
   },
 
   setChannelKey: (key) => {
