@@ -96,7 +96,7 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
   setSecret: (secret) => {
     set({ ingestSecret: secret, connected: secret.length > 0 });
     if (get().rememberSecret) {
-      try { localStorage.setItem(STORAGE_KEY, secret); } catch {}
+      try { localStorage.setItem(STORAGE_KEY, secret); } catch { /* storage unavailable */ }
     }
   },
 
@@ -105,16 +105,16 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
     if (value) {
       const secret = get().ingestSecret;
       if (secret) {
-        try { localStorage.setItem(STORAGE_KEY, secret); } catch {}
+        try { localStorage.setItem(STORAGE_KEY, secret); } catch { /* storage unavailable */ }
       }
     } else {
-      try { localStorage.removeItem(STORAGE_KEY); } catch {}
+      try { localStorage.removeItem(STORAGE_KEY); } catch { /* storage unavailable */ }
     }
   },
 
   clearSecret: () => {
     set({ ingestSecret: '', connected: false });
-    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* storage unavailable */ }
   },
 
   regenerateSecret: () => {
@@ -127,13 +127,13 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
 
   disconnect: () => {
     set({ ingestSecret: '', connected: false, events: [], lastEventAt: null });
-    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* storage unavailable */ }
   },
 
   setChannelKey: (key) => {
     const normalized = key.toLowerCase();
     set({ channelKey: normalized });
-    try { localStorage.setItem(CHANNEL_KEY_STORAGE, normalized); } catch {}
+    try { localStorage.setItem(CHANNEL_KEY_STORAGE, normalized); } catch { /* storage unavailable */ }
   },
 
   regenerateChannelKey: () => {
