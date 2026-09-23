@@ -10,6 +10,14 @@ function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/** Only allow safe URL schemes in links rendered from AI messages. */
+function sanitizeHref(href: string): string {
+  const trimmed = href.trim();
+  if (/^(https?|mailto):/i.test(trimmed)) return trimmed;
+  // Block javascript:, data:, vbscript:, etc.
+  return '#';
+}
+
 function parseInline(text: string): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
   // Regex order matters: code first, then bold, italic, links
@@ -32,9 +40,9 @@ function parseInline(text: string): React.ReactNode[] {
       // italic
       nodes.push(<em key={key++}>{match[6]}</em>);
     } else if (match[7]) {
-      // link
+      // link — sanitize href to prevent javascript: URI injection
       nodes.push(
-        <a key={key++} href={match[9]} target="_blank" rel="noopener noreferrer" className="chat-md-link">
+        <a key={key++} href={sanitizeHref(match[9])} target="_blank" rel="noopener noreferrer" className="chat-md-link">
           {match[8]}
         </a>
       );
