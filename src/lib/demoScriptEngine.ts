@@ -411,9 +411,11 @@ const ACTION_MAP: Record<string, () => ResponseNode> = {
   integrate_discord: getWebhooksResponse,
   integrate_webhooks: getWebhooksResponse,
   open_connectors: () => {
-    window.location.href = '/connectors';
+    // A full page load would discard the stores, the AudioContext and the feed,
+    // and the whole point is that the eyes keep reacting while you set up.
+    window.dispatchEvent(new CustomEvent('ping:claimChannel'));
     return {
-      text: "Opening the Connectors page — you'll find setup templates for Generic, Stripe, and GitHub webhooks there.",
+      text: "Opening your channel setup — grab the webhook URL and point GitHub, Stripe or a script straight at it.",
       buttons: [
         { label: 'Back to menu', action: 'whatIsPing' },
       ],

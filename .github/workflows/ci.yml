@@ -1,8 +1,9 @@
 name: CI
 
 on:
+  # Not filtered to [main], so a stacked PR based on another feature branch
+  # still gets checked instead of running for the first time after its base merges.
   pull_request:
-    branches: [main]
 
 jobs:
   lint-and-build:
@@ -24,3 +25,17 @@ jobs:
 
       - run: npm test
       - run: npm run build
+
+  edge-functions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # Resolves the real Deno module graph, so a broken relative import in an
+      # edge function fails the PR instead of the deploy.
+      - name: Typecheck edge functions
+        run: deno check supabase/functions/*/index.ts
