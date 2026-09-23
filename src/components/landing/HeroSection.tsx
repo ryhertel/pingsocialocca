@@ -82,14 +82,14 @@ export function HeroSection() {
 
       <h1 className="relative text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] max-w-3xl">
         Give your{' '}
-        <span className="text-primary">AI agents</span>{' '}
+        <span className="text-primary">notifications</span>{' '}
         a face
       </h1>
 
       <p className="relative mt-6 text-lg sm:text-xl text-muted-foreground max-w-xl leading-relaxed">
-        Ping is a friendly, eyes-only presence UI. Connect it to any AI agent,
-        webhook, or automation and watch it react to status, messages, and
-        alerts in real time.
+        A pair of eyes that reacts to whatever you point at it. Send a deploy, a
+        payment, an alert or a line of text, and Ping answers with an expression,
+        a sound and a burst of colour — in real time.
       </p>
 
       <div className="relative mt-10 flex flex-col sm:flex-row gap-4">

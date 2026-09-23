@@ -7,15 +7,15 @@ import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 
 const integrations = [
-  { icon: Bot, name: 'OpenClaw', desc: 'Local AI agent bridge. Connect your own agent over WebSocket.', featured: true },
-  { icon: Webhook, name: 'Generic Webhook', desc: 'Any HTTP service, Zapier, Make, n8n, or curl' },
-  { icon: CreditCard, name: 'Stripe', desc: 'Payments, subscriptions & revenue events' },
-  { icon: Github, name: 'GitHub', desc: 'Pushes, deployments, issues & PRs' },
-  { icon: MessageSquare, name: 'Slack', desc: 'Messages, mentions & channel alerts' },
-  { icon: Gamepad2, name: 'Discord', desc: 'Server events, messages & bot alerts' },
+  { icon: Webhook, name: 'Any script or service', desc: 'Any HTTP service, cron job, CI step, Zapier, Make, n8n or curl', featured: true },
+  { icon: Github, name: 'GitHub', desc: 'Pushes, CI, deploys, issues & PRs — paste the URL, no middleware' },
+  { icon: CreditCard, name: 'Stripe', desc: 'Payments, subscriptions & failed charges — direct' },
+  { icon: Triangle, name: 'Vercel', desc: 'Deploys & build failures — direct' },
+  { icon: MessageSquare, name: 'Slack', desc: 'Messages & mentions — needs a Slack app' },
+  { icon: Gamepad2, name: 'Discord', desc: 'Server events — needs a bot or relay' },
   { icon: SquareKanban, name: 'Linear', desc: 'Issues, project updates & workflow' },
   { icon: Bug, name: 'Sentry', desc: 'Errors, crashes & production incidents' },
-  { icon: Triangle, name: 'Vercel', desc: 'Deploys, build failures & CI/CD' },
+  { icon: Bot, name: 'Local bridge', desc: 'A local agent or script over WebSocket, staying on your machine' },
 ] as const;
 
 export function IntegrationsSection() {

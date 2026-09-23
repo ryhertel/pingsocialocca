@@ -10,14 +10,23 @@ import { connectorTemplates } from '@/lib/connectors/connectorTemplates';
 import type { ConnectorTemplate } from '@/lib/connectors/types';
 import {
   ArrowLeft, Webhook, CreditCard, Github, Send, Copy, Check, Eye, EyeOff, Bot,
+  MessageSquare, Gamepad2, SquareKanban, Bug, Triangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Every icon named in connectorTemplates must appear here. A missing entry falls
+// back to the generic webhook glyph, which is how five of the nine connectors
+// ended up rendering identically.
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Webhook,
   CreditCard,
   Github,
   Bot,
+  MessageSquare,
+  Gamepad2,
+  SquareKanban,
+  Bug,
+  Triangle,
 };
 
 function CopyButton({ text }: { text: string }) {
@@ -44,7 +53,11 @@ export default function Connectors() {
   const navigate = useNavigate();
   const channelKey = useIngestStore((s) => s.channelKey);
   const ingestSecret = useIngestStore((s) => s.ingestSecret);
+  const writeToken = useIngestStore((s) => s.writeToken);
   const secureStreamConnected = useIngestStore((s) => s.secureStreamConnected);
+  // Subscribed rather than read through canSendEvents(), so claiming a channel
+  // re-enables the Test buttons without a reload.
+  const canSend = writeToken.length > 0 || ingestSecret.length > 0;
   const pushEvent = useIngestStore((s) => s.pushEvent);
   const [selectedTemplate, setSelectedTemplate] = useState<ConnectorTemplate | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -160,7 +173,7 @@ export default function Connectors() {
                     size="sm"
                     className="flex-1 text-xs gap-1"
                     onClick={() => handleTestEvent(template)}
-                    disabled={testingId === template.id || !ingestSecret}
+                    disabled={testingId === template.id || !canSend}
                   >
                     <Send className="h-3 w-3" />
                     {testingId === template.id ? 'Sending…' : 'Test'}
@@ -171,10 +184,10 @@ export default function Connectors() {
           })}
         </div>
 
-        {!ingestSecret && (
+        {!canSend && (
           <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-center">
             <p className="text-xs text-muted-foreground">
-              Set your ingest secret in the Webhooks panel (main page) before testing connectors.
+              Click “Make it mine” on the main page to get a webhook URL, then come back to test a connector.
             </p>
           </div>
         )}

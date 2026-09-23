@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
 
 const howItWorks = [
-  { step: '1', title: 'Launch Ping', desc: 'Open the app, no account needed. Start with Demo Mode to explore.' },
-  { step: '2', title: 'Connect a Source', desc: 'Point any webhook, bot, or agent at Ping\'s ingest endpoint with a simple POST.' },
-  { step: '3', title: 'Watch It React', desc: 'Ping reads your events and responds with expressions, sounds, and spectacles in real time.' },
+  { step: '1', title: 'Open Ping', desc: 'It starts reacting immediately — no account, nothing to install.' },
+  { step: '2', title: 'Claim your URL', desc: 'One click gives you a webhook URL. Paste it into GitHub, Stripe, Vercel or a script.' },
+  { step: '3', title: 'Watch it react', desc: 'Ping reads each event and answers with an expression, a sound and a spectacle.' },
 ];
 
 export function HowItWorksSection() {
@@ -14,7 +14,7 @@ export function HowItWorksSection() {
           Three steps to a reactive presence
         </h2>
         <p className="text-center text-muted-foreground mb-14 max-w-md mx-auto">
-          No accounts, no API keys to manage. Just launch and connect.
+          No account, no install, no middleware. Open it and paste one URL.
         </p>
 
         <div className="grid gap-8 sm:grid-cols-3">
