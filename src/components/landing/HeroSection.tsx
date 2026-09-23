@@ -25,7 +25,7 @@ let particleId = 0;
 
 export function HeroSection() {
   const navigate = useNavigate();
-  const { theme, setTheme } = useSettingsStore();
+  const { theme, setTheme, volume, muted, dnd } = useSettingsStore();
   const [particles, setParticles] = useState<Particle[]>([]);
   const { vibrate } = useHaptics();
   const faceControls = useAnimation();
@@ -135,7 +135,7 @@ export function HeroSection() {
                     onClick={(e) => {
                       vibrate('tap');
                       spawnParticles(e, `hsl(${preset.glowPrimary})`);
-                      playSwatchPop();
+                      playSwatchPop(volume, muted, dnd);
                       setTheme(key);
                     }}
                     aria-label={`${preset.name} theme`}

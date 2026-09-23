@@ -86,7 +86,7 @@ const BASE_MAP: Record<string, ReactionOutput> = {
 const NEGATIVE_TYPES = new Set(['error', 'incident']);
 
 /** The quiet voice used for ambient (severity 0) events. */
-const AMBIENT_SOUND = 'playNotify';
+const AMBIENT_SOUND = 'playIdleChirp';
 
 function clampSeverity(value: number | undefined): number {
   if (typeof value !== 'number' || Number.isNaN(value)) return 1;
