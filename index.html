@@ -2,6 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Content-Security-Policy: restricts execution to known-safe sources -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com;
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' data: https://storage.googleapis.com;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co ws://127.0.0.1:* wss://127.0.0.1:* https://www.google-analytics.com;
+      font-src 'self';
+      frame-ancestors 'none';
+      base-uri 'self';
+      form-action 'self';
+    " />
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-75GGDH40TF"></script>
     <script>
@@ -11,19 +23,15 @@
       gtag('config', 'G-75GGDH40TF');
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Ping - Real-Time Notification Visualizer for AI Agents</title>
-    <meta name="description" content="A friendly, eyes-only presence UI that gives your AI agents a face. Connect via webhook or API and see live status, messages, and notifications at a glance.">
+    <title>Ping — Real-Time Notification Visualizer</title>
+    <meta name="description" content="Give your notifications a face. Point a webhook at Ping — a deploy, a payment, an alert — and a pair of eyes reacts with an expression, a sound and a burst of colour.">
     <meta name="author" content="Lovable" />
 
-    <!-- TODO: Update og:title to match your application name -->
-    
-    
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/WbycW1BNRsZtOHVD5J9UfNl3z0P2/social-images/social-1770717276783-Ping_Website_Thumbnail.png">
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
+    <meta name="twitter:site" content="@pingreact" />
     <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/WbycW1BNRsZtOHVD5J9UfNl3z0P2/social-images/social-1770717276783-Ping_Website_Thumbnail.png">
     
   
@@ -40,15 +48,15 @@
   
   
   
-  <meta property="og:url" content="https://pingsocialocca.lovable.app/">
-  <link rel="canonical" href="https://pingsocialocca.lovable.app/">
+  <meta property="og:url" content="https://pingreact.com/">
+  <link rel="canonical" href="https://pingreact.com/">
 
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "name": "Ping",
-    "description": "A friendly, eyes-only presence UI for AI agents. Connect any webhook, bot, or automation and watch it react to status, messages, and alerts in real time.",
+    "description": "Give your notifications a face. Point a webhook at Ping — a deploy, a payment, an alert — and a pair of eyes reacts with an expression, a sound and a burst of colour.",
     "url": "https://pingsocialocca.lovable.app",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Web",
@@ -59,17 +67,17 @@
     },
     "featureList": [
       "Real-time notification visualization",
-      "Animated presence UI for AI agents",
+      "Notification visualizer",
       "Webhook and WebSocket connectivity",
       "Privacy-first with local-only mode",
       "8 pre-built integrations"
     ]
   }
   </script>
-  <meta property="og:title" content="Ping | Real-Time Notification Visualizer for AI Agents">
-  <meta name="twitter:title" content="Ping | Real-Time Notification Visualizer for AI Agents">
-  <meta property="og:description" content="A friendly, eyes-only presence UI that gives your AI agents a face. Connect via webhook or API and see live status, messages, and notifications at a glance.">
-  <meta name="twitter:description" content="A friendly, eyes-only presence UI that gives your AI agents a face. Connect via webhook or API and see live status, messages, and notifications at a glance.">
+  <meta property="og:title" content="Ping | Real-Time Notification Visualizer">
+  <meta name="twitter:title" content="Ping | Real-Time Notification Visualizer">
+  <meta property="og:description" content="Give your notifications a face. Point a webhook at Ping — a deploy, a payment, an alert — and a pair of eyes reacts with an expression, a sound and a burst of colour.">
+  <meta name="twitter:description" content="Give your notifications a face. Point a webhook at Ping — a deploy, a payment, an alert — and a pair of eyes reacts with an expression, a sound and a burst of colour.">
 </head>
 
   <body>
