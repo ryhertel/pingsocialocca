@@ -4,8 +4,10 @@ import { startTextReveal } from './textReveal';
 import { playReceive, playNotify, playConfirm, playExcited, playThinking, playMotif, triggerEmotion } from './audio';
 import { routeInput } from './demoIntentRouter';
 import { routeEvent } from './ingest/reactionRouter';
+import { useIngestStore } from '@/stores/useIngestStore';
 import { executeReaction } from './ingest/reactionExecutor';
 import type { DemoButton, DemoAction } from './types';
+import type { NormalizedEvent } from './ingest/types';
 
 interface DemoState {
   currentModule: 'idle' | 'welcome' | 'whatIsPing' | 'notifications' | 'integrations' | 'privacy';
@@ -310,20 +312,76 @@ const DEMO_EFFECTS: Record<string, { title: string; keywords: string }> = {
   fireworks:  { title: '🎆 Fireworks!', keywords: 'deploy shipped' },
 };
 
-function triggerDemoEffect(name: string) {
+function buildDemoEvent(name: string): NormalizedEvent | null {
   const effect = DEMO_EFFECTS[name];
-  if (!effect) return;
-  const reaction = routeEvent({
+  if (!effect) return null;
+  const now = Date.now();
+  return {
     id: crypto.randomUUID(),
     source: 'demo',
     eventType: 'message',
     title: effect.title,
     body: effect.keywords,
     severity: 1,
-    timestamp: Date.now(),
-    receivedAt: Date.now(),
-  });
-  executeReaction(reaction);
+    timestamp: now,
+    receivedAt: now,
+  };
+}
+
+/**
+ * Run a demo event down the real pipeline — same routeEvent, same reaction, and
+ * the same store the live stream writes to. Pushing to the store is what makes
+ * the Event Feed, its filters and the source rules demoable with zero setup;
+ * source 'demo' keeps it visually honest.
+ */
+function playDemoEvent(event: NormalizedEvent) {
+  useIngestStore.getState().pushEvent(event);
+  executeReaction(routeEvent(event));
+}
+
+function triggerDemoEffect(name: string) {
+  const event = buildDemoEvent(name);
+  if (event) playDemoEvent(event);
+}
+
+// ── Ambient reel ──
+//
+// A first-time visitor should see Ping react before configuring anything, so the
+// demo drives itself instead of waiting for a button. Pauses when the tab is
+// hidden; stops for good once a real channel is claimed.
+
+const AMBIENT_MIN_GAP_MS = 5000;
+const AMBIENT_JITTER_MS = 4000;
+
+let ambientTimer: number | null = null;
+let ambientIndex = 0;
+
+function ambientTick() {
+  const names = Object.keys(DEMO_EFFECTS);
+  const event = buildDemoEvent(names[ambientIndex++ % names.length]);
+  if (event) playDemoEvent(event);
+  ambientTimer = window.setTimeout(ambientTick, AMBIENT_MIN_GAP_MS + Math.random() * AMBIENT_JITTER_MS);
+}
+
+function onAmbientVisibility() {
+  if (document.visibilityState === 'hidden') {
+    if (ambientTimer) clearTimeout(ambientTimer);
+    ambientTimer = null;
+  } else if (!ambientTimer) {
+    ambientTimer = window.setTimeout(ambientTick, 1500);
+  }
+}
+
+export function startAmbientReel() {
+  if (ambientTimer) return;
+  ambientTimer = window.setTimeout(ambientTick, 1200);
+  document.addEventListener('visibilitychange', onAmbientVisibility);
+}
+
+export function stopAmbientReel() {
+  if (ambientTimer) clearTimeout(ambientTimer);
+  ambientTimer = null;
+  document.removeEventListener('visibilitychange', onAmbientVisibility);
 }
 
 function getDemoEffectResponse(name: string): ResponseNode {
@@ -613,10 +671,15 @@ export function startScriptedDemo() {
     deliverResponse(getWelcomeResponse());
   }, 800);
   activeTimers.push(t);
+
+  // Drive the demo instead of waiting for a click: a first-time visitor should
+  // see Ping react before configuring anything.
+  startAmbientReel();
 }
 
 export function stopScriptedDemo() {
   clearAll();
+  stopAmbientReel();
 }
 
 export function handleDemoInput(text: string) {

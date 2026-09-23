@@ -185,7 +185,10 @@ export function FaceCanvas() {
 
     // Listen for spectacle trigger events from demo engine
     const onTriggerSpectacle = (e: Event) => {
-      const routineName = (e as CustomEvent).detail;
+      const detail = (e as CustomEvent).detail;
+      // Accepts a bare routine name (demo engine) or an object (ingest).
+      const routineName = detail && detail.type ? detail.type : detail;
+      if (!routineName) return;
       forceStartSpectacle(spectacle, routineName);
       // Temporarily force idle so spectacle isn't cancelled
       const currentPs = usePingStore.getState().persistentState;
