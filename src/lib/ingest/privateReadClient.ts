@@ -23,6 +23,19 @@ export interface ClaimedChannel {
   channelKey: string;
   writeToken: string;
   readToken: string;
+  /** Local part of this channel's inbound email address. */
+  emailAlias: string;
+}
+
+/** The domain inbound mail is routed on. Empty when email-in is not configured. */
+export function getEmailDomain(): string {
+  return import.meta.env.VITE_PING_EMAIL_DOMAIN ?? '';
+}
+
+/** Full inbound address, or empty when email-in is not configured for this deployment. */
+export function emailAddressFor(alias: string): string {
+  const domain = getEmailDomain();
+  return alias && domain ? `${alias}@${domain}` : '';
 }
 
 /**
@@ -42,9 +55,39 @@ export async function claimChannel(label?: string): Promise<ClaimedChannel | nul
     });
     const data = await res.json();
     if (data.ok && typeof data.channelKey === 'string' && typeof data.writeToken === 'string' && typeof data.readToken === 'string') {
-      return { channelKey: data.channelKey, writeToken: data.writeToken, readToken: data.readToken };
+      return {
+        channelKey: data.channelKey,
+        writeToken: data.writeToken,
+        readToken: data.readToken,
+        // Older deployments predate email-in and simply omit this.
+        emailAlias: typeof data.emailAlias === 'string' ? data.emailAlias : '',
+      };
     }
     return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Issue a new inbound email address for this channel, invalidating the old one.
+ *
+ * An address is the credential for email-in — it carries no token — and it ends
+ * up in forwarding rules and other people's inboxes, so it has to be cheap to
+ * replace. Authenticated by the write token, which proves you own the channel.
+ */
+export async function rotateEmailAlias(channelKey: string, writeToken: string): Promise<string | null> {
+  const base = getBaseUrl();
+  if (!base || !channelKey || !writeToken) return null;
+
+  try {
+    const res = await fetch(`${base}/claim-channel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'rotate-email', channelKey, writeToken }),
+    });
+    const data = await res.json();
+    return data.ok && typeof data.emailAlias === 'string' ? data.emailAlias : null;
   } catch {
     return null;
   }

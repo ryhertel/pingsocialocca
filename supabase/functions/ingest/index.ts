@@ -22,7 +22,7 @@ import { validate } from './validate.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-ping-signature, x-ping-secret, x-ping-channel-key, x-ping-write-token, x-ping-source',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-ping-signature, x-ping-secret, x-ping-channel-key, x-ping-write-token, x-ping-source, x-ping-email-secret',
 };
 
 // ── Limits ──
@@ -57,6 +57,8 @@ function truncateIp(ip: string): string {
 
 const CHANNEL_KEY_REGEX = /^[0-9a-fA-F]{32}$/;
 const TOKEN_REGEX = /^[0-9a-f]{64}$/;
+/** 12 random bytes. Short enough to live in an email address, 96 bits of entropy. */
+const EMAIL_ALIAS_REGEX = /^[0-9a-f]{24}$/;
 
 function hexToBytes(hex: string): Uint8Array | null {
   if (hex.length % 2 !== 0) return null;
@@ -153,6 +155,29 @@ async function fetchWriteTokenHash(channelKey: string): Promise<string | null> {
   }
 }
 
+/**
+ * Resolve the channel an inbound email belongs to. Returns null when the alias
+ * is unknown, which the caller reports as a plain 401 — confirming that an
+ * address exists would let someone enumerate live channels.
+ */
+async function fetchChannelKeyByEmailAlias(alias: string): Promise<string | null> {
+  const config = serviceConfig();
+  if (!config) return null;
+  try {
+    const res = await fetch(
+      `${config.url}/rest/v1/ping_channels?email_alias=eq.${alias}&select=channel_key`,
+      { headers: { apikey: config.key, Authorization: `Bearer ${config.key}` } },
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length === 0) return null;
+    const key = rows[0]?.channel_key;
+    return typeof key === 'string' && CHANNEL_KEY_REGEX.test(key) ? key.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
 async function insertEvent(row: Record<string, unknown>): Promise<{ ok: boolean; error?: string }> {
   const config = serviceConfig();
   if (!config) return { ok: false, error: 'missing_config' };
@@ -203,13 +228,31 @@ Deno.serve(async (req) => {
     return json(429, { ok: false, error: 'Rate limit exceeded' });
   }
 
-  // Channel key: header or query param
   const url = new URL(req.url);
-  let channelKey = req.headers.get('x-ping-channel-key') ?? url.searchParams.get('key') ?? '';
-  if (!CHANNEL_KEY_REGEX.test(channelKey)) {
-    return json(400, { ok: false, error: 'channel_key: required 32-char hex' });
+
+  // Two ways to name the channel. An inbound email has no channel key and no
+  // write token — the address itself identifies the channel, and the relay that
+  // received the mail is what gets authenticated.
+  const emailAlias = (url.searchParams.get('alias') ?? '').toLowerCase();
+  const isEmailPath = emailAlias.length > 0;
+
+  let channelKey: string;
+  if (isEmailPath) {
+    if (!EMAIL_ALIAS_REGEX.test(emailAlias)) {
+      return json(400, { ok: false, error: 'alias: required 24-char hex' });
+    }
+    const resolved = await fetchChannelKeyByEmailAlias(emailAlias);
+    if (!resolved) {
+      // Same shape as a bad credential: never confirm whether an address exists.
+      return json(401, { ok: false, error: 'Unauthorized' });
+    }
+    channelKey = resolved;
+  } else {
+    channelKey = (req.headers.get('x-ping-channel-key') ?? url.searchParams.get('key') ?? '').toLowerCase();
+    if (!CHANNEL_KEY_REGEX.test(channelKey)) {
+      return json(400, { ok: false, error: 'channel_key: required 32-char hex' });
+    }
   }
-  channelKey = channelKey.toLowerCase();
 
   if (!checkRateLimit(`ch:${channelKey}`)) {
     return new Response(JSON.stringify({ ok: false, error: 'Rate limit exceeded' }), {
@@ -232,6 +275,9 @@ Deno.serve(async (req) => {
   const rawBody = new TextDecoder('utf-8', { fatal: false }).decode(buffer);
 
   // ── Authentication ──
+  //  0. email relay secret, for the ?alias= path only. The alias already proved
+  //     which channel; this proves the request came from our own mail relay and
+  //     not from anyone who guessed the endpoint shape.
   //  1. per-channel write token (header or ?t=)
   //  2. legacy global secret or its HMAC, accepted only for a channel that never
   //     claimed a token. Provider-native HMAC (GitHub, Stripe) lands in R3.
@@ -240,20 +286,29 @@ Deno.serve(async (req) => {
   const sharedSecret = req.headers.get('x-ping-secret');
   const globalSecret = Deno.env.get('PING_INGEST_SECRET');
 
-  const writeTokenHash = await fetchWriteTokenHash(channelKey);
-
   let authenticated = false;
   let authMode = 'none';
 
-  if (writeToken && await tokenMatchesHash(writeToken, writeTokenHash)) {
-    authenticated = true;
-    authMode = 'channel_token';
-  } else if (hmacSig && writeTokenHash === null && globalSecret && await verifyHmac(rawBody, hmacSig, globalSecret)) {
-    authenticated = true;
-    authMode = 'legacy_hmac';
-  } else if (sharedSecret && writeTokenHash === null && globalSecret && await secretsMatch(sharedSecret, globalSecret)) {
-    authenticated = true;
-    authMode = 'legacy_global';
+  if (isEmailPath) {
+    const relaySecret = req.headers.get('x-ping-email-secret');
+    const expected = Deno.env.get('PING_EMAIL_SECRET');
+    if (relaySecret && expected && await secretsMatch(relaySecret, expected)) {
+      authenticated = true;
+      authMode = 'email_relay';
+    }
+  } else {
+    const writeTokenHash = await fetchWriteTokenHash(channelKey);
+
+    if (writeToken && await tokenMatchesHash(writeToken, writeTokenHash)) {
+      authenticated = true;
+      authMode = 'channel_token';
+    } else if (hmacSig && writeTokenHash === null && globalSecret && await verifyHmac(rawBody, hmacSig, globalSecret)) {
+      authenticated = true;
+      authMode = 'legacy_hmac';
+    } else if (sharedSecret && writeTokenHash === null && globalSecret && await secretsMatch(sharedSecret, globalSecret)) {
+      authenticated = true;
+      authMode = 'legacy_global';
+    }
   }
 
   if (!authenticated) {
