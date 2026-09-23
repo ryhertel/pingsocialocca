@@ -340,6 +340,250 @@ const vercelAdapter: Adapter = {
   },
 };
 
+// ── Sentry ──
+
+/** Sentry's level vocabulary, mapped onto Ping's intensity channel. */
+const SENTRY_SEVERITY: Record<string, 0 | 1 | 2 | 3> = {
+  fatal: 3,
+  error: 2,
+  warning: 1,
+  info: 0,
+  debug: 0,
+};
+
+const sentryAdapter: Adapter = {
+  id: 'sentry',
+
+  detect(req) {
+    return typeof req.headers['sentry-hook-resource'] === 'string'
+      || req.query.source === 'sentry';
+  },
+
+  adapt(req) {
+    const b = obj(req.body);
+    const resource = str(req.headers['sentry-hook-resource'], 40) ?? '';
+
+    // Integration Platform: { action, data: { event | issue }, actor }
+    const data = obj(b.data);
+    const event = obj(data.event);
+    const issue = obj(data.issue);
+
+    // Legacy webhook integration posts a flat body instead.
+    const legacyMessage = str(b.message, 500);
+    const legacyCulprit = str(b.culprit, 120);
+    const project = str(b.project_name, 60)
+      ?? str(b.project, 60)
+      ?? str(dig(event, 'project'), 60)
+      ?? 'project';
+
+    const level = (str(event.level, 20) ?? str(b.level, 20) ?? 'error').toLowerCase();
+    const severity = SENTRY_SEVERITY[level] ?? 2;
+
+    const base = {
+      source: 'sentry',
+      dedupeKey: str(event.event_id, 64) ?? str(b.id, 64) ?? str(issue.id, 64) ?? undefined,
+    };
+
+    // An issue transitioning to resolved or ignored is good news, not an alarm.
+    if (resource === 'issue' || issue.id) {
+      const action = str(b.action, 20) ?? '';
+      if (action === 'resolved' || action === 'ignored') {
+        return { kind: 'event', event: {
+          ...base,
+          eventType: 'success',
+          severity: 0,
+          title: `Sentry issue ${action}: ${firstLine(str(issue.title, 200) ?? 'issue', 70)}`,
+          tags: tagList('sentry', 'issue', action),
+        } };
+      }
+      if (action && action !== 'created' && action !== 'unresolved') {
+        return { kind: 'ignore', reason: `sentry:issue:${action}` };
+      }
+    }
+
+    const title = str(event.title, 300)
+      ?? str(issue.title, 300)
+      ?? legacyMessage
+      ?? legacyCulprit;
+
+    if (!title) return { kind: 'ignore', reason: `sentry:${resource || 'unknown'}` };
+
+    const detail = str(event.culprit, 200)
+      ?? legacyCulprit
+      ?? str(dig(event, 'metadata', 'value'), 200);
+
+    return { kind: 'event', event: {
+      ...base,
+      // fatal reads as an incident; everything else is an error to look at.
+      eventType: severity >= 3 ? 'incident' : 'error',
+      severity,
+      title: firstLine(title, 120),
+      body: detail ? `${firstLine(detail, 160)} — ${project}` : project,
+      tags: tagList('sentry', level, str(event.environment, 30)),
+    } };
+  },
+};
+
+// ── Linear ──
+
+/** Linear priority: 0 none, 1 urgent, 2 high, 3 medium, 4 low. */
+function linearSeverity(priority: unknown): 0 | 1 | 2 | 3 {
+  const p = num(priority);
+  if (p === 1) return 2;
+  if (p === 2) return 1;
+  return 1;
+}
+
+const linearAdapter: Adapter = {
+  id: 'linear',
+
+  detect(req) {
+    return typeof req.headers['linear-delivery'] === 'string'
+      || typeof req.headers['linear-event'] === 'string'
+      || req.query.source === 'linear';
+  },
+
+  adapt(req) {
+    const b = obj(req.body);
+    const type = str(b.type, 40) ?? str(req.headers['linear-event'], 40) ?? '';
+    const action = str(b.action, 20) ?? '';
+    const data = obj(b.data);
+    const base = {
+      source: 'linear',
+      dedupeKey: str(req.headers['linear-delivery'], 64) ?? undefined,
+    };
+
+    if (action === 'remove') return { kind: 'ignore', reason: `linear:${type}:remove` };
+
+    if (type === 'Issue') {
+      const identifier = str(data.identifier, 20) ?? 'issue';
+      const issueTitle = str(data.title, 300) ?? 'Untitled';
+      const state = str(dig(data, 'state', 'name'), 40);
+      const assignee = str(dig(data, 'assignee', 'name'), 40);
+      const labels = Array.isArray(data.labels)
+        ? (data.labels as unknown[]).map((l) => str(dig(l, 'name'), 30)).filter((l): l is string => l !== null).slice(0, 3)
+        : [];
+
+      // Reaching a done state is the one Linear event worth celebrating.
+      const done = /^(done|completed|merged|shipped)$/i.test(state ?? '');
+      const blocked = labels.some((l) => /^(bug|blocked|regression)$/i.test(l));
+
+      return { kind: 'event', event: {
+        ...base,
+        eventType: done ? 'success' : (blocked ? 'warning' : 'message'),
+        severity: blocked ? 2 : linearSeverity(data.priority),
+        title: state
+          ? `${identifier} moved to ${state}`
+          : `${identifier} ${action === 'create' ? 'created' : 'updated'}`,
+        body: assignee ? `${firstLine(issueTitle, 140)} — ${assignee}` : firstLine(issueTitle, 160),
+        tags: tagList('linear', 'issue', ...labels),
+      } };
+    }
+
+    if (type === 'Comment') {
+      const identifier = str(dig(data, 'issue', 'identifier'), 20) ?? 'issue';
+      const who = str(dig(data, 'user', 'name'), 40) ?? 'someone';
+      const text = str(data.body, 500) ?? '';
+      return { kind: 'event', event: {
+        ...base,
+        eventType: 'message',
+        severity: 1,
+        title: `${who} commented on ${identifier}`,
+        body: text ? firstLine(text, 180) : undefined,
+        tags: tagList('linear', 'comment'),
+      } };
+    }
+
+    if (type === 'Project') {
+      const name = str(data.name, 60) ?? 'project';
+      const state = str(data.state, 40);
+      return { kind: 'event', event: {
+        ...base,
+        eventType: 'message',
+        severity: 1,
+        title: state ? `Project ${name} is ${state}` : `Project ${name} updated`,
+        tags: tagList('linear', 'project'),
+      } };
+    }
+
+    return { kind: 'ignore', reason: `linear:${type || 'unknown'}` };
+  },
+};
+
+// ── Slack ──
+
+/**
+ * Subtypes that are edits and housekeeping rather than someone saying something.
+ * Without this, editing a message re-fires the whole reaction.
+ */
+const SLACK_IGNORED_SUBTYPES = new Set([
+  'message_changed',
+  'message_deleted',
+  'channel_join',
+  'channel_leave',
+  'bot_message',
+  'thread_broadcast',
+]);
+
+const slackAdapter: Adapter = {
+  id: 'slack',
+
+  detect(req) {
+    const b = obj(req.body);
+    return typeof req.headers['x-slack-signature'] === 'string'
+      || req.query.source === 'slack'
+      // The handshake arrives before Slack will send the signature header.
+      || b.type === 'url_verification';
+  },
+
+  adapt(req) {
+    const b = obj(req.body);
+
+    // Slack will not enable an endpoint until it echoes this back.
+    if (b.type === 'url_verification') {
+      const challenge = str(b.challenge, 500);
+      return challenge
+        ? { kind: 'ack', body: { challenge } }
+        : { kind: 'ignore', reason: 'slack:bad-handshake' };
+    }
+
+    if (b.type !== 'event_callback') {
+      return { kind: 'ignore', reason: `slack:${str(b.type, 40) ?? 'unknown'}` };
+    }
+
+    const event = obj(b.event);
+    const eventType = str(event.type, 40) ?? '';
+    const subtype = str(event.subtype, 40) ?? '';
+    const base = { source: 'slack', dedupeKey: str(b.event_id, 64) ?? undefined };
+
+    // Never react to our own kind. A bot posting into a watched channel would
+    // otherwise be able to drive the face in a loop.
+    if (event.bot_id || SLACK_IGNORED_SUBTYPES.has(subtype)) {
+      return { kind: 'ignore', reason: `slack:${subtype || 'bot'}` };
+    }
+
+    if (eventType !== 'message' && eventType !== 'app_mention') {
+      return { kind: 'ignore', reason: `slack:${eventType || 'unknown'}` };
+    }
+
+    const text = str(event.text, 1000);
+    if (!text) return { kind: 'ignore', reason: 'slack:empty' };
+
+    const channel = str(event.channel, 40) ?? 'a channel';
+    const mention = eventType === 'app_mention';
+
+    return { kind: 'event', event: {
+      ...base,
+      eventType: 'message',
+      // A direct mention is aimed at you; an ordinary channel message is not.
+      severity: mention ? 2 : 1,
+      title: mention ? `Mentioned in ${channel}` : `New message in ${channel}`,
+      body: firstLine(text, 200),
+      tags: tagList('slack', mention ? 'mention' : 'message'),
+    } };
+  },
+};
+
 // ── Email ──
 
 /** Where a quoted reply starts. Everything from here down is someone else's text. */
@@ -493,7 +737,16 @@ const genericAdapter: Adapter = {
 // ── Dispatcher ──
 
 /** Provider adapters first; the loose generic fallback last. */
-const ADAPTERS: Adapter[] = [githubAdapter, stripeAdapter, vercelAdapter, emailAdapter, genericAdapter];
+const ADAPTERS: Adapter[] = [
+  githubAdapter,
+  stripeAdapter,
+  vercelAdapter,
+  sentryAdapter,
+  linearAdapter,
+  slackAdapter,
+  emailAdapter,
+  genericAdapter,
+];
 
 /** Tier 3: a payload already in Ping's shape is never touched by an adapter. */
 export function looksNative(body: unknown): boolean {
