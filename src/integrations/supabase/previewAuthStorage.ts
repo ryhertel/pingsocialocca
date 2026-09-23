@@ -35,7 +35,10 @@ export function brokeredPreviewStorage() {
     new Promise((resolve) => {
       const requestId = newId();
       let done = false;
-      let timer: ReturnType<typeof setTimeout>;
+      // Initialized here rather than declared bare: finish() clears it, so it has
+      // to exist before the timeout is scheduled, and prefer-const flags a `let`
+      // that is only ever assigned once. clearTimeout(undefined) is a no-op.
+      let timer: ReturnType<typeof setTimeout> | undefined = undefined;
       const finish = (r: { ok: boolean; value?: string | null } | null) => {
         if (done) return;
         done = true;
