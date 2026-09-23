@@ -11,6 +11,19 @@ function getCtx(): AudioContext {
   return audioCtx;
 }
 
+/**
+ * Browsers start an AudioContext suspended until the page sees a user gesture,
+ * so the ambient reel is silent on a cold load. Call this from the first
+ * pointer or key event to let sound in.
+ */
+export function resumeAudio(): void {
+  try {
+    if (audioCtx && audioCtx.state === 'suspended') void audioCtx.resume();
+  } catch {
+    /* audio unavailable */
+  }
+}
+
 function canBeep(muted: boolean, dnd: boolean): boolean {
   if (muted || dnd) return false;
   if (Date.now() - lastBeepTime < BEEP_COOLDOWN) return false;

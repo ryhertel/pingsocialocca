@@ -59,7 +59,7 @@ export function executeReaction(reaction: ReactionOutput): void {
 
   // Overlay (skip if reduced motion)
   if (reaction.overlayType && settings.animationIntensity !== 'low') {
-    window.dispatchEvent(new CustomEvent('ping:triggerSpectacle', { detail: reaction.overlayType }));
+    window.dispatchEvent(new CustomEvent('ping:triggerSpectacle', { detail: { type: reaction.overlayType, pulseLevel: reaction.pulseLevel ?? 1 } }));
   }
 
   // Notification icon
