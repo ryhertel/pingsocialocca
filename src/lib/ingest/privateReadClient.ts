@@ -1,7 +1,7 @@
 /**
  * Private Read Client — Secure communication with the read edge functions.
  *
- * - claimChannel: POST claim-channel, returns a fresh channel and its tokens
+ * - claimChannel: POST issue-read-token {action:'claim'}, returns a channel + tokens
  * - issueReadToken: POST issue-read-token, returns a token or null
  * - fetchEventsSecure: GET events_read with headers
  * - openSecureStream: fetch-based SSE reader to events_stream with headers;
@@ -48,10 +48,10 @@ export async function claimChannel(label?: string): Promise<ClaimedChannel | nul
   if (!base) return null;
 
   try {
-    const res = await fetch(`${base}/claim-channel`, {
+    const res = await fetch(`${base}/issue-read-token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(label ? { label } : {}),
+      body: JSON.stringify(label ? { action: 'claim', label } : { action: 'claim' }),
     });
     const data = await res.json();
     if (data.ok && typeof data.channelKey === 'string' && typeof data.writeToken === 'string' && typeof data.readToken === 'string') {
@@ -81,7 +81,7 @@ export async function rotateEmailAlias(channelKey: string, writeToken: string): 
   if (!base || !channelKey || !writeToken) return null;
 
   try {
-    const res = await fetch(`${base}/claim-channel`, {
+    const res = await fetch(`${base}/issue-read-token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'rotate-email', channelKey, writeToken }),

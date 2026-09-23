@@ -18,6 +18,6 @@ ALTER TABLE public.ping_channels
   ADD COLUMN IF NOT EXISTS claim_ip_prefix  text,
   ADD COLUMN IF NOT EXISTS label            text;
 
--- Supports the per-IP claim throttle in the claim-channel function.
+-- Supports the per-IP claim throttle when a channel is claimed.
 CREATE INDEX IF NOT EXISTS idx_ping_channels_claim_ip
   ON public.ping_channels (claim_ip_prefix, created_at DESC);

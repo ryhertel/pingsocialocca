@@ -14,6 +14,3 @@ verify_jwt = false
 
 [functions.analytics]
 verify_jwt = false
-
-[functions.claim-channel]
-verify_jwt = false
