@@ -76,6 +76,15 @@ Ping reads the title for keywords, so that one reacts with a ka-ching and a coin
 without any further configuration. For GitHub, Stripe or Vercel, paste the same URL into
 their webhook settings — their raw payloads are understood as they come.
 
+
+### Email it instead
+
+Some things can send email but not webhooks. Every channel gets its own inbound
+address, so you can forward to it or point an alert at it and Ping reacts the same
+way. The subject becomes the title.
+
+Requires a one-time Cloudflare setup — see [cloudflare/README.md](cloudflare/README.md).
+
 See [/docs](https://pingsocialocca.lovable.app/docs) for the full schema and per-connector
 setup.
 

@@ -59,6 +59,8 @@ interface StoredCredentials {
   channelKey: string;
   writeToken: string;
   readToken: string;
+  /** Local part of the inbound email address. Empty when email-in is unavailable. */
+  emailAlias: string;
 }
 
 /**
@@ -67,14 +69,18 @@ interface StoredCredentials {
  * invalidated the last one.
  */
 const credentialStore = {
-  load(channelKey: string): { writeToken: string; readToken: string } | null {
+  load(channelKey: string): { writeToken: string; readToken: string; emailAlias: string } | null {
     try {
       const raw = localStorage.getItem(CREDENTIALS_STORAGE);
       if (!raw) return null;
       const parsed = JSON.parse(raw) as StoredCredentials;
       // Tokens are only meaningful for the channel they were minted for.
       if (!parsed || parsed.channelKey !== channelKey) return null;
-      return { writeToken: parsed.writeToken ?? '', readToken: parsed.readToken ?? '' };
+      return {
+        writeToken: parsed.writeToken ?? '',
+        readToken: parsed.readToken ?? '',
+        emailAlias: parsed.emailAlias ?? '',
+      };
     } catch {
       return null;
     }
@@ -119,6 +125,7 @@ interface IngestState {
   realtimeConnected: boolean;
   readToken: string | null;
   writeToken: string;
+  emailAlias: string;
   secureStreamConnected: boolean;
 
   pushEvent: (event: NormalizedEvent) => void;
@@ -133,6 +140,7 @@ interface IngestState {
   setRealtimeConnected: (value: boolean) => void;
   setReadToken: (token: string | null) => void;
   setWriteToken: (token: string) => void;
+  setEmailAlias: (alias: string) => void;
   /** Adopt a freshly claimed channel and its tokens in one atomic step. */
   adoptChannel: (credentials: StoredCredentials) => void;
   setSecureStreamConnected: (value: boolean) => void;
@@ -157,6 +165,7 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
   realtimeConnected: false,
   readToken: initialCredentials?.readToken || null,
   writeToken: initialCredentials?.writeToken ?? '',
+  emailAlias: initialCredentials?.emailAlias ?? '',
   secureStreamConnected: false,
 
   pushEvent: (event) =>
@@ -205,7 +214,7 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
   },
 
   disconnect: () => {
-    set({ ingestSecret: '', connected: false, events: [], lastEventAt: null, readToken: null, writeToken: '' });
+    set({ ingestSecret: '', connected: false, events: [], lastEventAt: null, readToken: null, writeToken: '', emailAlias: '' });
     secretStore.remove();
     credentialStore.clear();
   },
@@ -215,9 +224,9 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
     const previous = get().channelKey;
     set({ channelKey: normalized });
     try { localStorage.setItem(CHANNEL_KEY_STORAGE, normalized); } catch { /* storage unavailable */ }
-    // Tokens belong to the channel they were minted for.
+    // Tokens and the email address belong to the channel they were minted for.
     if (previous !== normalized) {
-      set({ readToken: null, writeToken: '' });
+      set({ readToken: null, writeToken: '', emailAlias: '' });
       credentialStore.clear();
     }
   },
@@ -232,26 +241,33 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
 
   setReadToken: (token) => {
     set({ readToken: token });
-    const { channelKey, writeToken } = get();
+    const { channelKey, writeToken, emailAlias } = get();
     if (token) {
-      credentialStore.save({ channelKey, writeToken, readToken: token });
+      credentialStore.save({ channelKey, writeToken, readToken: token, emailAlias });
     }
   },
 
   setWriteToken: (token) => {
     set({ writeToken: token });
-    const { channelKey, readToken } = get();
-    credentialStore.save({ channelKey, writeToken: token, readToken: readToken ?? '' });
+    const { channelKey, readToken, emailAlias } = get();
+    credentialStore.save({ channelKey, writeToken: token, readToken: readToken ?? '', emailAlias });
   },
 
-  adoptChannel: ({ channelKey, writeToken, readToken }) => {
+  setEmailAlias: (alias) => {
+    set({ emailAlias: alias });
+    const { channelKey, writeToken, readToken } = get();
+    credentialStore.save({ channelKey, writeToken, readToken: readToken ?? '', emailAlias: alias });
+  },
+
+  adoptChannel: ({ channelKey, writeToken, readToken, emailAlias }) => {
     const normalized = channelKey.toLowerCase();
     try { localStorage.setItem(CHANNEL_KEY_STORAGE, normalized); } catch { /* storage unavailable */ }
-    credentialStore.save({ channelKey: normalized, writeToken, readToken });
+    credentialStore.save({ channelKey: normalized, writeToken, readToken, emailAlias });
     set({
       channelKey: normalized,
       writeToken,
       readToken,
+      emailAlias,
       connected: true,
       events: [],
       lastEventAt: null,

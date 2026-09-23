@@ -340,6 +340,101 @@ const vercelAdapter: Adapter = {
   },
 };
 
+// ── Email ──
+
+/** Where a quoted reply starts. Everything from here down is someone else's text. */
+const REPLY_MARKERS = [
+  /^>/,
+  /^On .+ wrote:$/i,
+  /^-{2,}\s*Original Message\s*-{2,}/i,
+  /^From:\s/i,
+  /^_{5,}$/,
+];
+
+/** Signature delimiter per RFC 3676: a line of exactly "-- ". */
+const SIGNATURE_MARKER = /^--\s?$/;
+
+/** Boilerplate that would otherwise become the body of every automated email. */
+const NOISE_LINE = /^(sent from my |unsubscribe|view (this|it) in|if you (did not|didn't)|this (email|message) was sent)/i;
+
+/**
+ * Pull the first line of actual content out of an email body.
+ *
+ * Email is the messiest input Ping accepts: quoted replies, signatures,
+ * footers, and hard-wrapped paragraphs. Taking the raw first line gives you
+ * "Hi there," as often as not, so we skip the obvious noise and stop at the
+ * first marker that means the human part has ended.
+ */
+function cleanEmailBody(raw: string, max: number): string | null {
+  const lines = raw.replace(/\r\n/g, '\n').split('\n');
+  const kept: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (SIGNATURE_MARKER.test(trimmed)) break;
+    if (REPLY_MARKERS.some((re) => re.test(trimmed))) break;
+    if (trimmed.length === 0) continue;
+    if (NOISE_LINE.test(trimmed)) continue;
+    kept.push(trimmed);
+    // Two lines is enough to carry a sentence that was hard-wrapped.
+    if (kept.join(' ').length >= max) break;
+  }
+
+  if (kept.length === 0) return null;
+  const joined = kept.join(' ').replace(/\s+/g, ' ').trim();
+  return joined.length > max ? joined.slice(0, max - 1) + '…' : joined;
+}
+
+/** "alerts@stripe.com" → "stripe.com", for a tag you can filter on. */
+function senderDomain(from: string): string | null {
+  const match = /<?([^<>@\s]+)@([^<>@\s]+?)>?$/.exec(from.trim());
+  const domain = match?.[2];
+  return domain ? domain.toLowerCase().slice(0, 40) : null;
+}
+
+/**
+ * Inbound email, delivered by the mail relay (see cloudflare/email-worker.js).
+ *
+ * Reached only through the explicit ?source=email override — never by sniffing,
+ * because the shape is generic enough that a sniff would claim other payloads.
+ */
+const emailAdapter: Adapter = {
+  id: 'email',
+
+  detect(req) {
+    return req.query.source === 'email' || req.headers['x-ping-source'] === 'email';
+  },
+
+  adapt(req) {
+    const b = obj(req.body);
+    const subject = str(b.subject, 300);
+    const text = str(b.text, 20000);
+    const from = str(b.from, 200) ?? '';
+    const domain = senderDomain(from);
+
+    const body = text ? cleanEmailBody(text, 300) : null;
+
+    // A subject is the natural title. Without one, promote the first real line
+    // of the body rather than dropping a message that clearly arrived.
+    const title = subject
+      ? firstLine(subject, 120)
+      : (body ? firstLine(body, 120) : null);
+
+    if (!title) return { kind: 'ignore', reason: 'email:empty' };
+
+    return { kind: 'event', event: {
+      source: 'email',
+      eventType: 'message',
+      severity: 1,
+      title,
+      // Avoid repeating the subject back when there is no distinct body.
+      body: body && body !== title ? body : undefined,
+      tags: tagList('email', domain),
+      dedupeKey: str(b.messageId, 200) ?? undefined,
+    } };
+  },
+};
+
 // ── Generic ──
 
 const GENERIC_TITLE_KEYS = ['title', 'text', 'message', 'subject', 'summary'];
@@ -398,7 +493,7 @@ const genericAdapter: Adapter = {
 // ── Dispatcher ──
 
 /** Provider adapters first; the loose generic fallback last. */
-const ADAPTERS: Adapter[] = [githubAdapter, stripeAdapter, vercelAdapter, genericAdapter];
+const ADAPTERS: Adapter[] = [githubAdapter, stripeAdapter, vercelAdapter, emailAdapter, genericAdapter];
 
 /** Tier 3: a payload already in Ping's shape is never touched by an adapter. */
 export function looksNative(body: unknown): boolean {

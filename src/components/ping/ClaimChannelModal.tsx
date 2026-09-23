@@ -3,10 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Copy, Check, Sparkles, ShieldAlert, Loader2 } from 'lucide-react';
+import { Copy, Check, Sparkles, ShieldAlert, Loader2, Mail, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useIngestStore, getWebhookUrl } from '@/stores/useIngestStore';
-import { claimChannel } from '@/lib/ingest/privateReadClient';
+import { claimChannel, rotateEmailAlias, emailAddressFor } from '@/lib/ingest/privateReadClient';
 import { stopAmbientReel } from '@/lib/demoScriptEngine';
 
 interface ClaimChannelModalProps {
@@ -31,12 +31,30 @@ function CopyButton({ text }: { text: string }) {
 export function ClaimChannelModal({ open, onOpenChange }: ClaimChannelModalProps) {
   const [label, setLabel] = useState('');
   const [claiming, setClaiming] = useState(false);
+  const [rotating, setRotating] = useState(false);
   const adoptChannel = useIngestStore((s) => s.adoptChannel);
+  const setEmailAlias = useIngestStore((s) => s.setEmailAlias);
   const writeToken = useIngestStore((s) => s.writeToken);
   const channelKey = useIngestStore((s) => s.channelKey);
+  const emailAlias = useIngestStore((s) => s.emailAlias);
 
   const claimed = writeToken.length > 0;
   const webhookUrl = getWebhookUrl();
+  // Empty when this deployment has no mail domain configured, in which case the
+  // whole email section stays hidden rather than showing a broken address.
+  const emailAddress = emailAddressFor(emailAlias);
+
+  const handleRotateEmail = async () => {
+    setRotating(true);
+    const fresh = await rotateEmailAlias(channelKey, writeToken);
+    setRotating(false);
+    if (!fresh) {
+      toast.error('Could not issue a new address. Try again in a moment.');
+      return;
+    }
+    setEmailAlias(fresh);
+    toast.success('New address issued — the old one stops working now.');
+  };
   const curl = `curl -X POST "${webhookUrl}" \\\n  -H "content-type: application/json" \\\n  -d '{"title":"Hello from Ping"}'`;
 
   const handleClaim = async () => {
@@ -111,6 +129,36 @@ export function ClaimChannelModal({ open, onOpenChange }: ClaimChannelModalProps
                 <CopyButton text={curl} />
               </div>
             </div>
+
+            {emailAddress && (
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1.5 text-xs">
+                  <Mail className="h-3.5 w-3.5" />
+                  Or email it
+                </Label>
+                <div className="flex items-center gap-1">
+                  <code className="flex-1 truncate rounded bg-muted/40 px-2 py-1.5 text-[11px] font-mono">
+                    {emailAddress}
+                  </code>
+                  <CopyButton text={emailAddress} />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleRotateEmail}
+                    disabled={rotating}
+                    title="Issue a new address and stop the old one"
+                    className="h-7 w-7 shrink-0"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${rotating ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  For anything that can send email but not webhooks. The subject becomes the
+                  title. Anyone who knows this address can post to your feed, so rotate it if it
+                  gets out.
+                </p>
+              </div>
+            )}
 
             <div className="flex gap-2 rounded-md border border-[hsl(var(--ping-warning))]/30 bg-[hsl(var(--ping-warning))]/10 p-2.5">
               <ShieldAlert className="h-4 w-4 shrink-0 text-[hsl(var(--ping-warning))]" />
