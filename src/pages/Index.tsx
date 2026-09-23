@@ -18,6 +18,7 @@ import { DiagnosticsPanel } from '@/components/ping/DiagnosticsPanel';
 import { WelcomeDialog } from '@/components/ping/WelcomeDialog';
 import { OnboardingTour } from '@/components/ping/OnboardingTour';
 import { WebhookPanel } from '@/components/ping/WebhookPanel';
+import { ClaimChannelModal } from '@/components/ping/ClaimChannelModal';
 import { EventFeed } from '@/components/ping/EventFeed';
 import { KeyboardShortcutsHelp } from '@/components/ping/KeyboardShortcutsHelp';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -50,6 +51,7 @@ const Index = () => {
   const [showLandscapeChat, setShowLandscapeChat] = useState(false);
   const [showWebhookPanel, setShowWebhookPanel] = useState(false);
   const [showEventFeed, setShowEventFeed] = useState(false);
+  const [showClaimChannel, setShowClaimChannel] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showTour, setShowTour] = useState(false);
 
@@ -63,26 +65,40 @@ const Index = () => {
   const messages = usePingStore((s) => s.messages);
   const channelKey = useIngestStore((s) => s.channelKey);
   const ingestSecret = useIngestStore((s) => s.ingestSecret);
+  const readToken = useIngestStore((s) => s.readToken);
+  const writeToken = useIngestStore((s) => s.writeToken);
   const setReadToken = useIngestStore((s) => s.setReadToken);
   const chatLayout = useSettingsStore((s) => s.chatLayout);
 
   const isDocked = chatLayout === 'docked' && !isMobile;
 
-  // Secure stream lifecycle
+  // Secure stream lifecycle.
+  //
+  // The read token is minted once and cached, never re-minted on mount:
+  // issue-read-token stores a single hash per channel, so minting here silently
+  // invalidated every other open tab (and burned a token on every dev reload).
+  // A rejected token is renewed from inside the stream instead, on a real 401.
   useEffect(() => {
-    if (!channelKey || !ingestSecret) return;
+    if (!channelKey) return;
     let cancelled = false;
     const boot = async () => {
-      const token = await issueReadToken(channelKey, ingestSecret);
-      if (cancelled || !token) return;
-      setReadToken(token);
-      await fetchRecentEventsSecure(channelKey, token);
+      if (!readToken) {
+        if (!writeToken && !ingestSecret) return;
+        const minted = await issueReadToken(channelKey, {
+          writeToken: writeToken || undefined,
+          ingestSecret: ingestSecret || undefined,
+        });
+        if (cancelled || !minted) return;
+        setReadToken(minted);
+        return; // storing it re-runs this effect with the token in hand
+      }
+      await fetchRecentEventsSecure(channelKey, readToken);
       if (cancelled) return;
-      startSecureStream(channelKey, token);
+      startSecureStream(channelKey, readToken);
     };
     boot();
-    return () => { cancelled = true; stopSecureStream(); setReadToken(null); };
-  }, [channelKey, ingestSecret, setReadToken]);
+    return () => { cancelled = true; stopSecureStream(); };
+  }, [channelKey, readToken, writeToken, ingestSecret, setReadToken]);
 
   useEffect(() => {
     if (!localStorage.getItem('ping:welcomeSeen')) setShowAbout(true);
@@ -98,6 +114,12 @@ const Index = () => {
     const handler = () => setShowWebhookPanel(true);
     window.addEventListener('ping:openWebhookPanel', handler);
     return () => window.removeEventListener('ping:openWebhookPanel', handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setShowClaimChannel(true);
+    window.addEventListener('ping:claimChannel', handler);
+    return () => window.removeEventListener('ping:claimChannel', handler);
   }, []);
 
   useEffect(() => {
@@ -209,6 +231,16 @@ const Index = () => {
               </TooltipContent>
             </Tooltip>
           )}
+          {!writeToken && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowClaimChannel(true)}
+              className="h-6 rounded-full px-2.5 text-[11px] text-[hsl(var(--ping-accent))] hover:bg-[hsl(var(--ping-accent))]/10"
+            >
+              Make it mine
+            </Button>
+          )}
         </div>
         <div>
           {isMobile ? (
@@ -289,6 +321,7 @@ const Index = () => {
         }}
       />
       <WebhookPanel open={showWebhookPanel} onOpenChange={setShowWebhookPanel} />
+      <ClaimChannelModal open={showClaimChannel} onOpenChange={setShowClaimChannel} />
       <EventFeed open={showEventFeed} onOpenChange={setShowEventFeed} />
       <KeyboardShortcutsHelp open={showShortcuts} onOpenChange={setShowShortcuts} />
       <OnboardingTour open={showTour} onComplete={() => setShowTour(false)} />
