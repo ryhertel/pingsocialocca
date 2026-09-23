@@ -33,7 +33,7 @@ Always branch from the latest `main`.
 
 ```bash
 npm run dev        # Start Vite dev server
-npm run build      # Production build (also type-checks)
+npm run build      # Production build (esbuild transform only — does NOT type-check)
 npm run build:dev  # Dev build (skips tsc)
 npm run lint       # Run ESLint
 npm run test       # Run Vitest once

@@ -16,14 +16,16 @@ interface OpenClawSetupModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const BRIDGE_COMMAND = 'cd /home/ryan/.openclaw/workspace/ping-openclaw-bridge && node bridge.mjs';
+// Machine-agnostic: the previous value hardcoded one developer's home directory,
+// so the command the modal told you to copy could not run on your machine.
+const BRIDGE_COMMAND = 'npx openclaw@latest start --bridge';
 const DEFAULT_WS_URL = 'ws://127.0.0.1:3939/ping';
 
 const STEPS = [
   {
     icon: Terminal,
     title: 'Open your terminal',
-    description: 'Launch Ubuntu (WSL) or your preferred terminal on your computer.',
+    description: 'Any terminal will do — macOS, Linux, or Windows (PowerShell or WSL).',
   },
   {
     icon: Rocket,
@@ -54,7 +56,7 @@ const TROUBLESHOOTING = [
   },
   {
     problem: 'Bridge connects then immediately disconnects',
-    solution: 'Check that your bridge supports the ping/0.1 protocol. Update OpenClaw to the latest version.',
+    solution: 'Check that your bridge speaks the ping/0.1 protocol. Any process that sends Ping-shaped JSON over the socket works — OpenClaw is one example, not a requirement.',
   },
 ];
 

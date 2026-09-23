@@ -81,9 +81,8 @@ function buildCurl(t: ConnectorTemplate): string {
     timestamp: Date.now(),
   }, null, 2);
 
-  return `curl -X POST "https://YOUR_INGEST_URL/ingest?key=YOUR_CHANNEL_KEY" \\
+  return `curl -X POST "https://YOUR_WEBHOOK_URL" \\
   -H "Content-Type: application/json" \\
-  -H "x-ping-secret: YOUR_INGEST_SECRET" \\
   -d '${payload}'`;
 }
 
@@ -91,14 +90,61 @@ function buildCurl(t: ConnectorTemplate): string {
 /*  JSON schema reference                                              */
 /* ------------------------------------------------------------------ */
 const SCHEMA_EXAMPLE = `{
+  "title": "Short headline (required, max 120)",
   "source": "my-app",
-  "eventType": "success | error | message | warning | deploy | incident",
-  "title": "Short headline (required)",
-  "body": "Optional details",
-  "severity": 3,
+  "eventType": "success | error | message | thinking | warning | incident | deploy",
+  "body": "Optional details (max 500)",
+  "severity": 2,
   "tags": ["optional", "tags"],
   "timestamp": 1700000000000
 }`;
+
+/**
+ * Only `title` is genuinely required for a loose payload — everything else has a
+ * sensible default, and Ping reads the text for keywords either way.
+ */
+const SCHEMA_MINIMAL = `{ "title": "Invoice #204 paid" }`;
+
+/* ------------------------------------------------------------------ */
+/*  Transport badge                                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Says up front how much work a connector actually is. The old docs implied
+ * every source was equally easy, which sent people to Zapier for ones that now
+ * work by pasting a URL — and implied parity for Discord, which cannot.
+ */
+const TRANSPORT_LABELS: Record<ConnectorTemplate['transport'], { label: string; hint: string; className: string }> = {
+  direct: {
+    label: 'Paste the URL',
+    hint: 'Ping reads this provider\'s payload as it comes. Nothing in between.',
+    className: 'border-green-500/40 text-green-400',
+  },
+  generic: {
+    label: 'Send JSON',
+    hint: 'Anything that can POST JSON works. A title is the only required field.',
+    className: 'border-primary/40 text-primary',
+  },
+  middleware: {
+    label: 'Needs a relay',
+    hint: 'This source cannot post to an arbitrary URL on its own — it needs an app, bot or automation step.',
+    className: 'border-orange-500/40 text-orange-400',
+  },
+  bridge: {
+    label: 'Local bridge',
+    hint: 'A WebSocket on your own machine rather than HTTP. Nothing leaves your computer.',
+    className: 'border-blue-500/40 text-blue-400',
+  },
+};
+
+function TransportBadge({ transport }: { transport: ConnectorTemplate['transport'] }) {
+  const meta = TRANSPORT_LABELS[transport];
+  return (
+    <Badge variant="outline" className={cn('text-[10px]', meta.className)} title={meta.hint}>
+      {meta.label}
+    </Badge>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /*  Connector doc card                                                 */
@@ -110,11 +156,12 @@ function ConnectorDoc({ template }: { template: ConnectorTemplate }) {
         {/* Header */}
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-semibold text-foreground">{template.name}</h2>
-          <Badge variant="outline" className="text-[10px] border-primary/30 text-muted-foreground">
-            Connector
-          </Badge>
+          <TransportBadge transport={template.transport} />
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">{template.description}</p>
+        <p className="text-xs text-muted-foreground/80 leading-relaxed">
+          {TRANSPORT_LABELS[template.transport].hint}
+        </p>
 
         {/* Setup steps */}
         <CollapsibleSection title="Setup Steps" icon={<Zap className="h-4 w-4 text-primary" />} defaultOpen>
@@ -128,9 +175,9 @@ function ConnectorDoc({ template }: { template: ConnectorTemplate }) {
         {/* Curl example */}
         <CollapsibleSection title="cURL Example" icon={<Terminal className="h-4 w-4 text-primary" />}>
           <p className="text-xs text-muted-foreground mb-2">
-            Replace <code className="text-primary/80 bg-muted px-1 rounded">YOUR_INGEST_URL</code>,{' '}
-            <code className="text-primary/80 bg-muted px-1 rounded">YOUR_CHANNEL_KEY</code>, and{' '}
-            <code className="text-primary/80 bg-muted px-1 rounded">YOUR_INGEST_SECRET</code> with your actual values from the Connect panel.
+            Replace <code className="text-primary/80 bg-muted px-1 rounded">YOUR_WEBHOOK_URL</code>{' '}
+            with the URL from the Webhooks panel — it already contains your channel key and
+            write token.
           </p>
           <CodeBlock code={buildCurl(template)} />
         </CollapsibleSection>
@@ -172,7 +219,7 @@ function Troubleshooting() {
     },
     {
       q: 'Getting 401 / 403 errors?',
-      a: 'Your x-ping-secret header is missing or wrong. Copy it again from the Connect panel. Secrets are case-sensitive.',
+      a: 'Your write token is missing or wrong. Copy the webhook URL again from the Webhooks panel — the token is the &t= part. If you rotated it, every webhook pointing at the old URL needs updating.',
     },
     {
       q: 'Ping doesn\'t react to my events?',
@@ -224,8 +271,7 @@ export default function Docs() {
         <section className="space-y-3">
           <h1 className="text-2xl font-bold text-foreground">Ping Integration Guide</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Send events to Ping via HTTP webhooks and watch it react in real time.
-            This guide covers the JSON schema, setup for each connector, cURL examples, and troubleshooting.
+            Point a webhook at Ping and watch it react. GitHub, Stripe and Vercel work as they come — anything else just needs a title.            This guide covers the schema, per-connector setup, cURL examples and troubleshooting.
           </p>
 
           {/* Search bar */}
@@ -279,12 +325,23 @@ export default function Docs() {
                 <section id="schema" className="scroll-mt-20 space-y-4">
                   <h2 className="text-xl font-semibold text-foreground">Event Schema</h2>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Every event POSTed to the ingest endpoint must follow this JSON shape.
-                    Only <code className="text-primary/80 bg-muted px-1 rounded">source</code>,{' '}
-                    <code className="text-primary/80 bg-muted px-1 rounded">eventType</code>, and{' '}
-                    <code className="text-primary/80 bg-muted px-1 rounded">title</code> are required.
+                    The smallest thing Ping accepts is a title. Everything else has a
+                    default, and the reaction is chosen by reading the text — so a plain
+                    sentence already works.
+                  </p>
+                  <CodeBlock code={SCHEMA_MINIMAL} lang="json" />
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    The full shape, for when you want to be explicit.{' '}
+                    <code className="text-primary/80 bg-muted px-1 rounded">severity</code> runs
+                    0–3: <strong>0</strong> is ambient and drops the overlay so a chatty source
+                    stays bearable, <strong>3</strong> forces the urgent reaction no matter what
+                    the text says.
                   </p>
                   <CodeBlock code={SCHEMA_EXAMPLE} lang="json" />
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Sending a raw payload from GitHub, Stripe or Vercel instead? Don't reshape
+                    it — Ping recognises those and maps them itself. Nothing in between required.
+                  </p>
                 </section>
               )}
 

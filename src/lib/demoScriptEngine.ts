@@ -59,11 +59,11 @@ function resetState() {
 
 function getWelcomeResponse(): ResponseNode {
   return {
-    text: "Hey 👀 I'm Ping. I turn AI agent activity into expressive eyes + notification moments. Want to see a quick demo?",
+    text: "Hey 👀 I am Ping. I turn your notifications into expressions, sounds and little celebrations. Want to see?",
     buttons: [
       { label: 'Yes — show me', action: 'see_demo' },
       { label: 'Tell me what Ping does', action: 'whatIsPing' },
-      { label: 'Connect OpenClaw', action: 'integrate_openclaw' },
+      { label: 'Connect a source', action: 'integrations' },
     ],
     module: 'welcome',
   };
@@ -71,7 +71,7 @@ function getWelcomeResponse(): ResponseNode {
 
 function getWhatIsPingResponse(): ResponseNode {
   return {
-    text: "Ping visualizes AI agent activity as emotional feedback instead of logs. When your agent thinks, Ping's eyes shift. When it responds, they glow and you hear a sound. It's the emotional layer for your AI.",
+    text: "Ping turns notifications into something you feel instead of something you read. A deploy lands and the eyes light up. A payment arrives and you hear it. An alert fires and you know before you look.",
     buttons: [
       { label: 'Notifications', action: 'notifications' },
       { label: 'Animations', action: 'animations' },
@@ -88,7 +88,7 @@ function getNotificationsResponse(): ResponseNode {
     text: "Watch Ping's eyes react to a notification event right now. Each notification type — thinking, success, error, new message — maps to a unique eye state and sound.",
     buttons: [
       { label: 'Trigger another', action: 'notifications_again' },
-      { label: 'Connect your agent', action: 'integrate_openclaw' },
+      { label: 'Connect a source', action: 'integrations' },
       { label: 'Back to menu', action: 'whatIsPing' },
     ],
     demoActions: [
@@ -106,7 +106,7 @@ function getNotificationsAgainResponse(): ResponseNode {
       buttons: [
         { label: 'Trigger another', action: 'notifications_again' },
         { label: 'What is Ping?', action: 'whatIsPing' },
-        { label: 'Connect your agent', action: 'integrate_openclaw' },
+        { label: 'Connect a source', action: 'integrations' },
       ],
       demoActions: [
         { type: 'triggerSound', payload: 'confirm' },
@@ -118,7 +118,7 @@ function getNotificationsAgainResponse(): ResponseNode {
       buttons: [
         { label: 'Trigger another', action: 'notifications_again' },
         { label: 'Integrations', action: 'integrations' },
-        { label: 'Connect your agent', action: 'integrate_openclaw' },
+        { label: 'Connect a source', action: 'integrations' },
       ],
       demoActions: [{ type: 'triggerEyes', payload: 'thinking' }],
     },
@@ -127,7 +127,7 @@ function getNotificationsAgainResponse(): ResponseNode {
       buttons: [
         { label: 'Trigger another', action: 'notifications_again' },
         { label: 'Privacy', action: 'privacy' },
-        { label: 'Connect your agent', action: 'integrate_openclaw' },
+        { label: 'Connect a source', action: 'integrations' },
       ],
       demoActions: [
         { type: 'triggerSound', payload: 'receive' },
@@ -140,9 +140,9 @@ function getNotificationsAgainResponse(): ResponseNode {
 
 function getIntegrationsResponse(): ResponseNode {
   return {
-    text: "Ping connects to your AI agents and external services. Which are you interested in?",
+    text: "Ping takes events from just about anything. Which do you want?",
     buttons: [
-      { label: 'OpenClaw (local)', action: 'integrate_openclaw' },
+      { label: 'Local bridge', action: 'integrate_openclaw' },
       { label: 'Webhooks', action: 'integrate_webhooks' },
       { label: 'Other', action: 'integrate_other' },
       { label: 'Just exploring', action: 'see_demo' },
@@ -153,7 +153,7 @@ function getIntegrationsResponse(): ResponseNode {
 
 function getOpenClawResponse(): ResponseNode {
   return {
-    text: "OpenClaw connection is local-only by default — no tokens stored in the browser. You run a small bridge on your computer, then Ping connects to it via WebSocket at ws://127.0.0.1:3939/ping.",
+    text: "The local bridge keeps everything on your machine — no tokens in the browser, nothing stored in the cloud. You run a small bridge, then Ping connects over WebSocket at ws://127.0.0.1:3939/ping. OpenClaw ships one, but any local process that speaks the protocol works.",
     buttons: [
       { label: 'Open setup steps', action: 'openclaw_setup' },
       { label: 'Back to menu', action: 'whatIsPing' },
@@ -179,7 +179,7 @@ function getOpenClawSetupResponse(): ResponseNode {
 function getWebhooksResponse(): ResponseNode {
   window.dispatchEvent(new CustomEvent('ping:openWebhookPanel'));
   return {
-    text: "Webhooks let external services (Zapier, Make, GitHub, Stripe, your own scripts) send events to Ping. Each event triggers eye reactions, sounds, and overlays. I've opened the setup panel — you can also browse connector templates at /connectors.",
+    text: "Point GitHub, Stripe or Vercel straight at Ping — it understands their payloads as they come, no middleware. Anything else that can POST JSON works too. I have opened the setup panel for you.",
     buttons: [
       { label: 'Browse Connectors', action: 'open_connectors' },
       { label: 'Back to integrations', action: 'integrations' },
@@ -191,9 +191,9 @@ function getWebhooksResponse(): ResponseNode {
 
 function getOtherIntegrationResponse(): ResponseNode {
   return {
-    text: "We're building more integrations. For now, OpenClaw is the primary local-first connection. Want to try it?",
+    text: "GitHub, Stripe and Vercel work by pasting a URL. Anything else that can POST JSON works too. Want the webhook URL?",
     buttons: [
-      { label: 'OpenClaw (local)', action: 'integrate_openclaw' },
+      { label: 'Local bridge', action: 'integrate_openclaw' },
       { label: 'Back to menu', action: 'whatIsPing' },
       { label: 'Keep exploring', action: 'see_demo' },
     ],
@@ -206,7 +206,7 @@ function getPrivacyResponse(): ResponseNode {
     text: "Ping never stores tokens in the browser. OpenClaw runs locally on your machine. This demo is fully sandboxed — no data leaves your browser.",
     buttons: [
       { label: 'Back to demo', action: 'see_demo' },
-      { label: 'Connect OpenClaw', action: 'integrate_openclaw' },
+      { label: 'Connect a source', action: 'integrations' },
     ],
     demoActions: [{ type: 'triggerEyes', payload: 'idle' }],
     module: 'privacy',
@@ -219,7 +219,7 @@ function getPricingResponse(): ResponseNode {
     buttons: [
       { label: 'Notifications', action: 'notifications' },
       { label: 'Integrations', action: 'integrations' },
-      { label: 'Connect OpenClaw', action: 'integrate_openclaw' },
+      { label: 'Connect a source', action: 'integrations' },
     ],
     module: 'whatIsPing',
   };
@@ -256,7 +256,7 @@ function getTroubleshootingResponse(): ResponseNode {
     buttons: [
       { label: 'Open setup steps', action: 'openclaw_setup' },
       { label: 'Back to menu', action: 'whatIsPing' },
-      { label: 'Connect OpenClaw', action: 'integrate_openclaw' },
+      { label: 'Connect a source', action: 'integrations' },
     ],
     module: 'integrations',
   };
@@ -605,7 +605,7 @@ function deliverResponse(node: ResponseNode) {
       (b) => b.action === 'integrate_openclaw' || b.action === 'connect_bridge'
     );
     if (!hasConnect) {
-      buttons.push({ label: 'Connect your agent', action: 'integrate_openclaw' });
+      buttons.push({ label: 'Connect a source', action: 'integrations' });
     }
   }
 

@@ -21,7 +21,8 @@ export function SchemaSection() {
             Dead-simple event schema
           </h2>
           <p className="text-center text-muted-foreground mb-10 max-w-md mx-auto">
-            Just POST JSON with a source, type, and title. That's it.
+            A title is all you need. Everything else is optional — and raw GitHub,
+            Stripe or Vercel payloads work as they come.
           </p>
         </motion.div>
 
@@ -33,12 +34,16 @@ export function SchemaSection() {
             </div>
             <pre className="px-5 py-4 text-sm font-mono text-foreground/85 overflow-x-auto leading-relaxed">
 {`{
-  "source": "my-agent",
-  "eventType": "success",
-  "title": "Task completed",
-  "body": "Processed 142 records in 3.2s",
-  "severity": 2,
-  "tags": ["pipeline", "data"]
+  "title": "Deployed to production"
+}
+
+// or, when you want to be explicit:
+{
+  "source": "my-app",
+  "eventType": "deploy",
+  "title": "Deployed to production",
+  "body": "build #42 in 38s",
+  "severity": 1
 }`}
             </pre>
           </div>

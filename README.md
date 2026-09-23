@@ -2,7 +2,7 @@
 
 # Ping
 
-**Open-source presence UI for AI agents**
+**Open-source notification visualizer**
 
 [![CI](https://github.com/ryhertel/pingsocialocca/actions/workflows/ci.yml/badge.svg)](https://github.com/ryhertel/pingsocialocca/actions/workflows/ci.yml)
 [![GitHub stars](https://img.shields.io/github/stars/ryhertel/pingsocialocca?style=social)](https://github.com/ryhertel/pingsocialocca)
@@ -17,14 +17,22 @@
 
 ## What is Ping?
 
-Ping is an always-on presence layer for AI agents — a lightweight UI that lets your agent show it's alive, listening, and thinking. Drop it into any product to give your AI a face, a heartbeat, and a real-time event feed.
+Ping gives your notifications a face. Point a webhook at it — a deploy, a payment, an
+alert, a line of text — and a pair of eyes reacts with an expression, a sound and a
+burst of colour.
+
+GitHub, Stripe and Vercel work by pasting a URL: Ping maps their payloads server-side, so
+there is no Zapier step in between. Anything else that can POST JSON works too, and the
+only required field is a title.
 
 ## Features
 
-- 🟢 **Live presence indicator** — animated face canvas that responds to agent state
-- 📡 **Real-time event feed** — stream events from any source via webhook
+- 👀 **Expressive face** — a canvas of eyes that emotes, with synthesized sound and particle spectacles
+- 🔌 **Direct webhooks** — GitHub, Stripe and Vercel payloads are adapted server-side; no middleware
+- 🔑 **No account** — one click mints a channel and a webhook URL you can paste anywhere
+- 📡 **Real-time event feed** — searchable, filterable, streamed over SSE
+- 🎚️ **Severity as intensity** — 0 is ambient and stays quiet, 3 wakes you up
 - 💬 **Docked chat** — conversational interface with markdown support
-- 🔌 **Connector system** — plug in Slack, Discord, GitHub, and more
 - 🎨 **Themeable** — multiple built-in themes with full customisation
 - 📱 **Mobile-first** — responsive PWA with haptics and pull-to-refresh
 - ⌨️ **Keyboard shortcuts** — power-user friendly
@@ -51,7 +59,25 @@ npm install
 npm run dev
 ```
 
-The app will be available at `http://localhost:8080`.
+The app will be available at `http://localhost:8080`. It starts reacting immediately in
+demo mode — no account, no configuration.
+
+## Sending events
+
+Click **Make it mine** to get a webhook URL, then:
+
+```bash
+curl -X POST "<your webhook URL>" \
+  -H "content-type: application/json" \
+  -d '{"title":"Invoice #204 paid"}'
+```
+
+Ping reads the title for keywords, so that one reacts with a ka-ching and a coin shower
+without any further configuration. For GitHub, Stripe or Vercel, paste the same URL into
+their webhook settings — their raw payloads are understood as they come.
+
+See [/docs](https://pingsocialocca.lovable.app/docs) for the full schema and per-connector
+setup.
 
 ## Contributing
 
