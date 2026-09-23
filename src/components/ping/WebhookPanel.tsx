@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { useIngestStore, getIngestUrlWithKey } from '@/stores/useIngestStore';
+import { useIngestStore, getIngestUrlWithKey, getIngestAuthHeaders, canSendEvents } from '@/stores/useIngestStore';
 import { routeEvent } from '@/lib/ingest/reactionRouter';
 import { executeReaction } from '@/lib/ingest/reactionExecutor';
 import { Copy, Check, Send, Trash2, RefreshCw, AlertTriangle, Eye, EyeOff, LayoutGrid } from 'lucide-react';
@@ -69,7 +69,7 @@ export function WebhookPanel({ open, onOpenChange }: WebhookPanelProps) {
   };
 
   const handleTestEvent = async () => {
-    if (!ingestUrl || !ingestSecret) return;
+    if (!ingestUrl || !canSendEvents()) return;
     setTesting(true);
     try {
       const testId = crypto.randomUUID();
@@ -84,7 +84,7 @@ export function WebhookPanel({ open, onOpenChange }: WebhookPanelProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-ping-secret': ingestSecret,
+          ...getIngestAuthHeaders(),
         },
         body: JSON.stringify(payload),
       });

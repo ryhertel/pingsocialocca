@@ -1,7 +1,19 @@
 /**
  * Ingest Store — Completely separate from usePingStore.
- * Manages webhook event ring buffer, secret, channel key, and realtime status.
- * Secret is memory-only by default; opt-in persistence via "rememberSecret" toggle.
+ * Manages webhook event ring buffer, credentials, channel key, and stream status.
+ *
+ * Two different credentials live here, and conflating them would be a real
+ * hazard, so they are stored under different keys:
+ *
+ *   ingestSecret  the legacy global server secret. Grants write access to every
+ *                 channel, so it stays in sessionStorage (tab-scoped, cleared on
+ *                 close) and is never put in a URL.
+ *   writeToken    a per-channel token minted by claim-channel. Scoped to one
+ *                 channel, so it is safe to place in a webhook URL — which is
+ *                 required, because GitHub, Stripe, Vercel, Sentry and Linear
+ *                 cannot send custom headers. Persisted in localStorage next to
+ *                 the read token so every tab shares one set.
+ *
  * Channel key is always persisted (not sensitive — scopes event routing only).
  */
 
@@ -11,6 +23,7 @@ import type { NormalizedEvent } from '@/lib/ingest/types';
 const MAX_EVENTS = 200;
 const STORAGE_KEY = 'ping-ingest-secret';
 const CHANNEL_KEY_STORAGE = 'ping-channel-key';
+const CREDENTIALS_STORAGE = 'ping-channel-credentials';
 
 // Secret is stored in sessionStorage (scoped to the browser tab) rather than
 // localStorage, so it is cleared on tab/window close and is not accessible
@@ -42,6 +55,38 @@ const secretStore = {
   },
 };
 
+interface StoredCredentials {
+  channelKey: string;
+  writeToken: string;
+  readToken: string;
+}
+
+/**
+ * Per-channel tokens, shared across tabs on purpose: the read token has exactly
+ * one stored hash server-side, so a per-tab token would mean each new tab
+ * invalidated the last one.
+ */
+const credentialStore = {
+  load(channelKey: string): { writeToken: string; readToken: string } | null {
+    try {
+      const raw = localStorage.getItem(CREDENTIALS_STORAGE);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as StoredCredentials;
+      // Tokens are only meaningful for the channel they were minted for.
+      if (!parsed || parsed.channelKey !== channelKey) return null;
+      return { writeToken: parsed.writeToken ?? '', readToken: parsed.readToken ?? '' };
+    } catch {
+      return null;
+    }
+  },
+  save(credentials: StoredCredentials) {
+    try { localStorage.setItem(CREDENTIALS_STORAGE, JSON.stringify(credentials)); } catch { /* storage unavailable */ }
+  },
+  clear() {
+    try { localStorage.removeItem(CREDENTIALS_STORAGE); } catch { /* storage unavailable */ }
+  },
+};
+
 function generateChannelKey(): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
@@ -60,6 +105,9 @@ function loadOrCreateChannelKey(): string {
   }
 }
 
+const initialChannelKey = loadOrCreateChannelKey();
+const initialCredentials = credentialStore.load(initialChannelKey);
+
 interface IngestState {
   events: NormalizedEvent[];
   lastEventAt: number | null;
@@ -70,6 +118,7 @@ interface IngestState {
   channelKey: string;
   realtimeConnected: boolean;
   readToken: string | null;
+  writeToken: string;
   secureStreamConnected: boolean;
 
   pushEvent: (event: NormalizedEvent) => void;
@@ -83,6 +132,9 @@ interface IngestState {
   regenerateChannelKey: () => string;
   setRealtimeConnected: (value: boolean) => void;
   setReadToken: (token: string | null) => void;
+  setWriteToken: (token: string) => void;
+  /** Adopt a freshly claimed channel and its tokens in one atomic step. */
+  adoptChannel: (credentials: StoredCredentials) => void;
   setSecureStreamConnected: (value: boolean) => void;
 }
 
@@ -101,9 +153,10 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
   })(),
   connected: false,
   showBodyPreview: false,
-  channelKey: loadOrCreateChannelKey(),
+  channelKey: initialChannelKey,
   realtimeConnected: false,
-  readToken: null,
+  readToken: initialCredentials?.readToken || null,
+  writeToken: initialCredentials?.writeToken ?? '',
   secureStreamConnected: false,
 
   pushEvent: (event) =>
@@ -152,14 +205,21 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
   },
 
   disconnect: () => {
-    set({ ingestSecret: '', connected: false, events: [], lastEventAt: null });
+    set({ ingestSecret: '', connected: false, events: [], lastEventAt: null, readToken: null, writeToken: '' });
     secretStore.remove();
+    credentialStore.clear();
   },
 
   setChannelKey: (key) => {
     const normalized = key.toLowerCase();
+    const previous = get().channelKey;
     set({ channelKey: normalized });
     try { localStorage.setItem(CHANNEL_KEY_STORAGE, normalized); } catch { /* storage unavailable */ }
+    // Tokens belong to the channel they were minted for.
+    if (previous !== normalized) {
+      set({ readToken: null, writeToken: '' });
+      credentialStore.clear();
+    }
   },
 
   regenerateChannelKey: () => {
@@ -169,7 +229,35 @@ export const useIngestStore = create<IngestState>()((set, get) => ({
   },
 
   setRealtimeConnected: (value) => set({ realtimeConnected: value }),
-  setReadToken: (token) => set({ readToken: token }),
+
+  setReadToken: (token) => {
+    set({ readToken: token });
+    const { channelKey, writeToken } = get();
+    if (token) {
+      credentialStore.save({ channelKey, writeToken, readToken: token });
+    }
+  },
+
+  setWriteToken: (token) => {
+    set({ writeToken: token });
+    const { channelKey, readToken } = get();
+    credentialStore.save({ channelKey, writeToken: token, readToken: readToken ?? '' });
+  },
+
+  adoptChannel: ({ channelKey, writeToken, readToken }) => {
+    const normalized = channelKey.toLowerCase();
+    try { localStorage.setItem(CHANNEL_KEY_STORAGE, normalized); } catch { /* storage unavailable */ }
+    credentialStore.save({ channelKey: normalized, writeToken, readToken });
+    set({
+      channelKey: normalized,
+      writeToken,
+      readToken,
+      connected: true,
+      events: [],
+      lastEventAt: null,
+    });
+  },
+
   setSecureStreamConnected: (value) => set({ secureStreamConnected: value }),
 }));
 
@@ -190,4 +278,38 @@ export function getIngestUrlWithKey(): string {
   if (!base) return '';
   const channelKey = useIngestStore.getState().channelKey;
   return `${base}?key=${channelKey}`;
+}
+
+/**
+ * The full webhook URL, token included, for pasting into a provider that cannot
+ * send custom headers. Falls back to the key-only URL when no token is claimed.
+ */
+export function getWebhookUrl(): string {
+  const base = getIngestUrlWithKey();
+  if (!base) return '';
+  const writeToken = useIngestStore.getState().writeToken;
+  return writeToken ? `${base}&t=${writeToken}` : base;
+}
+
+/** True once this browser holds per-channel credentials rather than the global secret. */
+export function hasClaimedChannel(): boolean {
+  const { writeToken, readToken } = useIngestStore.getState();
+  return writeToken.length > 0 && !!readToken;
+}
+
+/**
+ * Auth headers for writing to the ingest endpoint. Prefers the per-channel write
+ * token; falls back to the legacy global secret for channels that predate it.
+ */
+export function getIngestAuthHeaders(): Record<string, string> {
+  const { writeToken, ingestSecret } = useIngestStore.getState();
+  if (writeToken) return { 'x-ping-write-token': writeToken };
+  if (ingestSecret) return { 'x-ping-secret': ingestSecret };
+  return {};
+}
+
+/** Whether this browser holds any credential that can post events. */
+export function canSendEvents(): boolean {
+  const { writeToken, ingestSecret } = useIngestStore.getState();
+  return writeToken.length > 0 || ingestSecret.length > 0;
 }

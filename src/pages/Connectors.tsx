@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useIngestStore, getIngestUrlWithKey } from '@/stores/useIngestStore';
+import { useIngestStore, getIngestUrlWithKey, getIngestAuthHeaders, canSendEvents } from '@/stores/useIngestStore';
 import { routeEvent } from '@/lib/ingest/reactionRouter';
 import { executeReaction } from '@/lib/ingest/reactionExecutor';
 import { ConnectorPanel } from '@/components/ping/ConnectorPanel';
@@ -54,8 +54,8 @@ export default function Connectors() {
   const ingestUrl = getIngestUrlWithKey();
 
   const handleTestEvent = async (template: ConnectorTemplate) => {
-    if (!ingestUrl || !ingestSecret) {
-      toast.error('Set your ingest secret first (Webhooks panel on main page)');
+    if (!ingestUrl || !canSendEvents()) {
+      toast.error('Create a channel or set an ingest secret first');
       return;
     }
     setTestingId(template.id);
@@ -66,7 +66,7 @@ export default function Connectors() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-ping-secret': ingestSecret,
+          ...getIngestAuthHeaders(),
         },
         body: JSON.stringify(payload),
       });

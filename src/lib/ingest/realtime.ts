@@ -12,10 +12,25 @@
 import { useIngestStore } from '@/stores/useIngestStore';
 import { routeEvent } from '@/lib/ingest/reactionRouter';
 import { executeReaction } from '@/lib/ingest/reactionExecutor';
-import { openSecureStream, fetchEventsSecure } from '@/lib/ingest/privateReadClient';
+import { openSecureStream, fetchEventsSecure, issueReadToken } from '@/lib/ingest/privateReadClient';
 import type { NormalizedEvent } from '@/lib/ingest/types';
 
 let cleanupFn: (() => void) | null = null;
+
+/**
+ * Re-mint the read token after the server rejects the stored one — a rotation,
+ * a wipe, or another device having taken the single stored hash. Ownership is
+ * proved with the channel write token, falling back to the legacy global secret.
+ */
+async function renewReadToken(channelKey: string): Promise<string | null> {
+  const store = useIngestStore.getState();
+  const fresh = await issueReadToken(channelKey, {
+    writeToken: store.writeToken || undefined,
+    ingestSecret: store.ingestSecret || undefined,
+  });
+  if (fresh) store.setReadToken(fresh);
+  return fresh;
+}
 
 export function startSecureStream(channelKey: string, readToken: string): void {
   // Clean up any existing stream
@@ -33,6 +48,7 @@ export function startSecureStream(channelKey: string, readToken: string): void {
     (connected: boolean) => {
       useIngestStore.getState().setSecureStreamConnected(connected);
     },
+    () => renewReadToken(channelKey),
   );
 }
 
