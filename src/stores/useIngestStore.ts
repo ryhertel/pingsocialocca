@@ -8,8 +8,8 @@
  *   ingestSecret  the legacy global server secret. Grants write access to every
  *                 channel, so it stays in sessionStorage (tab-scoped, cleared on
  *                 close) and is never put in a URL.
- *   writeToken    a per-channel token minted by claim-channel. Scoped to one
- *                 channel, so it is safe to place in a webhook URL — which is
+ *   writeToken    a per-channel token minted when a channel is claimed. Scoped
+ *                 to one channel, so it is safe to place in a webhook URL — which is
  *                 required, because GitHub, Stripe, Vercel, Sentry and Linear
  *                 cannot send custom headers. Persisted in localStorage next to
  *                 the read token so every tab shares one set.
