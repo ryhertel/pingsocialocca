@@ -107,7 +107,8 @@ export const connectorTemplates: ConnectorTemplate[] = [
     name: 'Sentry',
     description: 'Error alerts and issue notifications.',
     icon: 'Bug',
-    transport: 'generic',
+    transport: 'direct',
+    adapterId: 'sentry',
     setupSteps: [
       'In Sentry, go to Settings → Alerts → create or edit an alert rule.',
       'Add a webhook action pointing at the URL below.',
@@ -121,7 +122,7 @@ export const connectorTemplates: ConnectorTemplate[] = [
       body: 'Cannot read properties of undefined',
     },
     keywordsSupported: ['error', 'exception', 'crash', 'incident', 'resolved', 'regression'],
-    notes: 'A dedicated Sentry adapter is coming. Until then Sentry\'s payload still lands as an event — the keyword routing reads "error" and "exception" from the text and reacts correctly. Set severity to 3 on the alert payload if you want it to override everything else.',
+    notes: 'Ping reads Sentry payloads directly, both the Integration Platform shape and the older flat webhook. The level drives the intensity: fatal becomes an incident that overrides every keyword, error needs attention, info stays quiet. Resolving an issue reads as good news rather than another alarm.',
     securityCopy: 'Stack traces are long and often contain paths and tokens. Ping stores a truncated title and body with URLs, tokens and code blocks redacted server-side.',
   },
   {
@@ -129,7 +130,8 @@ export const connectorTemplates: ConnectorTemplate[] = [
     name: 'Linear',
     description: 'Issue and project updates from your team\'s workflow.',
     icon: 'SquareKanban',
-    transport: 'generic',
+    transport: 'direct',
+    adapterId: 'linear',
     setupSteps: [
       'In Linear, go to Settings → API → Webhooks → New webhook.',
       'Paste the webhook URL below.',
@@ -143,7 +145,7 @@ export const connectorTemplates: ConnectorTemplate[] = [
       body: 'Fix auth token refresh',
     },
     keywordsSupported: ['issue', 'bug', 'blocked', 'done', 'assigned', 'in progress'],
-    notes: 'A dedicated Linear adapter is coming. Linear\'s payload already carries readable text, so keyword routing handles it: "done" celebrates, "bug" and "blocked" read as warnings.',
+    notes: 'Ping reads Linear payloads directly. An issue reaching a done state celebrates; a bug or blocked label raises it to a warning; comments name who wrote them. Deletions are ignored rather than shown.',
     securityCopy: 'Issue titles may contain internal details. Everything is redacted server-side and Ping stores only what it displays.',
   },
   {
@@ -152,10 +154,11 @@ export const connectorTemplates: ConnectorTemplate[] = [
     description: 'Messages, mentions and alerts from your workspace.',
     icon: 'MessageSquare',
     transport: 'middleware',
+    adapterId: 'slack',
     setupSteps: [
       'Slack needs a Slack app, not just a URL — outbound webhooks alone will not do it.',
       'Create an app at api.slack.com, enable Event Subscriptions and point it at the URL below.',
-      'Slack sends a url_verification challenge first; Ping answers it automatically.',
+      'Slack sends a url_verification challenge first — Ping answers it automatically, so the endpoint verifies without you doing anything.',
       'Subscribe to the message events you want, then install the app to your workspace.',
       'Simplest alternative: a Zapier or Make step that forwards matching messages as JSON.',
     ],
@@ -166,7 +169,7 @@ export const connectorTemplates: ConnectorTemplate[] = [
       body: 'heads up, deploy going out in 10',
     },
     keywordsSupported: ['message', 'mention', 'thread', 'alert', 'channel'],
-    notes: 'More setup than the others because Slack requires an app with event subscriptions. Worth filtering hard — an unfiltered channel will make Ping react constantly.',
+    notes: 'More setup than the others because Slack requires an app with event subscriptions, but Ping handles the verification handshake and maps the events itself. Bot messages and edits are ignored, so Ping cannot end up reacting to its own kind in a loop. A direct mention counts as needing attention; an ordinary channel message does not. Worth filtering hard — an unfiltered busy channel will make Ping react constantly.',
     securityCopy: 'Never give Ping a Slack bot token. It only needs the events forwarded to its URL. Filter at the Slack end so private conversations are never sent.',
   },
   {
