@@ -99,5 +99,5 @@ This project is licensed under the [MIT License](LICENSE).
 ---
 
 <div align="center">
-  Made by <a href="https://socialocca.io">socialocca.io</a>
+  A product by <a href="https://socialocca.com">Socialocca</a>
 </div>
