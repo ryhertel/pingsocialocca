@@ -1,8 +1,9 @@
 name: CI
 
 on:
+  # Not filtered to [main], so a stacked PR based on another feature branch
+  # still gets checked instead of running for the first time after its base merges.
   pull_request:
-    branches: [main]
 
 jobs:
   lint-and-build:
