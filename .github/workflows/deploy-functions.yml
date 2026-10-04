@@ -1,0 +1,113 @@
+name: Deploy edge functions
+
+# Edge functions were not deploying at all. Thirteen PRs merged while the running
+# functions stayed on May's code: ingest still enforced a 2KB payload cap long
+# after the repo said 96KB, and the self-serve claim endpoint returned 401 for a
+# feature that had been merged weeks earlier. Frontend deploys worked the whole
+# time, which is what made it so easy to miss.
+#
+# This closes that gap. Merging a change to supabase/functions now deploys it.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - 'supabase/config.toml'
+      - '.github/workflows/deploy-functions.yml'
+  # Lets the backlog be flushed, or a failed deploy retried, without an empty commit.
+  workflow_dispatch:
+
+concurrency:
+  # Never let two deploys race; a later merge should win.
+  group: deploy-edge-functions
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: hmbsdwvykoxjzmowxvvp
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the access token exists
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN is not set. Add it under Settings → Secrets and variables → Actions, from https://supabase.com/dashboard/account/tokens"
+            exit 1
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy every function
+        run: |
+          set -euo pipefail
+          deployed=0
+          for dir in supabase/functions/*/; do
+            fn="$(basename "$dir")"
+            # _shared holds library code, not a function.
+            [ "$fn" = "_shared" ] && continue
+            [ -f "$dir/index.ts" ] || { echo "skipping $fn — no index.ts"; continue; }
+
+            echo "::group::deploying $fn"
+            # Discovered from the directory listing rather than a hardcoded list,
+            # so a NEW function deploys the first time it is merged. A new
+            # directory never deploying is exactly how claim-channel sat at 404
+            # through three separate attempts to ship it.
+            #
+            # --no-verify-jwt is explicit: every function here is public by design
+            # and supabase/config.toml says so. Relying on the config being picked
+            # up would mean a deploy could silently turn JWT verification on and
+            # 401 every inbound webhook — the precise kind of quiet breakage this
+            # workflow exists to stop.
+            supabase functions deploy "$fn" \
+              --project-ref "$PROJECT_REF" \
+              --no-verify-jwt
+            deployed=$((deployed + 1))
+            echo "::endgroup::"
+          done
+          echo "deployed $deployed function(s)"
+
+      - name: Verify the deploy actually took effect
+        run: |
+          set -uo pipefail
+          PING="https://${PROJECT_REF}.supabase.co/functions/v1"
+
+          # A 405 from the endpoint proves only that *some* version is running —
+          # the old code returns 405 too. That mistake is why this went unnoticed
+          # for weeks. So test for behaviour only the current code has: the
+          # payload cap moved from 2KB to 96KB, so a 5KB body must get past the
+          # size check and fail on auth instead.
+          node -e "require('fs').writeFileSync('payload.json', JSON.stringify({source:'ci',eventType:'message',title:'deploy check',body:'y'.repeat(5000)}))"
+
+          code=$(curl -s -o response.txt -w '%{http_code}' \
+            -X POST "$PING/ingest?key=0123456789abcdef0123456789abcdef" \
+            -H 'content-type: application/json' \
+            --data-binary @payload.json)
+
+          echo "HTTP $code — $(cat response.txt)"
+
+          if [ "$code" = "413" ]; then
+            echo "::error::Deploy reported success but ingest still enforces the old 2KB cap, so the new code is not live."
+            exit 1
+          fi
+          if [ "$code" != "401" ]; then
+            echo "::warning::Expected 401 (passes the size cap, fails auth on an unclaimed channel) but got $code. Not necessarily broken, worth a look."
+          fi
+
+          # The write-token header arrived with the per-channel auth work; its
+          # absence means a pre-#6 ingest is still running.
+          headers=$(curl -s -D- -o /dev/null -X OPTIONS "$PING/ingest" \
+            -H 'Origin: https://example.com' \
+            -H 'Access-Control-Request-Method: POST')
+          if echo "$headers" | grep -iq 'x-ping-write-token'; then
+            echo "x-ping-write-token advertised — per-channel auth is live"
+          else
+            echo "::error::ingest does not advertise x-ping-write-token, so the deployed code predates the per-channel auth work."
+            exit 1
+          fi
