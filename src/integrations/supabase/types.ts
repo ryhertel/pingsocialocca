@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -53,21 +53,39 @@ export type Database = {
       ping_channels: {
         Row: {
           channel_key: string
+          claim_ip_prefix: string | null
           created_at: string
+          email_alias: string | null
+          email_rotated_at: string | null
+          label: string | null
           read_token_hash: string
           rotated_at: string | null
+          write_rotated_at: string | null
+          write_token_hash: string | null
         }
         Insert: {
           channel_key: string
+          claim_ip_prefix?: string | null
           created_at?: string
+          email_alias?: string | null
+          email_rotated_at?: string | null
+          label?: string | null
           read_token_hash: string
           rotated_at?: string | null
+          write_rotated_at?: string | null
+          write_token_hash?: string | null
         }
         Update: {
           channel_key?: string
+          claim_ip_prefix?: string | null
           created_at?: string
+          email_alias?: string | null
+          email_rotated_at?: string | null
+          label?: string | null
           read_token_hash?: string
           rotated_at?: string | null
+          write_rotated_at?: string | null
+          write_token_hash?: string | null
         }
         Relationships: []
       }
