@@ -1,12 +1,10 @@
+# Deploy edge functions from current repo code
 
-
-## Add CODE_OF_CONDUCT.md
-
-Create `CODE_OF_CONDUCT.md` at the project root containing the full [Contributor Covenant v2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/) text. This is the standard adopted by most open-source projects.
-
-### Details
-- Single file creation: `CODE_OF_CONDUCT.md`
-- Full unmodified Contributor Covenant v2.1 text
-- Contact method placeholder set to "[INSERT CONTACT METHOD]" (can be updated later with a real email or link)
-- No other files need changes
-
+## Steps
+1. Deploy `ingest`, `issue-read-token`, `events-read`, `events-stream` directly with the deploy tool. No logic changes.
+2. Only if a direct deploy fails: add a one-line comment at the top of each `index.ts` and redeploy.
+3. Verify:
+   - POST a ~5KB JSON body to `/functions/v1/ingest?key=0123456789abcdef0123456789abcdef`. Expect 401, not 413.
+   - OPTIONS preflight on `ingest` should list `x-ping-write-token` in its allowed headers.
+   - Call `issue-read-token` with the `claim` action. It should no longer return the old 401 for an unknown action.
+4. Report the status codes I get back.
