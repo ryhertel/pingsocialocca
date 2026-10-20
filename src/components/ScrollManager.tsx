@@ -12,6 +12,7 @@ import { useLocation, useNavigationType } from 'react-router-dom';
  *   new page, #section      → that section, instantly (arriving, not travelling)
  *   same page, #section     → glide if it is close, otherwise go straight there
  *   back / forward          → leave it to the browser, which restores where you were
+ *   fresh load, #section    → that section (the browser looked before it existed)
  */
 const MAX_GLIDE_SCREENS = 1.5;
 
@@ -21,16 +22,22 @@ export function ScrollManager() {
   const previousPath = useRef<string | null>(null);
 
   useLayoutEffect(() => {
+    const firstLoad = previousPath.current === null;
     const samePage = previousPath.current === pathname;
     previousPath.current = pathname;
 
-    if (navigationType === 'POP') return;
-
     let id = '';
     try { id = decodeURIComponent(hash.slice(1)); } catch { /* malformed hash such as #% */ }
+
+    // The router reports a fresh page load as POP too. On a real back/forward the
+    // browser restores the position itself; on a fresh load of /docs#email it
+    // cannot, because the browser looks for the anchor before React has drawn it.
+    if (navigationType === 'POP' && !(firstLoad && id)) return;
+
     const target = id ? document.getElementById(id) : null;
 
     if (!target) {
+      if (firstLoad) return;
       // A link to a section that is not on this page leaves you where you are.
       if (!samePage || !hash) window.scrollTo(0, 0);
       return;

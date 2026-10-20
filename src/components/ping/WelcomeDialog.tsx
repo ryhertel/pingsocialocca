@@ -27,16 +27,13 @@ export function WelcomeDialog({ open, onOpenChange }: WelcomeDialogProps) {
           <img src="/ping-square.png" alt="Ping" className="h-16 w-16 rounded-2xl" />
           <DialogTitle className="text-xl">Meet Ping</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground leading-relaxed">
-            Ping is your always-on presence companion. An expressive face that listens,
-            reacts, and keeps you company. Connect it to a local AI agent or try Demo Mode
-            to see it come alive.
+            A face for your notifications. Point a webhook or an email at Ping — a deploy,
+            a payment, an alert — and it reacts with an expression, a sound and a burst of
+            colour.
           </DialogDescription>
           <p className="text-xs text-muted-foreground/80 leading-relaxed">
-            To connect to a local agent bridge, click <strong>Bridge</strong> and
-            enter{' '}
-            <code className="rounded bg-muted px-1 py-0.5 text-[11px] font-mono">
-              ws://127.0.0.1:3939/ping
-            </code>.
+            It is running a short demo now. Press <strong>Make it mine</strong> for your own
+            webhook URL and email address. No account needed.
           </p>
         </DialogHeader>
         <Button onClick={dismiss} className="w-full">

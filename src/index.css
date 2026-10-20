@@ -342,3 +342,31 @@
    mode. Text in it is darkened instead: a neon accent on a pale page fails
    contrast for every preset. */
 .light .text-primary { color: color-mix(in srgb, hsl(var(--primary)) 58%, #000); }
+
+/* The app's face sits in the same device as the home page on a large screen.
+   Below that the face keeps the whole screen: on a phone it is the device. */
+@media (min-width: 1024px) {
+  .app-device {
+    border-radius: 40px;
+    padding: 16px;
+    background: hsl(var(--device-shell));
+    box-shadow:
+      inset 0 2px 0 rgb(255 255 255 / 0.5),
+      inset 0 -6px 0 hsl(var(--device-edge)),
+      0 30px 60px -24px rgb(0 0 0 / 0.55),
+      0 0 0 1px rgb(0 0 0 / 0.35);
+  }
+  .light .app-device {
+    box-shadow:
+      inset 0 2px 0 rgb(255 255 255 / 0.08),
+      inset 0 -6px 0 hsl(var(--device-edge)),
+      0 30px 60px -24px rgb(15 23 42 / 0.4),
+      0 0 0 1px rgb(15 23 42 / 0.2);
+  }
+  .app-device-screen {
+    border-radius: 28px;
+    overflow: hidden;
+    background: #07090b;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05), inset 0 10px 30px rgb(0 0 0 / 0.8);
+  }
+}

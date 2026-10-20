@@ -147,3 +147,49 @@ describe('emailAdapter — safety', () => {
     expect(redact(e.body!)).toContain('[link]');
   });
 });
+
+describe('emailAdapter — forwarding confirmation', () => {
+  // Gmail will not auto-forward to a new address until a code it emails there is
+  // entered. Trimming that email to its first line used to hide the code, which
+  // made forwarding to Ping impossible to set up.
+  const gmailConfirmation = {
+    from: 'Gmail Team <forwarding-noreply@google.com>',
+    subject: '(#123456789) Gmail Forwarding Confirmation - Receive Mail from ryan@example.com',
+    text: [
+      'ryan@example.com has requested to automatically forward mail to your email',
+      'address 83ae121e943db44c6dd9d7c2@in.pingreact.com.',
+      '',
+      'Confirmation code: 123456789',
+      '',
+      'To allow ryan@example.com to automatically forward mail to your address,',
+      'please click the link below to confirm the request:',
+      'https://mail-settings.google.com/mail/vf-%5BANGjdJ9example%5D',
+    ].join('\n'),
+  };
+
+  it('puts the code in the title, where it can be read', () => {
+    const e = eventOf(adaptRequest(emailReq(gmailConfirmation)));
+    expect(e.title).toBe('Forwarding confirmation code: 123456789');
+    expect(e.tags).toContain('forwarding');
+    expect(e.severity).toBe(2);
+  });
+
+  it('keeps the code through redaction, which strips the link', () => {
+    const e = eventOf(adaptRequest(emailReq(gmailConfirmation)));
+    expect(redact(e.title)).toContain('123456789');
+  });
+
+  it('finds the code in the subject when the text has none', () => {
+    const e = eventOf(adaptRequest(emailReq({ ...gmailConfirmation, text: 'Please confirm forwarding.' })));
+    expect(e.title).toBe('Forwarding confirmation code: 123456789');
+  });
+
+  it('leaves an ordinary email that mentions forwarding alone', () => {
+    const e = eventOf(adaptRequest(emailReq({
+      from: 'a@b.com',
+      subject: 'Please confirm',
+      text: 'Can you forward me the order 12345678 details?',
+    })));
+    expect(e.title).toBe('Please confirm');
+  });
+});

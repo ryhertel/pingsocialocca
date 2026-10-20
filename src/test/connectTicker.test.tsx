@@ -64,7 +64,7 @@ describe('advance', () => {
 
 describe('ticker items', () => {
   it('covers every connector, so a new one shows up automatically', () => {
-    expect(TICKER_ITEMS.map((i) => i.id)).toEqual(connectorTemplates.map((t) => t.id));
+    expect(TICKER_ITEMS.map((i) => i.id)).toEqual([...connectorTemplates.map((t) => t.id), 'email']);
   });
 
   it('gives every item a line to show', () => {

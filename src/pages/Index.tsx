@@ -27,7 +27,7 @@ import { usePingStore } from '@/stores/usePingStore';
 import { useIngestStore } from '@/stores/useIngestStore';
 import { startSecureStream, stopSecureStream, fetchRecentEventsSecure } from '@/lib/ingest/realtime';
 import { issueReadToken } from '@/lib/ingest/privateReadClient';
-import { startScriptedDemo, stopScriptedDemo } from '@/lib/demoScriptEngine';
+import { startScriptedDemo, stopScriptedDemo, stopAmbientReel } from '@/lib/demoScriptEngine';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLandscape } from '@/hooks/use-landscape';
 import { Button } from '@/components/ui/button';
@@ -38,7 +38,9 @@ import {
 import {
   Tooltip, TooltipContent, TooltipTrigger,
 } from '@/components/ui/tooltip';
-import pingLogo from '@/assets/ping-logo-white.png';
+import { PingWordmark } from '@/components/landing/PingWordmark';
+import { ReadoutPanel } from '@/components/ping/ReadoutPanel';
+import { StatusReadings } from '@/components/ping/StatusReadings';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -138,6 +140,13 @@ const Index = () => {
     return () => stopScriptedDemo();
   }, [connectionMode]);
 
+  // Someone with a channel of their own is watching real events. The ambient
+  // reel is for first-time visitors; left running, it prints made-up events into
+  // the readout between real ones.
+  useEffect(() => {
+    if (writeToken) stopAmbientReel();
+  }, [writeToken, connectionMode]);
+
   // Privacy Lock: inactivity timer
   const inactivityTimer = useRef<number | null>(null);
   const lastResetTs = useRef(Date.now());
@@ -202,28 +211,30 @@ const Index = () => {
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:text-sm focus:font-medium">
         Skip to content
       </a>
-      <h1 className="sr-only">Ping — AI Agent Presence</h1>
+      <h1 className="sr-only">Ping — a face for your notifications</h1>
       {/* Header */}
       <header
-        className="flex-none flex items-center justify-between px-4 py-2 z-10"
+        className="flex-none flex items-center justify-between gap-4 px-4 lg:px-5 py-2 z-10 border-b border-border/50"
         style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
       >
-        <div className="flex items-center gap-3">
-          <img
-            src={pingLogo}
-            alt="Ping — AI Agent Presence Logo"
-            className="h-8 cursor-pointer select-none opacity-90 hover:opacity-100 transition-opacity"
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
             onClick={() => navigate('/')}
-          />
+            aria-label="Ping home"
+            className="shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <PingWordmark />
+          </button>
           <StatusChip />
-          {isDemoMode && (
+          {isDemoMode && !writeToken && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge
                   variant="outline"
-                  className="text-[10px] px-2 py-0.5 border-primary/30 text-muted-foreground cursor-help hidden sm:inline-flex"
+                  className="font-mono text-[10px] tracking-[0.08em] px-2 py-0.5 border-border/60 text-muted-foreground cursor-help hidden sm:inline-flex"
                 >
-                  Demo Mode (scripted)
+                  DEMO · SCRIPTED
                 </Badge>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-xs max-w-[200px]">
@@ -231,18 +242,19 @@ const Index = () => {
               </TooltipContent>
             </Tooltip>
           )}
-          {!writeToken && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowClaimChannel(true)}
-              className="h-6 rounded-full px-2.5 text-[11px] text-[hsl(var(--ping-accent))] hover:bg-[hsl(var(--ping-accent))]/10"
-            >
+          {/* After claiming, this is how you find your URL and email address again. */}
+          {writeToken ? (
+            <Button variant="outline" size="sm" onClick={() => setShowClaimChannel(true)} className="h-8 rounded-full px-3 text-xs shrink-0">
+              My channel
+            </Button>
+          ) : (
+            <Button size="sm" onClick={() => setShowClaimChannel(true)} className="h-8 rounded-full px-3 text-xs shrink-0">
               Make it mine
             </Button>
           )}
         </div>
-        <div>
+        <StatusReadings className="hidden xl:flex" />
+        <div className="shrink-0">
           {isMobile ? (
             <MobileMenu {...controlProps} />
           ) : (
@@ -252,10 +264,12 @@ const Index = () => {
       </header>
 
       {/* Main — face + chat */}
-      <main id="main-content" className="flex-1 min-h-0 relative flex">
+      <main id="main-content" className="flex-1 min-h-0 relative flex lg:gap-5 lg:p-5">
         <PullIndicator pulling={pulling} pullDistance={pullDistance} refreshing={refreshing} threshold={80} />
-        {/* Face area */}
-        <div className={`relative ${isDocked ? 'flex-1' : 'w-full'}`} data-tour="face">
+        {/* Face area. On a large screen it sits in the device, as on the home page;
+            on a phone the face keeps the whole screen. */}
+        <div className="relative flex-1 min-w-0 app-device" data-tour="face">
+          <div className="relative h-full w-full app-device-screen">
           <FaceCanvas />
           {!isDocked && !landscapeHideChat && <ChatStack />}
 
@@ -271,13 +285,16 @@ const Index = () => {
               <MessageCircle className="h-4 w-4" />
             </Button>
           )}
+          </div>
         </div>
 
-        {/* Docked chat panel */}
-        {isDocked && (
-          <div className="w-80 shrink-0 border-l border-border/30 bg-card/50 backdrop-blur-md flex flex-col">
+        {/* Docked chat panel, or the readout when chat stays on the face */}
+        {isDocked ? (
+          <div className="w-80 shrink-0 border-l border-border/30 bg-card/50 backdrop-blur-md flex flex-col lg:border lg:border-border/60 lg:rounded-3xl lg:overflow-hidden">
             <DockedChat className="flex-1 min-h-0" />
           </div>
+        ) : (
+          <ReadoutPanel onClaim={() => setShowClaimChannel(true)} className="hidden lg:flex w-[460px] xl:w-[520px] shrink-0" />
         )}
       </main>
 
