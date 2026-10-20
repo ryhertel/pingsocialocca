@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Connectors from "./pages/Connectors";
 import Docs from "./pages/Docs";
 import NotFound from "./pages/NotFound";
+import { ScrollManager } from "./components/ScrollManager";
 
 const queryClient = new QueryClient();
 
@@ -17,6 +18,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ScrollManager />
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/app" element={<Index />} />
