@@ -6,7 +6,8 @@ import type { ConnectorTemplate } from '@/lib/connectors/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import pingLogo from '@/assets/ping-logo-white.png';
+import { getEmailDomain } from '@/lib/ingest/privateReadClient';
+import { PingWordmark } from '@/components/landing/PingWordmark';
 
 /* ------------------------------------------------------------------ */
 /*  Clipboard helper                                                   */
@@ -209,17 +210,86 @@ function ConnectorDoc({ template }: { template: ConnectorTemplate }) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Email-in                                                           */
+/* ------------------------------------------------------------------ */
+const EMAIL_STEPS = [
+  { title: 'Get your address', desc: 'Open the app, press “Make it mine”, and your channel comes with its own address. Find it again any time under “My channel”.' },
+  { title: 'Forward anything', desc: 'Send or forward any email to that address. Ping reacts within a couple of seconds.' },
+  { title: 'Automate it with a filter', desc: 'In Gmail, first add the address under Settings → Forwarding and POP/IMAP → “Add a forwarding address”. Gmail emails a confirmation code to it, which shows up in Ping as “Forwarding confirmation code: …” — type that code into Gmail. Then create a filter that matches the sender or subject and choose “Forward it to” your Ping address. In Outlook, use Rules → “Forward to”.' },
+  { title: 'Or give the address to a service', desc: 'Anything with an “email me when…” setting — uptime monitors, store receipts, school or delivery alerts — can notify Ping directly.' },
+];
+
+const EMAIL_HANDLING = [
+  ['Subject', 'becomes the title. No subject? The first real line of the message is used instead.'],
+  ['Body', 'is cut down to the first line or two of actual content. Quoted replies, signatures after “--” and “Sent from my phone” lines are dropped.'],
+  ['Sender', 'shows as a tag with their domain, such as socialocca.com, so you can tell sources apart.'],
+  ['Duplicates', 'are ignored: a message delivered twice reacts once.'],
+  ['Attachments', 'are ignored, and HTML mail is read as plain text.'],
+];
+
+function EmailDoc() {
+  const domain = getEmailDomain();
+  return (
+    <section id="email" className="scroll-mt-24 space-y-4">
+      <div className="flex items-center gap-3">
+        <h2 className="text-xl font-semibold text-foreground">Email</h2>
+        <Badge variant="outline" className="text-[10px]">Built in</Badge>
+      </div>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        Every channel has its own email address{domain ? <>, ending in <code className="text-primary bg-muted px-1 rounded">@{domain}</code></> : null}.
+        Webhooks only reach tools that can send them; almost everything can send an email,
+        so this is how receipts, alerts and newsletters make Ping react.
+      </p>
+
+      <CollapsibleSection title="Set it up" icon={<Zap className="h-4 w-4 text-primary" />} defaultOpen>
+        <ol className="list-decimal list-inside space-y-2 text-sm text-foreground/80">
+          {EMAIL_STEPS.map((step) => (
+            <li key={step.title} className="leading-relaxed">
+              <span className="font-medium text-foreground">{step.title}.</span> {step.desc}
+            </li>
+          ))}
+        </ol>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="What Ping does with a message" icon={<BookOpen className="h-4 w-4 text-primary" />} defaultOpen>
+        <dl className="space-y-2 text-sm">
+          {EMAIL_HANDLING.map(([term, desc]) => (
+            <div key={term} className="leading-relaxed">
+              <dt className="inline font-medium text-foreground">{term}</dt>{' '}
+              <dd className="inline text-foreground/80">{desc}</dd>
+            </div>
+          ))}
+        </dl>
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Keeping it private" icon={<Shield className="h-4 w-4 text-primary" />}>
+        <p className="text-sm text-foreground/80 leading-relaxed">
+          The address is random and can’t be guessed, but anyone who has it can post to your
+          feed. If it leaks or starts getting spam, press the refresh button next to it: you get
+          a new address and the old one stops working immediately. Titles are redacted on the
+          server like every other event, so links and tokens never get stored.
+        </p>
+      </CollapsibleSection>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Troubleshooting                                                    */
 /* ------------------------------------------------------------------ */
 function Troubleshooting() {
   const items = [
     {
       q: 'Events not showing up?',
-      a: 'Check that your channel key and ingest secret match the values in the Connect panel. Verify the Ingest URL is correct and the POST body is valid JSON.',
+      a: 'Open “My channel” in the app and copy the webhook URL again, so you know it is current. Check the request is a POST with a JSON body.',
     },
     {
       q: 'Getting 401 / 403 errors?',
-      a: 'Your write token is missing or wrong. Copy the webhook URL again from the Webhooks panel — the token is the &t= part. If you rotated it, every webhook pointing at the old URL needs updating.',
+      a: 'Your write token is missing or wrong. Copy the webhook URL again from “My channel” — the token is the &t= part. Providers like GitHub and Stripe need the whole URL, token included.',
+    },
+    {
+      q: 'An email never arrived?',
+      a: 'Check you sent it to the address under “My channel” exactly. If you pressed refresh on the address, the old one stopped working. A filter-based forward also needs the one-time confirmation from your mail app before it starts.',
     },
     {
       q: 'Ping doesn\'t react to my events?',
@@ -280,7 +350,7 @@ export default function Docs() {
           <Button variant="ghost" size="icon" onClick={() => navigate('/')} aria-label="Back to home" className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <img src={pingLogo} alt="Ping" className="h-6 opacity-80" />
+          <PingWordmark />
           <span className="text-sm font-medium text-foreground/70">Docs</span>
         </div>
       </header>
@@ -321,8 +391,9 @@ export default function Docs() {
 
           const filteredConnectors = connectorTemplates.filter(matchConnector);
           const showSchema = !q || 'event schema json source eventtype title body severity tags timestamp'.includes(q);
-          const showTroubleshooting = !q || 'troubleshooting 401 403 rate limit events not showing'.includes(q);
-          const hasResults = filteredConnectors.length > 0 || showSchema || showTroubleshooting;
+          const showTroubleshooting = !q || 'troubleshooting 401 403 rate limit events not showing email'.includes(q);
+          const showEmail = !q || 'email mail inbox forward forwarding gmail outlook address filter receipts'.includes(q);
+          const hasResults = filteredConnectors.length > 0 || showSchema || showEmail || showTroubleshooting;
 
           return (
             <>
@@ -334,6 +405,7 @@ export default function Docs() {
                       {t.name}
                     </Link>
                   ))}
+                  <Link to="#email" className="text-xs px-3 py-1.5 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">Email</Link>
                   <Link to="#schema" className="text-xs px-3 py-1.5 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">Schema</Link>
                   <Link to="#troubleshooting" className="text-xs px-3 py-1.5 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">Troubleshooting</Link>
                 </nav>
@@ -368,6 +440,9 @@ export default function Docs() {
               {filteredConnectors.map((t) => (
                 <ConnectorDoc key={t.id} template={t} />
               ))}
+
+              {/* Email-in */}
+              {showEmail && <EmailDoc />}
 
               {/* Troubleshooting */}
               {showTroubleshooting && <Troubleshooting />}

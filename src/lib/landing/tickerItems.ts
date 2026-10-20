@@ -15,10 +15,14 @@ const TEASERS: Record<string, { line: string; mood: TickerMood }> = {
   openclaw: { line: 'your local agent → gets a face', mood: 'curious' },
 };
 
-export const TICKER_ITEMS = connectorTemplates.map((t) => ({
-  id: t.id,
-  name: t.name,
-  // A connector added later without a teaser still gets a sensible line.
-  line: TEASERS[t.id]?.line ?? t.description,
-  mood: TEASERS[t.id]?.mood ?? ('curious' as TickerMood),
-}));
+export const TICKER_ITEMS = [
+  ...connectorTemplates.map((t) => ({
+    id: t.id,
+    name: t.name,
+    // A connector added later without a teaser still gets a sensible line.
+    line: TEASERS[t.id]?.line ?? t.description,
+    mood: TEASERS[t.id]?.mood ?? ('curious' as TickerMood),
+  })),
+  // Not a connector template, but built in and with its own section in the docs.
+  { id: 'email', name: 'Email', line: 'anything you forward → a reaction', mood: 'surprise' as TickerMood },
+];

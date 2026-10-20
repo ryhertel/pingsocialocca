@@ -629,6 +629,21 @@ function cleanEmailBody(raw: string, max: number): string | null {
   return joined.length > max ? joined.slice(0, max - 1) + '…' : joined;
 }
 
+/**
+ * The code a mail provider sends when someone sets up auto-forwarding to their
+ * Ping address. Gmail will not forward anything until it is entered, and the
+ * normal body trimming would cut it off, which made forwarding impossible to set
+ * up. So a confirmation email is recognised and its code becomes the title.
+ */
+function forwardingConfirmationCode(subject: string | null, text: string | null): string | null {
+  const haystack = `${subject ?? ''}\n${text ?? ''}`;
+  if (!/forward/i.test(haystack) || !/confirm/i.test(haystack)) return null;
+  const match =
+    /confirmation code:?\s*([0-9]{6,12})\b/i.exec(text ?? '') ??
+    /\(#([0-9]{6,12})\)/.exec(subject ?? '');
+  return match?.[1] ?? null;
+}
+
 /** "alerts@stripe.com" → "stripe.com", for a tag you can filter on. */
 function senderDomain(from: string): string | null {
   const match = /<?([^<>@\s]+)@([^<>@\s]+?)>?$/.exec(from.trim());
@@ -655,6 +670,20 @@ const emailAdapter: Adapter = {
     const text = str(b.text, 20000);
     const from = str(b.from, 200) ?? '';
     const domain = senderDomain(from);
+
+    const code = forwardingConfirmationCode(subject, text);
+    if (code) {
+      return { kind: 'event', event: {
+        source: 'email',
+        eventType: 'message',
+        // Raised a step: this one is waiting on the person to act.
+        severity: 2,
+        title: `Forwarding confirmation code: ${code}`,
+        body: 'Enter this code in your mail settings to finish setting up forwarding to Ping.',
+        tags: tagList('email', 'forwarding', domain),
+        dedupeKey: str(b.messageId, 200) ?? undefined,
+      } };
+    }
 
     const body = text ? cleanEmailBody(text, 300) : null;
 
