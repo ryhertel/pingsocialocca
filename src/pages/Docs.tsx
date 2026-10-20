@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { ArrowLeft, Copy, Check, ChevronDown, ChevronRight, Shield, Terminal, Zap, BookOpen, Search, X } from 'lucide-react';
 import { connectorTemplates } from '@/lib/connectors/connectorTemplates';
 import type { ConnectorTemplate } from '@/lib/connectors/types';
@@ -151,7 +151,7 @@ function TransportBadge({ transport }: { transport: ConnectorTemplate['transport
 /* ------------------------------------------------------------------ */
 function ConnectorDoc({ template }: { template: ConnectorTemplate }) {
   return (
-    <section id={template.id} className="scroll-mt-20">
+    <section id={template.id} className="scroll-mt-24">
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center gap-3">
@@ -232,7 +232,7 @@ function Troubleshooting() {
   ];
 
   return (
-    <section id="troubleshooting" className="scroll-mt-20 space-y-4">
+    <section id="troubleshooting" className="scroll-mt-24 space-y-4">
       <h2 className="text-xl font-semibold text-foreground">Troubleshooting</h2>
       <div className="space-y-3">
         {items.map((item, i) => (
@@ -253,23 +253,20 @@ export default function Docs() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Arriving from a link like /docs#github (the landing ticker, or a shared URL).
-  // A client-side navigation never scrolls to a hash on its own, so do it here,
-  // and glow the section briefly so it is obvious which guide was opened.
+  // Scrolling to a /docs#github link is ScrollManager's job. This only marks the
+  // section briefly, so it is obvious which guide was opened.
   useEffect(() => {
     let id = '';
     try { id = decodeURIComponent(location.hash.slice(1)); } catch { return; } // a malformed hash like #%
     if (!id) return;
     const el = document.getElementById(id);
     if (!el) return;
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const frame = requestAnimationFrame(() => {
-      el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
       el.classList.remove('docs-arrive');
       void el.offsetWidth; // restart the animation if the same section is opened twice
       el.classList.add('docs-arrive');
     });
-    const clear = setTimeout(() => el.classList.remove('docs-arrive'), 1800);
+    const clear = setTimeout(() => el.classList.remove('docs-arrive'), 2000);
     return () => { cancelAnimationFrame(frame); clearTimeout(clear); };
   }, [location.hash, location.key]);
 
@@ -333,18 +330,18 @@ export default function Docs() {
               {!q && (
                 <nav className="flex flex-wrap gap-2">
                   {connectorTemplates.map((t) => (
-                    <a key={t.id} href={`#${t.id}`} className="text-xs px-3 py-1.5 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
+                    <Link key={t.id} to={`#${t.id}`} className="text-xs px-3 py-1.5 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">
                       {t.name}
-                    </a>
+                    </Link>
                   ))}
-                  <a href="#schema" className="text-xs px-3 py-1.5 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">Schema</a>
-                  <a href="#troubleshooting" className="text-xs px-3 py-1.5 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">Troubleshooting</a>
+                  <Link to="#schema" className="text-xs px-3 py-1.5 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">Schema</Link>
+                  <Link to="#troubleshooting" className="text-xs px-3 py-1.5 rounded-full border border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors">Troubleshooting</Link>
                 </nav>
               )}
 
               {/* JSON Schema */}
               {showSchema && (
-                <section id="schema" className="scroll-mt-20 space-y-4">
+                <section id="schema" className="scroll-mt-24 space-y-4">
                   <h2 className="text-xl font-semibold text-foreground">Event Schema</h2>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     The smallest thing Ping accepts is a title. Everything else has a

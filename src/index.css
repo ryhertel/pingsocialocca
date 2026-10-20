@@ -225,18 +225,34 @@
   animation: ticker-blink 5s ease-in-out infinite;
 }
 
-/* Arriving on a docs section from the ticker: a brief glow says "this one". */
+/* Arriving on a docs section from a link: a soft panel says "this one". It sits
+   on a pseudo-element pushed out past the section, so the content gets room to
+   breathe instead of a ring drawn tight against the text. */
 @keyframes docs-arrive {
-  0% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
-  20% { box-shadow: 0 0 0 6px hsl(var(--primary) / 0.25); }
-  100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+  0% { opacity: 0; }
+  15%, 55% { opacity: 1; }
+  100% { opacity: 0; }
 }
 .docs-arrive {
-  border-radius: 0.75rem;
-  animation: docs-arrive 1.6s ease-out;
+  position: relative;
+  isolation: isolate;
+}
+.docs-arrive::before {
+  content: "";
+  position: absolute;
+  inset: -16px -12px;
+  z-index: -1;
+  border-radius: 1rem;
+  border: 1px solid hsl(var(--primary) / 0.35);
+  background: hsl(var(--primary) / 0.05);
+  pointer-events: none;
+  animation: docs-arrive 1.8s ease-out forwards;
+}
+@media (min-width: 640px) {
+  .docs-arrive::before { inset: -20px -24px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ticker-eyes-idle,
-  .docs-arrive { animation: none; }
+  .docs-arrive::before { animation: none; opacity: 0; }
 }
