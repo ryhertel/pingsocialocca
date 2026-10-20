@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/s
 import pingLogo from '@/assets/ping-logo-white.png';
 import { cn } from '@/lib/utils';
 import { useSettingsStore } from '@/stores/useSettingsStore';
+import { ConnectTicker } from './ConnectTicker';
 
 const NAV_SECTIONS = [
   { id: 'how-it-works', label: 'How It Works', fallback: '/docs' },
@@ -108,6 +109,7 @@ export function LandingNav() {
 
   return (
     <nav className="fixed top-0 inset-x-0 z-50 backdrop-blur-xl bg-background/70 border-b border-border/40">
+      <ConnectTicker />
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
         <button onClick={() => isLanding ? window.scrollTo({ top: 0, behavior: 'smooth' }) : navigate('/')}>
           <img src={pingLogo} alt="Ping" className="h-7 opacity-90" />
