@@ -18,8 +18,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Sora", "sans-serif"],
-        sora: ["Sora", "sans-serif"],
+        // Geist is bundled from @fontsource (see main.tsx), so it loads under the
+        // font-src 'self' CSP. Sora was named here for months but never loaded.
+        sans: ["\"Geist Variable\"", "system-ui", "sans-serif"],
+        mono: ["\"Geist Mono Variable\"", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",

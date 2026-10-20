@@ -1,40 +1,36 @@
 import { motion } from 'framer-motion';
+import { SectionHeader } from './SectionHeader';
 
 const howItWorks = [
-  { step: '1', title: 'Open Ping', desc: 'It starts reacting immediately — no account, nothing to install.' },
-  { step: '2', title: 'Claim your URL', desc: 'One click gives you a webhook URL. Paste it into GitHub, Stripe, Vercel or a script.' },
-  { step: '3', title: 'Watch it react', desc: 'Ping reads each event and answers with an expression, a sound and a spectacle.' },
+  { step: '01', title: 'Open Ping', desc: 'It starts reacting immediately — no account, nothing to install.' },
+  { step: '02', title: 'Make it yours', desc: 'One click gives you a webhook URL and an email address. Paste the URL into GitHub, Stripe or Vercel, or forward mail to the address.' },
+  { step: '03', title: 'Watch it react', desc: 'Ping reads each event and answers with an expression, a sound and a spectacle.' },
 ];
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="py-20 px-6 border-t border-border/20 scroll-mt-28">
-      <div className="max-w-4xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center mb-4">
-          Three steps to a reactive presence
-        </h2>
-        <p className="text-center text-muted-foreground mb-14 max-w-md mx-auto">
-          No account, no install, no middleware. Open it and paste one URL.
-        </p>
+    <section id="how-it-works" className="py-24 px-5 sm:px-8 scroll-mt-28">
+      <div className="max-w-6xl mx-auto">
+        <SectionHeader label="SETUP · ABOUT A MINUTE" title="Three steps to a face that reacts.">
+          No account, no install, no middleware. Open it and point one thing at it.
+        </SectionHeader>
 
-        <div className="grid gap-8 sm:grid-cols-3">
+        <ol className="grid gap-3 sm:gap-4 md:grid-cols-3">
           {howItWorks.map((s, i) => (
-            <motion.div
+            <motion.li
               key={s.step}
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 0.5, delay: i * 0.15, ease: [0.16, 1, 0.3, 1] }}
-              className="text-center"
+              transition={{ duration: 0.35, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col gap-3 rounded-[22px] border border-border/60 bg-card p-6"
             >
-              <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-lg">
-                {s.step}
-              </div>
-              <h3 className="font-semibold text-lg mb-2">{s.title}</h3>
+              <span className="font-mono text-sm text-primary tabular-nums">{s.step}</span>
+              <h3 className="font-semibold text-lg tracking-[-0.01em]">{s.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
-            </motion.div>
+            </motion.li>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
   );

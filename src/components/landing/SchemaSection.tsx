@@ -1,38 +1,34 @@
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Terminal, ChevronRight } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { SectionHeader } from './SectionHeader';
 
 const anim = {
-  initial: { opacity: 0, y: 24 },
+  initial: { opacity: 0, y: 12 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: '-60px' } as const,
-  transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const },
+  transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] as const },
 };
 
 export function SchemaSection() {
   const navigate = useNavigate();
 
   return (
-    <section id="schema" className="py-20 px-6 border-t border-border/20 scroll-mt-28">
+    <section id="schema" className="py-24 px-5 sm:px-8 scroll-mt-28">
       <div className="max-w-3xl mx-auto">
         <motion.div {...anim}>
-          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-4">
-            Dead-simple event schema
-          </h2>
-          <p className="text-center text-muted-foreground mb-10 max-w-md mx-auto">
-            A title is all you need. Everything else is optional — and raw GitHub,
-            Stripe or Vercel payloads work as they come.
-          </p>
+          <SectionHeader label="POST /ingest" title="A title is all it needs.">
+            Everything else is optional — and raw GitHub, Stripe or Vercel payloads work as they come.
+          </SectionHeader>
         </motion.div>
 
         <motion.div {...anim} transition={{ ...anim.transition, delay: 0.15 } as const}>
-          <div className="rounded-xl border border-border/30 bg-card/50 backdrop-blur-sm overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/20 bg-muted/20">
+          <div className="rounded-[22px] border border-border/60 bg-card overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-border/60">
               <Terminal className="h-3.5 w-3.5 text-muted-foreground" />
               <span className="text-xs text-muted-foreground font-mono">POST /ingest</span>
             </div>
-            <pre className="px-5 py-4 text-sm font-mono text-foreground/85 overflow-x-auto leading-relaxed">
+            <pre className="px-5 py-5 text-sm font-mono text-foreground/85 overflow-x-auto leading-relaxed">
 {`{
   "title": "Deployed to production"
 }
@@ -50,7 +46,7 @@ export function SchemaSection() {
 
           <div className="flex flex-wrap justify-center gap-2 mt-6">
             {['success', 'error', 'message', 'warning', 'deploy', 'incident'].map((t) => (
-              <Badge key={t} variant="secondary" className="font-mono text-[11px]">{t}</Badge>
+              <span key={t} className="font-mono text-[11px] px-2.5 py-1 rounded-lg border border-border/60 text-muted-foreground">{t}</span>
             ))}
           </div>
 

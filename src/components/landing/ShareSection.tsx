@@ -64,9 +64,9 @@ export function ShareSection() {
   };
 
   return (
-    <section className="py-20 px-6 border-t border-border/20">
+    <section className="py-24 px-5 sm:px-8">
       <div className="max-w-3xl mx-auto">
-        <div className="relative rounded-2xl border border-border/30 bg-card/60 backdrop-blur-sm overflow-hidden p-10 sm:p-14 text-center">
+        <div className="relative rounded-[28px] border border-border/60 bg-card overflow-hidden p-8 sm:p-14 text-center">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(var(--glow-primary)/0.15)_0%,transparent_70%)]" />
 
           <motion.div
@@ -76,13 +76,12 @@ export function ShareSection() {
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] as const }}
             className="relative z-10"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 mb-6">
-              <Share2 className="h-4 w-4 text-primary" />
-              <span className="text-sm text-primary font-medium">Share the love</span>
-            </div>
+            <span className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] text-muted-foreground mb-4">
+              <Share2 className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> SHARE
+            </span>
 
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3">
-              Spread the word
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.03em] leading-[1.05] mb-3">
+              Spread the word.
             </h2>
             <p className="text-muted-foreground mb-10 max-w-md mx-auto leading-relaxed">
               Love Ping? Help others discover it — share with your community and let's grow together.
@@ -103,7 +102,7 @@ export function ShareSection() {
                 href={p.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex items-center gap-3 rounded-xl border border-border/40 bg-background/50 backdrop-blur-sm px-6 py-4 text-foreground transition-all duration-200 hover:scale-105 hover:border-primary/40 hover:shadow-[0_0_24px_hsl(var(--glow-primary)/0.2)]"
+                className="group flex items-center gap-3 rounded-xl border border-border/40 bg-background/50 backdrop-blur-sm px-6 py-4 text-foreground transition-all duration-200 hover:border-primary/40 active:translate-y-px"
               >
                 <span className="text-muted-foreground transition-colors group-hover:text-primary">
                   {p.icon}
@@ -115,7 +114,7 @@ export function ShareSection() {
             <motion.button
               variants={item}
               onClick={handleCopy}
-              className="group flex items-center gap-3 rounded-xl border border-dashed border-border/50 bg-background/30 backdrop-blur-sm px-6 py-4 text-foreground transition-all duration-200 hover:scale-105 hover:border-primary/40 hover:shadow-[0_0_24px_hsl(var(--glow-primary)/0.2)]"
+              className="group flex items-center gap-3 rounded-xl border border-dashed border-border/50 bg-background/30 backdrop-blur-sm px-6 py-4 text-foreground transition-all duration-200 hover:border-primary/40 active:translate-y-px"
             >
               <span className="text-muted-foreground transition-colors group-hover:text-primary">
                 {copied ? <Check className="h-6 w-6" /> : <Copy className="h-6 w-6" />}

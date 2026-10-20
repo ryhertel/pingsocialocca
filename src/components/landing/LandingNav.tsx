@@ -3,7 +3,7 @@ import { ArrowRight, Menu, Sun, Moon } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import pingLogo from '@/assets/ping-logo-white.png';
+import { PingWordmark } from './PingWordmark';
 import { cn } from '@/lib/utils';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { ConnectTicker } from './ConnectTicker';
@@ -112,7 +112,7 @@ export function LandingNav() {
       <ConnectTicker />
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
         <button onClick={() => isLanding ? window.scrollTo({ top: 0, behavior: 'smooth' }) : navigate('/')}>
-          <img src={pingLogo} alt="Ping" className="h-7 opacity-90" />
+          <PingWordmark />
         </button>
         <div ref={containerRef} className="relative flex items-center gap-2 sm:gap-4">
           {/* Sliding underline */}
@@ -169,7 +169,7 @@ export function LandingNav() {
             />
           </a>
           <Button size="sm" onClick={() => navigate('/app')} className="gap-1.5 hidden sm:flex">
-            Launch App <ArrowRight className="h-3.5 w-3.5" />
+            Launch app <ArrowRight className="h-3.5 w-3.5" />
           </Button>
 
           {/* Mobile hamburger */}
@@ -226,7 +226,7 @@ export function LandingNav() {
                   />
                 </a>
                 <Button onClick={() => { setSheetOpen(false); navigate('/app'); }} className="gap-1.5 mt-4">
-                  Launch App <ArrowRight className="h-3.5 w-3.5" />
+                  Launch app <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </nav>
             </SheetContent>
