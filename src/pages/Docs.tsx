@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Copy, Check, ChevronDown, ChevronRight, Shield, Terminal, Zap, BookOpen, Search, X } from 'lucide-react';
 import { connectorTemplates } from '@/lib/connectors/connectorTemplates';
 import type { ConnectorTemplate } from '@/lib/connectors/types';
@@ -251,6 +251,28 @@ function Troubleshooting() {
 /* ------------------------------------------------------------------ */
 export default function Docs() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Arriving from a link like /docs#github (the landing ticker, or a shared URL).
+  // A client-side navigation never scrolls to a hash on its own, so do it here,
+  // and glow the section briefly so it is obvious which guide was opened.
+  useEffect(() => {
+    let id = '';
+    try { id = decodeURIComponent(location.hash.slice(1)); } catch { return; } // a malformed hash like #%
+    if (!id) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const frame = requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+      el.classList.remove('docs-arrive');
+      void el.offsetWidth; // restart the animation if the same section is opened twice
+      el.classList.add('docs-arrive');
+    });
+    const clear = setTimeout(() => el.classList.remove('docs-arrive'), 1800);
+    return () => { cancelAnimationFrame(frame); clearTimeout(clear); };
+  }, [location.hash, location.key]);
+
   const [search, setSearch] = useState('');
 
   return (
