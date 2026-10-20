@@ -224,7 +224,14 @@ Deno.serve(async (req) => {
   }
 
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-  if (!checkRateLimit(ip)) {
+  // A trusted relay such as Watchrr fans one outage out to many channels, so all
+  // of its deliveries leave from the same few IPs and would trip the per-IP limit.
+  // It skips that one. The per-channel limit below still applies to it, so no
+  // single channel can be flooded, and it still needs that channel's write token.
+  const relaySecret = Deno.env.get('PING_RELAY_SECRET');
+  const relayHeader = req.headers.get('x-ping-relay-secret');
+  const trustedRelay = !!relaySecret && !!relayHeader && await secretsMatch(relayHeader, relaySecret);
+  if (!trustedRelay && !checkRateLimit(ip)) {
     return json(429, { ok: false, error: 'Rate limit exceeded' });
   }
 

@@ -114,6 +114,26 @@ export function ConnectorPanel({ open, onOpenChange, template }: ConnectorPanelP
             </ol>
           </div>
 
+          {/* One-click connection, for services that take the URL themselves */}
+          {template.connect && (
+            writeToken ? (
+              <Button asChild className="w-full gap-2">
+                <a
+                  href={template.connect.url.replace('{webhookUrl}', encodeURIComponent(webhookUrl))}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Zap className="h-4 w-4" />
+                  {template.connect.label}
+                </a>
+              </Button>
+            ) : (
+              <p className="rounded-lg border border-border/60 p-3 text-xs text-muted-foreground">
+                Press “Make it mine” in the app first. {template.name} needs your channel’s webhook URL to connect.
+              </p>
+            )
+          )}
+
           {/* Ingest URL */}
           <div className="space-y-1.5">
             <p className="text-xs text-muted-foreground font-medium">
