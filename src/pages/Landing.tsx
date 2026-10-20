@@ -1,6 +1,8 @@
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { LandingNav } from '@/components/landing/LandingNav';
 import { HeroSection } from '@/components/landing/HeroSection';
+import { ReadoutStrip } from '@/components/landing/ReadoutStrip';
+import { ReactionsSection } from '@/components/landing/ReactionsSection';
 import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
 import { FeaturesSection } from '@/components/landing/FeaturesSection';
 import { IntegrationsSection } from '@/components/landing/IntegrationsSection';
@@ -16,9 +18,11 @@ export default function Landing() {
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden transition-colors duration-[400ms] ease-in-out">
       <LandingNav />
       <HeroSection />
+      <ReadoutStrip />
+      <ReactionsSection />
       <HowItWorksSection />
-      <FeaturesSection />
       <IntegrationsSection />
+      <FeaturesSection />
       <SchemaSection />
       <DemoCtaSection />
       <ShareSection />

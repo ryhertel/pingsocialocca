@@ -217,9 +217,9 @@ export function ConnectTicker() {
       aria-label="Connect Ping to your services"
       className="flex h-9 items-stretch border-b border-border/40 bg-primary/[0.06] text-xs"
     >
-      <div className="hidden sm:flex shrink-0 items-center gap-1.5 pl-4 pr-3 font-medium text-foreground/90 border-r border-border/40">
+      <div className="hidden sm:flex shrink-0 items-center gap-1.5 pl-4 pr-3 font-mono text-[11px] tracking-[0.1em] text-foreground/90 border-r border-border/40">
         <Zap className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-        Plug Ping into
+        PLUG PING INTO
       </div>
 
       <div
@@ -295,9 +295,9 @@ export function ConnectTicker() {
         )}
         <Link
           to="/docs"
-          className="hidden sm:inline-flex items-center gap-1 rounded-md px-2 py-1 font-medium text-primary transition-colors hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="hidden sm:inline-flex items-center gap-1 rounded-md px-2 py-1 font-mono text-[11px] tracking-[0.08em] text-primary transition-colors hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          All guides <ArrowRight className="h-3 w-3" aria-hidden="true" />
+          ALL GUIDES <ArrowRight className="h-3 w-3" aria-hidden="true" />
         </Link>
         <button
           type="button"

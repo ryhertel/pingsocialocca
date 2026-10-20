@@ -1,41 +1,38 @@
 import { Eye, Zap, Plug, Shield, Bell, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { SectionHeader } from './SectionHeader';
 
 const features = [
-  { icon: Eye, title: 'Always-On Presence', desc: 'An expressive animated face that reacts to your AI agent\'s notifications in real time.' },
-  { icon: Zap, title: 'Instant Reactions', desc: 'See status changes, errors, and messages the moment they happen. no refresh needed.' },
-  { icon: Plug, title: 'Connect Anything', desc: 'Webhooks, WebSocket bridge, or REST API. Plug in any AI agent or automation tool.' },
-  { icon: Shield, title: 'Privacy-First', desc: 'Privacy lock, local-only mode, and automatic redaction. Your data stays yours.' },
-  { icon: Bell, title: 'Smart Notifications', desc: 'Severity-based routing, sound controls, and do-not-disturb, all configurable.' },
-  { icon: Sparkles, title: 'Demo Mode', desc: 'No setup required. Launch and explore with scripted demos, effects, and spectacles.' },
+  { icon: Eye, title: 'Always-on presence', desc: 'A face for a spare screen that reacts the moment something happens, so you notice without checking.' },
+  { icon: Zap, title: 'Instant reactions', desc: 'Events stream in live. No refresh, no inbox to open, nothing to poll.' },
+  { icon: Plug, title: 'Connect anything', desc: 'Webhooks, email-in, a WebSocket bridge or plain curl. GitHub, Stripe and Vercel work as they come.' },
+  { icon: Shield, title: 'Privacy-first', desc: 'Titles are redacted server-side, tokens are stored only as hashes, and a privacy lock hides everything on screen.' },
+  { icon: Bell, title: 'Loud only when it matters', desc: 'Severity decides how big a reaction is. Sound, mute and do-not-disturb are one press away.' },
+  { icon: Sparkles, title: 'Demo mode', desc: 'No setup needed to see it. Launch the app and watch it react to scripted events.' },
 ];
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-20 px-6 border-t border-border/20 scroll-mt-28">
+    <section id="features" className="py-24 px-5 sm:px-8 scroll-mt-28">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center mb-4">
-          Everything your agent needs to be seen
-        </h2>
-        <p className="text-center text-muted-foreground mb-14 max-w-lg mx-auto">
-          A single dashboard that turns invisible background processes into an
-          expressive, glanceable presence.
-        </p>
+        <SectionHeader label="WHAT IT DOES" title="Notifications you see, not ones you check.">
+          Ping turns the things happening in your tools into a presence you can read at a glance.
+        </SectionHeader>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((f, i) => (
             <motion.div
               key={f.title}
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 0.5, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="group rounded-xl border border-border/30 bg-card/40 backdrop-blur-sm p-6 hover:border-primary/30 transition-colors"
+              transition={{ duration: 0.35, delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col gap-3 rounded-[22px] border border-border/60 bg-card p-6"
             >
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                <f.icon className="h-5 w-5 text-primary" />
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <f.icon className="h-5 w-5 text-primary" aria-hidden="true" />
               </div>
-              <h3 className="font-semibold text-lg mb-2">{f.title}</h3>
+              <h3 className="font-semibold text-lg tracking-[-0.01em]">{f.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
             </motion.div>
           ))}

@@ -60,8 +60,19 @@ function drawEye(
   ctx.restore();
 }
 
-export function FaceCanvas() {
+interface FaceCanvasProps {
+  /**
+   * Eye size relative to the canvas height. 1 is tuned for the full-screen app;
+   * a small screen, such as the landing page device, needs bigger eyes to read.
+   */
+  eyeScale?: number;
+}
+
+export function FaceCanvas({ eyeScale = 1 }: FaceCanvasProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Read inside the animation loop, so a change applies without restarting it.
+  const eyeScaleRef = useRef(eyeScale);
+  eyeScaleRef.current = eyeScale;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -522,7 +533,7 @@ export function FaceCanvas() {
       ctx.clearRect(0, 0, w, h);
 
       // Eye profile constants — single source of truth for both layouts
-      const unit = h / 8.5;
+      const unit = (h / 8.5) * eyeScaleRef.current;
       const eyeW = unit * 1.2;
       const baseH = unit * 1.15;
       const eyeH = baseH * (1 - squint * 0.5) * (1 + widen * 0.3);

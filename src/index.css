@@ -102,7 +102,8 @@
   --popover: 0 0% 100%;
   --popover-foreground: 216 28% 10%;
 
-  --primary-foreground: 0 0% 100%;
+  /* Dark ink on the bright accent: white on mint is unreadable. */
+  --primary-foreground: 216 28% 8%;
 
   --secondary: 210 18% 90%;
   --secondary-foreground: 216 28% 10%;
@@ -120,7 +121,7 @@
 
   --sidebar-background: 210 20% 94%;
   --sidebar-foreground: 216 28% 10%;
-  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-primary-foreground: 216 28% 8%;
   --sidebar-accent: 210 18% 90%;
   --sidebar-accent-foreground: 216 28% 10%;
   --sidebar-border: 210 15% 82%;
@@ -132,7 +133,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Sora', sans-serif;
+    font-family: 'Geist Variable', system-ui, sans-serif;
   }
 }
 
@@ -256,3 +257,88 @@
   .ticker-eyes-idle,
   .docs-arrive::before { animation: none; opacity: 0; }
 }
+
+/* Device ------------------------------------------------------------------ */
+
+/* Ping's body: a ceramic shell, the same in light and dark mode, because it is
+   an object sitting on the page rather than part of the page's chrome. */
+:root {
+  --device-shell: 43 10% 90%;
+  --device-edge: 40 10% 79%;
+  --device-label: 214 5% 37%;
+}
+
+.device-shell {
+  background: hsl(var(--device-shell));
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.55),
+    inset 0 -6px 0 hsl(var(--device-edge)),
+    0 40px 80px -24px rgb(0 0 0 / 0.6),
+    0 0 0 1px rgb(0 0 0 / 0.35);
+}
+.light .device-shell {
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.7),
+    inset 0 -6px 0 hsl(var(--device-edge)),
+    0 30px 60px -24px rgb(15 23 42 / 0.3),
+    0 0 0 1px rgb(15 23 42 / 0.08);
+}
+
+/* The screen is dark glass in both modes: the eyes need a night sky to glow in. */
+.device-screen {
+  background: #07090b;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05), inset 0 10px 30px rgb(0 0 0 / 0.8);
+}
+
+.device-key {
+  width: 46px;
+  height: 46px;
+  border-radius: 9999px;
+  font-family: 'Geist Mono Variable', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: hsl(var(--device-label));
+  background: hsl(var(--device-shell));
+  box-shadow: inset 0 -4px 0 hsl(var(--device-edge)), 0 0 0 1px rgb(0 0 0 / 0.16), 0 4px 10px rgb(0 0 0 / 0.18);
+  transition: transform 90ms ease-out, box-shadow 90ms ease-out, background-color 150ms ease-out, color 150ms ease-out;
+}
+.device-key:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 -1px 0 hsl(var(--device-edge)), 0 0 0 1px rgb(0 0 0 / 0.16), 0 1px 3px rgb(0 0 0 / 0.18);
+}
+.device-key:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 3px;
+}
+.device-key-on {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  box-shadow: inset 0 -4px 0 rgb(0 0 0 / 0.22), 0 0 0 1px rgb(0 0 0 / 0.16), 0 4px 10px rgb(0 0 0 / 0.18);
+}
+@media (min-width: 640px) {
+  .device-key { width: 52px; height: 52px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .device-key, .device-key:active { transition: none; transform: none; }
+}
+
+/* Light mode: the device switches to its graphite finish, because ceramic on a
+   pale page disappears. */
+.light {
+  --device-shell: 218 11% 19%;
+  --device-edge: 217 13% 13%;
+  --device-label: 215 11% 70%;
+}
+.light .device-shell {
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 0.08),
+    inset 0 -6px 0 hsl(var(--device-edge)),
+    0 30px 60px -24px rgb(15 23 42 / 0.45),
+    0 0 0 1px rgb(15 23 42 / 0.2);
+}
+.light .device-key { box-shadow: inset 0 -4px 0 hsl(var(--device-edge)), 0 0 0 1px rgb(0 0 0 / 0.3), 0 4px 10px rgb(15 23 42 / 0.2); }
+
+/* The accent is set inline by the colour theme, so it cannot be redefined per
+   mode. Text in it is darkened instead: a neon accent on a pale page fails
+   contrast for every preset. */
+.light .text-primary { color: color-mix(in srgb, hsl(var(--primary)) 58%, #000); }
