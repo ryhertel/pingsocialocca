@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useIngestStore, getIngestUrlWithKey } from '@/stores/useIngestStore';
+import { useIngestStore, getIngestUrlWithKey, getWebhookUrl, getIngestAuthHeaders } from '@/stores/useIngestStore';
 import { routeEvent } from '@/lib/ingest/reactionRouter';
 import { executeReaction } from '@/lib/ingest/reactionExecutor';
 import { Copy, Check, Send, Zap } from 'lucide-react';
@@ -31,6 +31,10 @@ function CopyButton({ text }: { text: string }) {
 
 export function ConnectorPanel({ open, onOpenChange, template }: ConnectorPanelProps) {
   const ingestSecret = useIngestStore((s) => s.ingestSecret);
+  // Subscribed, not read once, so claiming a channel enables the test button
+  // without a reload.
+  const writeToken = useIngestStore((s) => s.writeToken);
+  const canSend = writeToken.length > 0 || ingestSecret.length > 0;
   const secureStreamConnected = useIngestStore((s) => s.secureStreamConnected);
   const pushEvent = useIngestStore((s) => s.pushEvent);
   const [testing, setTesting] = useState(false);
@@ -38,10 +42,13 @@ export function ConnectorPanel({ open, onOpenChange, template }: ConnectorPanelP
   if (!template) return null;
 
   const ingestUrl = getIngestUrlWithKey();
+  // What people paste into a provider. GitHub, Stripe, Vercel, Sentry and Linear
+  // cannot send custom headers, so for a claimed channel the token rides in the URL.
+  const webhookUrl = writeToken ? getWebhookUrl() : ingestUrl;
 
   const handleTestEvent = async () => {
-    if (!ingestUrl || !ingestSecret) {
-      toast.error('Set your ingest secret first (Webhooks panel)');
+    if (!ingestUrl || !canSend) {
+      toast.error('Click “Make it mine” on the main page to get a channel first');
       return;
     }
     setTesting(true);
@@ -52,7 +59,7 @@ export function ConnectorPanel({ open, onOpenChange, template }: ConnectorPanelP
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-ping-secret': ingestSecret,
+          ...getIngestAuthHeaders(),
         },
         body: JSON.stringify(payload),
       });
@@ -76,7 +83,12 @@ export function ConnectorPanel({ open, onOpenChange, template }: ConnectorPanelP
     }
   };
 
-  const curlExample = `curl -X POST "${ingestUrl}" \\
+  // A claimed channel authenticates through the token already in the URL.
+  const curlExample = writeToken
+    ? `curl -X POST "${webhookUrl}" \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(template.testEvent, null, 2)}'`
+    : `curl -X POST "${ingestUrl}" \\
   -H "Content-Type: application/json" \\
   -H "x-ping-secret: YOUR_SECRET" \\
   -d '${JSON.stringify(template.testEvent, null, 2)}'`;
@@ -104,12 +116,14 @@ export function ConnectorPanel({ open, onOpenChange, template }: ConnectorPanelP
 
           {/* Ingest URL */}
           <div className="space-y-1.5">
-            <p className="text-xs text-muted-foreground font-medium">Ingest URL (with channel key)</p>
+            <p className="text-xs text-muted-foreground font-medium">
+              {writeToken ? 'Webhook URL (paste this into the provider)' : 'Ingest URL (with channel key)'}
+            </p>
             <div className="flex items-center gap-1 p-2 rounded-lg bg-muted/30">
               <code className="text-[10px] text-foreground font-mono break-all flex-1">
-                {ingestUrl || 'Not available'}
+                {webhookUrl || 'Not available'}
               </code>
-              {ingestUrl && <CopyButton text={ingestUrl} />}
+              {webhookUrl && <CopyButton text={webhookUrl} />}
             </div>
           </div>
 
@@ -118,7 +132,13 @@ export function ConnectorPanel({ open, onOpenChange, template }: ConnectorPanelP
             <p className="text-xs text-muted-foreground font-medium">Required Headers</p>
             <div className="p-2 rounded-lg bg-muted/20 space-y-1">
               <code className="text-[10px] font-mono text-foreground block">Content-Type: application/json</code>
-              <code className="text-[10px] font-mono text-foreground block">x-ping-secret: YOUR_SECRET</code>
+              {writeToken ? (
+                <p className="text-[10px] text-muted-foreground">
+                  No auth header needed: your write token is already in the URL above. Treat that URL like a password.
+                </p>
+              ) : (
+                <code className="text-[10px] font-mono text-foreground block">x-ping-secret: YOUR_SECRET</code>
+              )}
             </div>
           </div>
 
@@ -159,7 +179,7 @@ export function ConnectorPanel({ open, onOpenChange, template }: ConnectorPanelP
           {/* Test Event */}
           <Button
             onClick={handleTestEvent}
-            disabled={!ingestSecret || !ingestUrl || testing}
+            disabled={!canSend || !ingestUrl || testing}
             className="w-full gap-2"
           >
             <Send className="h-4 w-4" />
