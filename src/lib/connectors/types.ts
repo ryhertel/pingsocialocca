@@ -33,4 +33,10 @@ export interface ConnectorTemplate {
   keywordsSupported: string[];
   notes: string;
   securityCopy: string;
+  /**
+   * A one-click connection from the setup panel, for services that take the
+   * webhook URL themselves. `{webhookUrl}` is replaced, URL-encoded. Put it after
+   * a `#` so the token in it never reaches the other service's server logs.
+   */
+  connect?: { label: string; url: string };
 }

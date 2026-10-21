@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import {
   Webhook, CreditCard, Github, MessageSquare, Gamepad2,
-  SquareKanban, Bug, Triangle, Plug, BookOpen, Bot,
+  SquareKanban, Bug, Triangle, Plug, BookOpen, Bot, Activity,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 
 // Same names as the template icons, so a card can never drift from its connector.
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  Webhook, CreditCard, Github, MessageSquare, Gamepad2, SquareKanban, Bug, Triangle, Bot,
+  Webhook, CreditCard, Github, MessageSquare, Gamepad2, SquareKanban, Bug, Triangle, Bot, Activity,
 };
 
 /** How each connector reaches Ping, said the way a spec sheet would. */

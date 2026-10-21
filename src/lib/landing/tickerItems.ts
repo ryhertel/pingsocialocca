@@ -7,6 +7,7 @@ const TEASERS: Record<string, { line: string; mood: TickerMood }> = {
   github: { line: 'push to main → fireworks', mood: 'proud' },
   stripe: { line: 'a sale lands → Ping beams', mood: 'proud' },
   vercel: { line: 'deploy ships → victory lap', mood: 'proud' },
+  watchrr: { line: 'a service goes down → Ping winces', mood: 'oops' },
   sentry: { line: 'new error → a polite uh-oh', mood: 'oops' },
   linear: { line: 'issue moves → Ping perks up', mood: 'surprise' },
   slack: { line: 'new message → Ping looks up', mood: 'surprise' },

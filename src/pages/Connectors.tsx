@@ -10,7 +10,7 @@ import { connectorTemplates } from '@/lib/connectors/connectorTemplates';
 import type { ConnectorTemplate } from '@/lib/connectors/types';
 import {
   ArrowLeft, Webhook, CreditCard, Github, Send, Copy, Check, Eye, EyeOff, Bot,
-  MessageSquare, Gamepad2, SquareKanban, Bug, Triangle,
+  MessageSquare, Gamepad2, SquareKanban, Bug, Triangle, Activity,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -27,6 +27,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   SquareKanban,
   Bug,
   Triangle,
+  Activity,
 };
 
 function CopyButton({ text }: { text: string }) {
