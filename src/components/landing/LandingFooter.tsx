@@ -1,3 +1,4 @@
+import { SocialoccaStatus } from "./SocialoccaStatus";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ExternalLink, Github } from 'lucide-react';
 import pingLogo from '@/assets/ping-logo-white.png';
@@ -182,6 +183,7 @@ export function LandingFooter() {
         {/* Bottom bar */}
         <div className="border-t border-border/30 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
           <span>&copy; {new Date().getFullYear()} Ping — a Socialocca product</span>
+          <SocialoccaStatus theme="dark" />
           <div className="flex items-center gap-4">
             <a
               href={`${SOCIALOCCA_URL}/privacy-policy`}
