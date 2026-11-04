@@ -48,6 +48,12 @@ const TOKEN_REGEX = /^[0-9a-f]{64}$/;
 
 /** Channels a single IP prefix may claim per hour. */
 const CLAIM_LIMIT_PER_HOUR = 10;
+/**
+ * Channels the whole service will create per hour, whoever asks. The per-IP limit
+ * above stops one visitor; this stops many visitors, or one with many addresses,
+ * from filling the table. Ordinary traffic is a handful of claims an hour.
+ */
+const GLOBAL_CLAIM_LIMIT_PER_HOUR = 300;
 
 function hexToBytes(hex: string): Uint8Array | null {
   if (hex.length % 2 !== 0) return null;
@@ -193,6 +199,24 @@ Deno.serve(async (req) => {
       }
     } catch {
       /* a failed throttle check must not block a legitimate claim */
+    }
+
+    try {
+      const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const totalRes = await fetch(
+        `${cfg.url}/rest/v1/ping_channels?created_at=gt.${since}&select=channel_key&limit=1`,
+        { headers: { ...cfg.authHeaders, Prefer: 'count=exact' } },
+      );
+      // Content-Range looks like "0-0/42", or "*/0" when empty.
+      const total = Number(totalRes.headers.get('content-range')?.split('/')[1]);
+      if (totalRes.ok && Number.isFinite(total) && total >= GLOBAL_CLAIM_LIMIT_PER_HOUR) {
+        return new Response(
+          JSON.stringify({ ok: false, error: 'Ping is busy creating channels right now. Try again in a little while.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '900' } },
+        );
+      }
+    } catch {
+      /* same: never block a legitimate claim on a failed check */
     }
 
     const channelKey = randomHex(16); // 32 hex, matches CHANNEL_KEY_REGEX

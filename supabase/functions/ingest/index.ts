@@ -1,8 +1,8 @@
 /**
  * Ingest Edge Function — webhook endpoint for external events.
  *
- * Pipeline: rate limit → size cap → authenticate → parse → adapt → validate
- *           (+redact) → insert. The secure read stream delivers to the UI.
+ * Pipeline: rate limit → size cap → authenticate → hourly budget → parse → adapt
+ *           → validate (+redact) → insert. The secure read stream delivers to the UI.
  *
  * Adaptation is what makes Ping general-purpose: a raw GitHub, Stripe or Vercel
  * webhook is mapped to Ping's shape here, so nothing in between is needed.
@@ -19,6 +19,7 @@
 
 import { adaptRequest } from './adapters.ts';
 import { validate } from './validate.ts';
+import { CHANNEL_EVENTS_PER_HOUR, IP_REQUESTS_PER_HOUR, withinHourlyBudget } from './usage.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -320,6 +321,21 @@ Deno.serve(async (req) => {
 
   if (!authenticated) {
     return json(401, { ok: false, error: 'Unauthorized' });
+  }
+
+  // Hourly budgets, shared by every instance (see usage.ts). Checked only after
+  // authentication so that unauthenticated traffic cannot create counters, and
+  // before any parsing or storage so an over-budget sender costs one cheap call.
+  const budgetConfig = serviceConfig();
+  if (budgetConfig) {
+    const overChannel = !(await withinHourlyBudget(budgetConfig, `ch:${channelKey}`, CHANNEL_EVENTS_PER_HOUR));
+    const overIp = !trustedRelay && ip !== 'unknown' && !(await withinHourlyBudget(budgetConfig, `ip:${ip}`, IP_REQUESTS_PER_HOUR));
+    if (overChannel || overIp) {
+      return new Response(JSON.stringify({ ok: false, error: 'Hourly limit reached. Try again later.' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '900' },
+      });
+    }
   }
 
   // Parse JSON
