@@ -131,12 +131,34 @@ export type Database = {
         }
         Relationships: []
       }
+      ping_rate_limits: {
+        Row: {
+          bucket: string
+          hits: number
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          hits?: number
+          window_start: string
+        }
+        Update: {
+          bucket?: string
+          hits?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      ping_rate_hit: {
+        Args: { p_bucket: string; p_limit: number; p_window_seconds: number }
+        Returns: boolean
+      }
+      prune_ping_data: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
