@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ConnectTicker } from '@/components/landing/ConnectTicker';
 import { TICKER_ITEMS } from '@/lib/landing/tickerItems';
+import { BRAND_ICONS } from '@/lib/landing/brandIcons';
 import { connectorTemplates } from '@/lib/connectors/connectorTemplates';
 import { advance, repeatsNeeded, wrapPosition, MAX_FRAME_MS } from '@/lib/landing/tickerLoop';
 
@@ -114,5 +115,42 @@ describe('<ConnectTicker />', () => {
 
     renderTicker();
     expect(screen.queryByRole('region', { name: /connect ping/i })).toBeNull();
+  });
+});
+
+describe('ticker brand icons', () => {
+  beforeEach(() => localStorage.clear());
+
+  const brandIds = ['github', 'stripe', 'vercel', 'sentry', 'linear', 'slack', 'discord', 'watchrr'];
+
+  it('shows an app icon for every named service, Watchrr included', () => {
+    for (const id of brandIds) {
+      expect(TICKER_ITEMS.some((item) => item.id === id), id).toBe(true);
+      expect(BRAND_ICONS[id], id).toBeDefined();
+    }
+    expect(BRAND_ICONS.watchrr).toEqual({ kind: 'image', src: '/connectors/watchrr.png' });
+  });
+
+  it('only has icons for services the ticker actually lists', () => {
+    const ids = new Set(TICKER_ITEMS.map((item) => item.id));
+    for (const id of Object.keys(BRAND_ICONS)) expect(ids.has(id), id).toBe(true);
+  });
+
+  it('draws real glyphs, not empty paths', () => {
+    for (const icon of Object.values(BRAND_ICONS)) {
+      if (icon.kind === 'glyph') {
+        expect(icon.path.length).toBeGreaterThan(10);
+        expect(icon.hex).toMatch(/^[0-9A-F]{6}$/i);
+      }
+    }
+  });
+
+  it('keeps the eyes for connectors that are not a brand', () => {
+    for (const id of ['generic', 'openclaw', 'email']) expect(BRAND_ICONS[id]).toBeUndefined();
+  });
+
+  it('renders the Watchrr icon as an image in the strip', () => {
+    const { container } = render(<MemoryRouter><ConnectTicker /></MemoryRouter>);
+    expect(container.querySelector('img[src="/connectors/watchrr.png"]')).not.toBeNull();
   });
 });
