@@ -177,6 +177,14 @@ export async function fetchEventsSecure(
 /** Called when the stored token is rejected; returns a replacement, or null. */
 export type TokenRenewer = () => Promise<string | null>;
 
+/**
+ * How long a tab must stay hidden before its stream is paused. A glance at another
+ * window should not tear down and rebuild the connection; a tab left in the
+ * background for the afternoon should stop costing a database query every few
+ * seconds.
+ */
+export const HIDDEN_GRACE_MS = 30_000;
+
 export function openSecureStream(
   channelKey: string,
   readToken: string,
@@ -196,11 +204,20 @@ export function openSecureStream(
   let lastSeen: number | undefined;
   let activeToken = readToken;
   let renewals = 0;
+  // Paused while the tab is hidden (see suspend/resume below).
+  let suspended = false;
+  let hiddenAt = 0;
+  let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
   const cleanup = () => {
     if (cleaned) return;
     cleaned = true;
     onStatus(false);
+    if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibility);
+    if (hideTimer) {
+      clearTimeout(hideTimer);
+      hideTimer = null;
+    }
     if (abortController) {
       abortController.abort();
       abortController = null;
@@ -323,14 +340,70 @@ export function openSecureStream(
         }
       }
 
-      // Stream ended gracefully — fall back to polling to stay live
-      if (!cleaned) startPolling();
+      // Stream ended gracefully — fall back to polling to stay live. Not when it
+      // ended because the tab was paused: resume() reconnects.
+      if (!cleaned && !suspended) startPolling();
     } catch {
-      if (cleaned) return; // Expected on cleanup abort
+      if (cleaned || suspended) return; // Expected on cleanup or pause abort
       // Stream failed — fall back to polling
       startPolling();
     }
   };
+
+  // A hidden tab cannot show anything, but its stream keeps the server polling the
+  // database for it. Stop after a grace period, and on return fetch what arrived
+  // in the meantime before reconnecting, so nothing is missed.
+  const suspend = () => {
+    if (cleaned || suspended) return;
+    suspended = true;
+    hiddenAt = Date.now();
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
+    }
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  };
+
+  const resume = async () => {
+    if (cleaned || !suspended) return;
+    suspended = false;
+    const since = lastSeen ?? hiddenAt;
+    let result = await readEvents(channelKey, activeToken, 50, since);
+    if (result.status === 401 && (await tryRenew())) {
+      result = await readEvents(channelKey, activeToken, 50, since);
+    }
+    // Hidden again, or torn down, while that was in flight.
+    if (cleaned || suspended) return;
+    // events_read returns newest first; replay oldest first so the feed order holds.
+    for (let i = result.events.length - 1; i >= 0; i--) {
+      const evt = result.events[i];
+      onEvent(evt);
+      if (lastSeen === undefined || evt.receivedAt > lastSeen) lastSeen = evt.receivedAt;
+    }
+    startFetchSSE();
+  };
+
+  function onVisibility() {
+    if (document.hidden) {
+      if (!hideTimer && !suspended) {
+        hideTimer = setTimeout(() => {
+          hideTimer = null;
+          suspend();
+        }, HIDDEN_GRACE_MS);
+      }
+    } else {
+      if (hideTimer) {
+        clearTimeout(hideTimer);
+        hideTimer = null;
+      }
+      void resume();
+    }
+  }
+
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibility);
 
   startFetchSSE();
 
