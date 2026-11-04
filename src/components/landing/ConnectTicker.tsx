@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Link } from 'react-router-dom';
 import { Pause, Play, X, Zap, ArrowRight } from 'lucide-react';
 import { TICKER_ITEMS, type TickerMood } from '@/lib/landing/tickerItems';
+import { BRAND_ICONS } from '@/lib/landing/brandIcons';
 import { TRACK_COPIES, advance, repeatsNeeded, wrapPosition } from '@/lib/landing/tickerLoop';
 
 /**
@@ -68,6 +69,25 @@ function TinyEyes({ mood, blinkDelay }: { mood: TickerMood; blinkDelay: number }
         {mood === 'curious' && (<><circle cx="7" cy="4.5" r="1.6" fill={stroke} /><circle cx="15" cy="4.5" r="1.6" fill={stroke} /></>)}
       </g>
     </svg>
+  );
+}
+
+/** A service's app icon: its official mark on a rounded tile, as it would appear on a phone. */
+function BrandMark({ id }: { id: string }) {
+  const icon = BRAND_ICONS[id];
+  if (!icon) return null;
+  const tile = 'flex h-[22px] w-[22px] shrink-0 items-center justify-center overflow-hidden rounded-[6px] ring-1 ring-foreground/15 transition-transform duration-150 group-hover:scale-110 group-focus-visible:scale-110';
+  if (icon.kind === 'image') {
+    return (
+      <span className={tile} aria-hidden="true">
+        <img src={icon.src} alt="" width={22} height={22} draggable={false} className="h-full w-full object-cover" />
+      </span>
+    );
+  }
+  return (
+    <span className={tile} style={{ backgroundColor: `#${icon.hex}` }} aria-hidden="true">
+      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="#fff"><path d={icon.path} /></svg>
+    </span>
   );
 }
 
@@ -267,7 +287,9 @@ export function ConnectTicker() {
                           onDragStart={(e) => e.preventDefault()}
                           className="group flex items-center gap-2 rounded-full px-3 py-1 whitespace-nowrap text-muted-foreground transition-colors hover:bg-primary/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
-                          <TinyEyes mood={item.mood} blinkDelay={(i * 0.7) % 5} />
+                          {BRAND_ICONS[item.id]
+                            ? <BrandMark id={item.id} />
+                            : <TinyEyes mood={item.mood} blinkDelay={(i * 0.7) % 5} />}
                           <span className="font-medium text-foreground">{item.name}</span>
                           <span>{item.line}</span>
                         </Link>
