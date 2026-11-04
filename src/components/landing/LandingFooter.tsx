@@ -27,6 +27,7 @@ const SOCIALOCCA_URL = 'https://socialocca.com';
  */
 const COMPANY_LINKS = [
   { label: 'Socialocca', href: SOCIALOCCA_URL },
+  { label: 'Socialocca Toolkit', href: 'https://tools.socialocca.io/toolkit' },
   { label: 'Contact', href: `${SOCIALOCCA_URL}/contact` },
   { label: 'Privacy Policy', href: `${SOCIALOCCA_URL}/privacy-policy` },
   { label: 'Terms', href: `${SOCIALOCCA_URL}/terms-of-service` },
